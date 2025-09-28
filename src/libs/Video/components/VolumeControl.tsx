@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {Volume2, VolumeX} from 'lucide-react';
 
 interface VolumeControlProps {
@@ -20,6 +20,7 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
   customIcons 
 }) => {
   const volumeContainerRef = useRef<HTMLDivElement>(null);
+  const volumeBufferRef = useRef<HTMLDivElement>(null);
   const isVolumeChanging = useRef(false);
 
   // 获取图标，优先使用自定义图标，否则使用默认图标
@@ -27,53 +28,66 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
     return customIcons && customIcons[iconType] ? customIcons[iconType] : defaultIcon;
   };
 
-  // 添加事件监听器处理音量拖拽
+  // 更新音量条显示
+  const updateVolumeBuffer = useCallback(() => {
+    if (volumeBufferRef.current) {
+      volumeBufferRef.current.style.transform = `scaleX(${volume})`;
+    }
+  }, [volume]);
+
+  // 当volume变化时更新音量条显示
   useEffect(() => {
-    const volumeContainer = volumeContainerRef.current;
-    if (!volumeContainer) return;
-
-    const handleMouseMove = (e: MouseEvent | TouchEvent) => {
-      if (!isVolumeChanging.current || !volumeContainer) return;
-      
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-      const rect = volumeContainer.getBoundingClientRect();
-      const position = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      
-      onVolumeChange(position);
-    };
-
-    const handleMouseUp = () => {
-      isVolumeChanging.current = false;
-    };
-
-    volumeContainer.addEventListener('mousemove', handleMouseMove);
-    volumeContainer.addEventListener('touchmove', handleMouseMove, { passive: false });
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('touchend', handleMouseUp);
-
-    return () => {
-      volumeContainer.removeEventListener('mousemove', handleMouseMove);
-      volumeContainer.removeEventListener('touchmove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('touchend', handleMouseUp);
-    };
-  }, [onVolumeChange]);
-
-  // 音量控制开始
-  const handleVolumeStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    isVolumeChanging.current = true;
-    handleVolumeMove(e);
-  };
+    updateVolumeBuffer();
+  }, [updateVolumeBuffer]);
 
   // 音量控制移动
-  const handleVolumeMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    if (!volumeContainerRef.current) return;
+  const handleVolumeMove = useCallback((e: MouseEvent | TouchEvent) => {
+    if (!isVolumeChanging.current || !volumeContainerRef.current) return;
     
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const rect = volumeContainerRef.current.getBoundingClientRect();
     const position = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     
     onVolumeChange(position);
+  }, [onVolumeChange]);
+
+  // 音量控制结束
+  const handleVolumeEnd = useCallback(() => {
+    isVolumeChanging.current = false;
+  }, []);
+
+  // 添加事件监听器处理音量拖拽
+  useEffect(() => {
+    // 只有在开始拖拽时才添加全局事件监听器
+    if (!isVolumeChanging.current) return;
+
+    const handleMouseMove = (e: MouseEvent | TouchEvent) => {
+      handleVolumeMove(e);
+    };
+
+    const handleMouseUp = () => {
+      handleVolumeEnd();
+    };
+
+    // 添加全局事件监听器，确保即使鼠标移出音量条区域也能正常工作
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('touchmove', handleMouseMove, { passive: false });
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchend', handleMouseUp);
+
+    return () => {
+      // 清理全局事件监听器
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('touchmove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchend', handleMouseUp);
+    };
+  }, [isVolumeChanging.current, handleVolumeMove, handleVolumeEnd]); // 依赖于拖拽状态
+
+  // 音量控制开始
+  const handleVolumeStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    isVolumeChanging.current = true;
+    handleVolumeMove(e as any);
   };
 
   // 处理音量条点击直接设置音量
@@ -106,7 +120,7 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
       >
         <div
           className="volume-buffer"
-          style={{ width: `${volume * 100}%` }}
+          ref={volumeBufferRef}
         />
       </div>
     </>
