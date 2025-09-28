@@ -8,11 +8,7 @@ import {visualizer} from 'rollup-plugin-visualizer'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    react({
-      babel: {
-        plugins: ['babel-plugin-react-compiler']
-      }
-    }),
+    react(),
     dts({
       insertTypesEntry: true,
       rollupTypes: true,
@@ -32,13 +28,13 @@ export default defineConfig({
       formats: ['es', 'cjs'],
       fileName: (format) => `index.${format}.js`
     },
-    rollupOptions: {
+    rolldownOptions: {
       external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react', 'uuid'],
       output: {
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
-        'react/jsx-runtime': 'reactJsxRuntime',
+          'react/jsx-runtime': 'reactJsxRuntime',
           'lucide-react': 'LucideReact',
           uuid: 'uuid'
         }
