@@ -1,0 +1,15 @@
+# .npmignore
+# 忽略开发环境文件
+src/
+__mocks__/
+tsconfig.json
+vite.config.ts
+eslint.config.js
+.git
+.npmrc
+.prettierrc
+.eslintrc.cjs
+jest.config.js
+
+# 忽略 devDependencies
+node_modules/

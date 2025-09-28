@@ -1,55 +1,48 @@
 // vite.config.ts
-import {defineConfig} from 'vite';
-import react from '@vitejs/plugin-react';
-import dts from 'vite-plugin-dts';
-import * as path from 'path';
-import {fileURLToPath} from 'url';
+import {defineConfig} from 'vite'
+import {resolve} from 'path'
+import react from '@vitejs/plugin-react'
+import dts from 'vite-plugin-dts'
+import {visualizer} from 'rollup-plugin-visualizer'
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    react(),
-
+    react({
+      babel: {
+        plugins: ['babel-plugin-react-compiler']
+      }
+    }),
     dts({
       insertTypesEntry: true,
       rollupTypes: true,
-      // compilerOptions: {
-      //   emitDeclarationOnly: true,
-      // },
       copyDtsFiles: true,
       exclude: ['**/*.test.*'],
       // 可选：指定输出目录
       outDir: 'dist',
     }),
-    // visualizer({
-    //   filename: 'dist/stats.html', // ✅ 明确路径
-    //   open: false, // 构建完后手动打开
-    //   gzipSize: true,
-    //   brotliSize: true,
-    //   template: 'treemap', // 或 'sunburst', 'network'
-    // }),
+    visualizer({
+      filename: 'dist/stats.html'
+    })
   ],
   build: {
-    emptyOutDir: true,
-    sourcemap: true,
     lib: {
-      entry: path.resolve(__dirname, 'src/libs/Video/index.ts'),
+      entry: resolve(__dirname, 'src/libs/Video/index.tsx'),
       name: 'CluoubVideo',
       formats: ['es', 'cjs'],
-      fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}.js`,
+      fileName: (format) => `index.${format}.js`
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime', 'uuid'],
+      external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react', 'uuid'],
       output: {
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
-          'react/jsx-runtime': 'reactJsxRuntime',
-          'uuid': 'uuid'
-        },
-      },
-    },
+        'react/jsx-runtime': 'reactJsxRuntime',
+          'lucide-react': 'LucideReact',
+          uuid: 'uuid'
+        }
+      }
+    }
   }
 });

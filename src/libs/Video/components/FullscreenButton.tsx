@@ -24,6 +24,7 @@ const FullscreenButton: React.FC<FullscreenButtonProps> = ({
     <button 
       className="control-button"
       onClick={onToggle}
+      aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
     >
       {getIcon('fullscreenIcon', <Maximize size={20} />)}
     </button>

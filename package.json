@@ -1,26 +1,60 @@
 {
-  "name": "cluoub-video",
-  "private": true,
-  "version": "0.0.0",
+  "name": "@cluoub-design/cluoub-video",
+  "version": "1.0.0",
   "type": "module",
+  "description": "一个带动效的视频播放器组件，支持弹幕、自定义控件和多种交互功能",
+  "keywords": [
+    "react",
+    "video",
+    "player",
+    "component",
+    "barrage",
+    "ui"
+  ],
+  "author": "Cluoub Design Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cluoub-design/cluoub-video.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cluoub-design/cluoub-video/issues"
+  },
+  "homepage": "https://github.com/cluoub-design/cluoub-video#readme",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.mjs.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs.js",
+      "require": "./dist/index.cjs.js"
+    },
+    "./dist/cluoub-video.css": {
+      "import": "./dist/cluoub-video.css",
+      "require": "./dist/cluoub-video.css"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
-  },
-  "dependencies": {
-    "lucide-react": "^0.544.0",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "uuid": "^13.0.0"
   },
   "peerDependencies": {
     "react": "^17.0.0 || ^18.0.0 || ^19.0.0",
     "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0"
   },
+  "dependencies": {
+    "lucide-react": "^0.544.0",
+    "uuid": "^13.0.0"
+  },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
+    "@rollup/plugin-typescript": "^12.1.4",
     "@types/node": "^18.19.124",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
@@ -31,10 +65,14 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.4.0",
+    "rollup-plugin-dts": "^6.2.3",
+    "rollup-plugin-visualizer": "^6.0.3",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.44.0",
     "vite": "npm:rolldown-vite@7.1.12",
-    "vite-plugin-dts": "^4.5.4"
+    "vite-plugin-dts": "^4.5.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
   },
   "pnpm": {
     "overrides": {

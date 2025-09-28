@@ -5,7 +5,6 @@ import './ProgressControl.css';
 interface ProgressControlProps {
   progress: number;
   duration: number;
-  currentTime: number;
   showThumbnail: boolean;
   thumbnailPosition: { x: number; time: number };
   thumbnailUrl?: string;
@@ -22,7 +21,6 @@ interface ProgressControlProps {
 const ProgressControl: React.FC<ProgressControlProps> = ({ 
   progress,
   duration,
-  currentTime,
   showThumbnail,
   thumbnailPosition,
   thumbnailUrl,
@@ -38,11 +36,6 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
   const progressThumbRef = useRef<HTMLDivElement>(null);
   const thumbnailRef = useRef<HTMLDivElement>(null);
   const isSeeking = useRef(false);
-
-  // 获取图标，优先使用自定义图标，否则使用默认图标
-  const getIcon = (iconType: keyof NonNullable<ProgressControlProps['customIcons']>, defaultIcon: React.ReactNode) => {
-    return customIcons && customIcons[iconType] ? customIcons[iconType] : defaultIcon;
-  };
 
   // 格式化时间
   const formatTime = (time: number) => {

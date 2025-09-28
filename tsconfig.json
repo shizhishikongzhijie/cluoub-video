@@ -1,7 +1,26 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "preserveConstEnums": true,
+    "skipLibCheck": true,
+
+    // ✅ 关键：启用 JSX 支持
+    "jsx": "react-jsx",
+
+    // ✅ 关键：允许默认导入 CommonJS 模块（如 @types/react）
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+
+    // 其他建议
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+  },
+  "include": ["src/libs/Video/**/*"]
 }
