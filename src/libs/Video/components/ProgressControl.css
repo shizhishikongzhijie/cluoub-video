@@ -1,0 +1,65 @@
+/* ProgressControl 组件样式 */
+.progress-container {
+  position: relative;
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: height 0.2s;
+  transform: translateZ(0);
+}
+
+.progress-container:hover {
+  height: 6px;
+}
+
+.progress-buffer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: #ff6b6b;
+  border-radius: 2px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.progress-thumb {
+  position: absolute;
+  display: flex;
+  top: 50%;
+  left: 0;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  will-change: transform;
+}
+
+.progress-container:hover .progress-thumb {
+  opacity: 1;
+}
+
+.thumbnail-preview {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 4px;
+  padding: 4px;
+  z-index: 100;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.thumbnail-preview img {
+  display: block;
+  border-radius: 2px;
+}
+
+.thumbnail-time {
+  color: white;
+  font-size: 12px;
+  text-align: center;
+  margin-top: 4px;
+}

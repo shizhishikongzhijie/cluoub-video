@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {Send} from 'lucide-react';
+import './BarrageInput.css';
 
 interface BarrageInputProps {
   isPlaying: boolean;

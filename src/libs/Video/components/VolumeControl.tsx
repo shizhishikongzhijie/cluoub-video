@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useRef} from 'react';
 import {Volume2, VolumeX} from 'lucide-react';
+import './VolumeControl.css';
 
 interface VolumeControlProps {
   isMuted: boolean;

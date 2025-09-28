@@ -1,0 +1,14 @@
+/* TimeDisplay 组件样式 */
+.time-display {
+  color: white;
+  font-size: 12px;
+  font-family: monospace;
+  min-width: 100px;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .time-display {
+    display: none;
+  }
+}

@@ -1,5 +1,6 @@
 import React from 'react';
 import {Pause, Play} from 'lucide-react';
+import './PlayButton.css';
 
 interface PlayButtonProps {
   isPlaying: boolean;

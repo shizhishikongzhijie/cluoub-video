@@ -167,28 +167,15 @@ const CluoubVideo: React.FC<VideoProps> = ({
     };
   }, []);
 
-  // 控制栏显示/隐藏
+  // 清理过期弹幕以提高性能
   useEffect(() => {
-    const handleMouseMove = () => {
-      setShowControls(true);
-      if (controlsTimeout.current) {
-        clearTimeout(controlsTimeout.current);
-      }
-      controlsTimeout.current = setTimeout(() => {
-        if (isPlaying) {
-          setShowControls(false);
-        }
-      }, 3000);
-    };
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setBarrages(prev => prev.filter(barrage => now - barrage.timestamp < 10000)); // 只保留10秒内的弹幕
+    }, 1000);
 
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener('mousemove', handleMouseMove);
-      return () => {
-        container.removeEventListener('mousemove', handleMouseMove);
-      };
-    }
-  }, [isPlaying]);
+    return () => clearInterval(interval);
+  }, []);
 
   // 播放/暂停
   const togglePlay = () => {
@@ -288,9 +275,9 @@ const CluoubVideo: React.FC<VideoProps> = ({
       userId,
       username,
       timestamp: Date.now(),
-      color: `#${Math.floor(Math.random()*16777215).toString(16)}`,
-      size: Math.floor(Math.random() * 5 + 12),
-      position: Math.floor(Math.random() * 3) * 30 + 10 // 10%, 40%, 70%
+      color: `hsl(${Math.floor(Math.random() * 360)}, 100%, 70%)`, // 使用HSL色彩空间获得更鲜艳的颜色
+      size: Math.floor(Math.random() * 8 + 10), // 调整字体大小范围
+      position: Math.floor(Math.random() * 7) * 10 + 5 // 增加更多位置选项 (5%, 15%, 25%, ..., 65%)
     };
     
     setBarrages(prev => [...prev, newBarrage]);

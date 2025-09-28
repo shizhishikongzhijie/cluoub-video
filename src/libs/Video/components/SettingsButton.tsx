@@ -1,5 +1,6 @@
 import React from 'react';
 import {Settings} from 'lucide-react';
+import './SettingsButton.css';
 
 interface SettingsButtonProps {
   customIcons?: {

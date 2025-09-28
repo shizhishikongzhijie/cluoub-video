@@ -1,5 +1,6 @@
 import React from 'react';
 import {Maximize} from 'lucide-react';
+import './FullscreenButton.css';
 
 interface FullscreenButtonProps {
   isFullscreen: boolean;

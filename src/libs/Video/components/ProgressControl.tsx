@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useRef} from 'react';
 import {Circle} from 'lucide-react';
+import './ProgressControl.css';
 
 interface ProgressControlProps {
   progress: number;
