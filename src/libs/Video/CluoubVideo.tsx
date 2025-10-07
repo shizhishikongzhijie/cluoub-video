@@ -1,14 +1,46 @@
-import React, {useCallback, useEffect, useRef, useState} from "react";
-import {Barrage, VideoProps} from "./Video.types";
-import {BarrageFilter} from "./BarrageFilter";
+import React, {useEffect, useRef, useState} from "react";
+
+// 定义VideoProps接口
+interface VideoProps {
+  videoSrc?: string;
+  videoId?: string;
+  userId?: string;
+  username?: string;
+  autoPlay?: boolean;
+  loop?: boolean;
+  muted?: boolean;
+  volume?: number;
+  themeColor?: string;
+  theme?: 'light' | 'dark';
+  showControls?: boolean;
+  controls?: {
+    play?: boolean;
+    volume?: boolean;
+    time?: boolean;
+    progress?: boolean;
+    settings?: boolean;
+    fullscreen?: boolean;
+    barrage?: boolean;
+    subtitles?: boolean;
+  };
+  customIcons?: Record<string, React.ReactNode>;
+  thumbnailUrl?: string;
+  thumbnailWidth?: number;
+  thumbnailHeight?: number;
+  tracks?: Array<{ id?: string; label: string; src: string; srclang?: string; kind?: string; default?: boolean }>;
+  enableShortcuts?: boolean;
+  debug?: boolean;
+  plugins?: Array<any>;
+  width?: string | number;
+  height?: string | number;
+  aspectRatio?: string;
+}
 import PlayButton from "./components/PlayButton";
 import VolumeControl from "./components/VolumeControl";
 import TimeDisplay from "./components/TimeDisplay";
 import ProgressControl from "./components/ProgressControl";
 import SettingsButton from "./components/SettingsButton";
 import FullscreenButton from "./components/FullscreenButton";
-import BarrageInput from "./components/BarrageInput";
-import BarrageToggleButton from "./components/BarrageToggleButton";
 import SubtitlesMenu from "./components/SubtitlesMenu";
 import {useControlsManager, usePlayerCore, useThumbnailManager} from "./hooks";
 import {useVideoEvents} from "./hooks/useVideoEvents";
@@ -16,9 +48,9 @@ import {useSubtitles} from "./hooks/useSubtitles";
 import {useKeyboardShortcuts} from "./hooks/useKeyboardShortcuts";
 import {useControlsVisibility} from "./hooks/useControlsVisibility";
 import Logger from "./utils/Logger";
-import {BarragePlugin} from "./plugins";
+import { VideoRef } from "./Video.types";
 
-const CluoubVideo: React.FC<VideoProps> = ({
+const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = ({
   videoSrc,
   videoId,
   userId,
@@ -42,8 +74,9 @@ const CluoubVideo: React.FC<VideoProps> = ({
   thumbnailHeight = 80,
   tracks = [],
   enableShortcuts = true,
-  debug = false
-}) => {
+  debug = false,
+  plugins = [],
+}, ref) => {
   const logger = Logger.getInstance();
   logger.setComponentName('CluoubVideo');
   logger.setDebugMode(debug);
@@ -57,16 +90,63 @@ const CluoubVideo: React.FC<VideoProps> = ({
   }
   
   // 使用播放器核心
-  const playerCore = usePlayerCore({ videoSrc, videoId, userId, username });
+  const playerCore = usePlayerCore({ 
+    videoSrc: videoSrc || '', 
+    videoId: videoId || '', 
+    userId: userId || '', 
+    username: username || '' 
+  });
   
-  // 初始化弹幕插件
-  const barragePluginRef = useRef<BarragePlugin | null>(null);
+  // 组件ref，用于暴露方法给外部
+  const exposedRef = useRef<VideoRef>({
+    play: () => playerCore.play(),
+    pause: () => playerCore.pause(),
+    togglePlay: () => playerCore.togglePlay(),
+    seekTo: (time: number) => playerCore.seek(time),
+    setVolume: (volume: number) => playerCore.setVolume(volume),
+    toggleMute: () => playerCore.toggleMute(),
+    toggleFullscreen: () => playerCore.toggleFullscreen(),
+    getPlugin: (pluginName: string) => playerCore.getPlugin(pluginName),
+    get currentTime() { return currentTime; },
+    get duration() { return duration; },
+    get isPlaying() { return isPlaying; }
+  });
+  
+  // 处理外部传入的ref
+  React.useImperativeHandle(ref, () => exposedRef.current);
+  
+  // 从插件系统获取控制按钮和组件
+  const [controlButtons, setControlButtons] = useState<Array<{ id: string; position: 'left' | 'right'; order: number; component?: React.ReactNode; customComponent?: React.ReactNode; icon?: React.ReactNode; title?: string; onClick?: () => void }>>([]);
+  
+  // 初始化用户提供的插件
   useEffect(() => {
-    if (controls.barrage && !barragePluginRef.current) {
-      barragePluginRef.current = new BarragePlugin();
-      playerCore.use(barragePluginRef.current);
+    // 注册用户提供的插件
+    if (plugins && Array.isArray(plugins)) {
+      plugins.forEach(plugin => {
+        if (plugin) {
+          // 处理插件配置对象 {plugin: IPlayerPlugin, options?: any}
+          if (typeof plugin === 'object' && 'plugin' in plugin) {
+            playerCore.use(plugin.plugin, plugin.options);
+          } else if (typeof plugin === 'object' && plugin.name && typeof plugin.install === 'function') {
+            // 直接传入的插件实例
+            playerCore.use(plugin);
+          }
+        }
+      });
     }
-  }, [playerCore, controls.barrage]);
+    
+    // 监听插件组件变化事件
+    playerCore.on('controlButtonsUpdate', (buttons: any) => {
+      setControlButtons(buttons);
+    });
+    
+    // 组件更新事件处理已移至新的插件系统
+    
+    return () => {
+      playerCore.removeListener('controlButtonsUpdate', () => {});
+      playerCore.removeListener('componentsUpdate', () => {});
+    };
+  }, [playerCore, plugins]);
   
   // 使用控制栏管理器
   const controlsManager = useControlsManager();
@@ -75,7 +155,6 @@ const CluoubVideo: React.FC<VideoProps> = ({
   const thumbnailManager = useThumbnailManager(thumbnailUrl);
   
   // 状态管理
-  const [barrages, setBarrages] = useState<Barrage[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
@@ -88,10 +167,9 @@ const CluoubVideo: React.FC<VideoProps> = ({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const filter = useRef<BarrageFilter>(new BarrageFilter());
 
   // 使用控制栏可见性Hook
-  const { showControls, setShowControls } = useControlsVisibility(containerRef, controlsManager);
+  const { showControls } = useControlsVisibility(containerRef as React.RefObject<HTMLDivElement>, controlsManager);
 
   // 监听播放器核心事件
   useEffect(() => {
@@ -113,11 +191,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
       // 实际执行全屏操作
       handleFullscreenToggle(fullscreen);
     };
-    const handleBarragesUpdate = (barrages: Barrage[]) => {
-      logger.debug('Barrages updated, current barrage count:', barrages.length);
-      logger.debug('Barrage list:', barrages);
-      setBarrages(barrages);
-    };
+
     const handleTimeUpdate = (data: { currentTime: number; progress: number }) => {
       setCurrentTime(data.currentTime);
       setProgress(data.progress);
@@ -170,7 +244,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
     playerCore.on('seek', handleSeek);
     playerCore.on('progressChange', handleProgressChange);
     playerCore.on('fullscreenChange', handleFullscreenChange);
-    playerCore.on('barragesUpdate', handleBarragesUpdate);
+
     playerCore.on('timeUpdate', handleTimeUpdate);
     playerCore.on('durationChange', handleDurationChange);
     playerCore.on('subtitleTrackChange', handleSubtitleTrackChange);
@@ -183,7 +257,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
       playerCore.removeListener('seek', handleSeek);
       playerCore.removeListener('progressChange', handleProgressChange);
       playerCore.removeListener('fullscreenChange', handleFullscreenChange);
-      playerCore.removeListener('barragesUpdate', handleBarragesUpdate);
+  
       playerCore.removeListener('timeUpdate', handleTimeUpdate);
       playerCore.removeListener('durationChange', handleDurationChange);
       playerCore.removeListener('subtitleTrackChange', handleSubtitleTrackChange);
@@ -198,13 +272,23 @@ const CluoubVideo: React.FC<VideoProps> = ({
   }, [thumbnailManager.isThumbnailVisible, thumbnailManager.thumbnailPosition]);
 
   // 使用视频事件Hook
-  useVideoEvents(videoRef, playerCore, isMuted, volume, currentTime);
+  useVideoEvents(videoRef as React.RefObject<HTMLVideoElement>, playerCore, isMuted, volume, currentTime);
 
   // 使用字幕Hook
-  useSubtitles(videoRef, playerCore, tracks);
+  // 转换tracks为符合Track类型的数组
+  const processedTracks = (tracks || []).map((track, index) => ({
+    id: track.id || `track-${index}`,
+    label: track.label || `Track ${index + 1}`,
+    src: track.src,
+    srclang: track.srclang || 'auto',
+    kind: (track.kind as 'subtitles' | 'captions' | 'descriptions' | 'chapters' | 'metadata') || 'subtitles',
+    default: track.default
+  }));
+  
+  useSubtitles(videoRef as React.RefObject<HTMLVideoElement>, playerCore, processedTracks);
 
   // 使用快捷键Hook
-  useKeyboardShortcuts(containerRef, playerCore, enableShortcuts, currentTime, duration, volume);
+  useKeyboardShortcuts(containerRef as React.RefObject<HTMLDivElement>, playerCore, enableShortcuts, currentTime, duration, volume);
 
   // 更新缩略图URL到管理器
   useEffect(() => {
@@ -312,14 +396,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
     }
   };
 
-  // 切换弹幕输入框显示/隐藏
-  const toggleBarrageInput = () => {
-    if (barragePluginRef.current) {
-      barragePluginRef.current.toggleBarrageInput();
-    } else {
-      playerCore.toggleBarrageInput();
-    }
-  };
+
 
   // 字幕菜单是否打开
   const [isSubtitlesMenuOpen, setIsSubtitlesMenuOpen] = useState(false);
@@ -331,7 +408,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
   
   // 选择字幕轨道
   const selectSubtitleTrack = (trackId: string) => {
-    const trackIndex = tracks.findIndex(track => track.id === trackId);
+    const trackIndex = tracks.findIndex(track => (track.id || track.label) === trackId);
     if (trackIndex !== -1) {
       playerCore.setSubtitleTrack(trackIndex);
       playerCore.setShowSubtitles(true);
@@ -345,21 +422,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
     setIsSubtitlesMenuOpen(false);
   };
 
-  // 发送弹幕
-  const sendBarrage = useCallback((text: string) => {
-    logger.debug('Preparing to send barrage:', text);
-    const filteredText = filter.current.filter(text);
-    if (!filteredText) {
-      logger.debug('Barrage text filtered out');
-      return; // 过滤后为空
-    }
 
-    // 通过弹幕插件发送弹幕
-    if (barragePluginRef.current) {
-      logger.debug('Sending barrage via BarragePlugin:', { filteredText, userId, username });
-      barragePluginRef.current.sendBarrage(filteredText, userId, username);
-    }
-  }, [userId, username]);
 
   // 计算容器样式
   const getContainerStyle = () => {
@@ -394,37 +457,50 @@ const CluoubVideo: React.FC<VideoProps> = ({
           className="video-element"
         />
 
-        {/* 弹幕渲染层 */}
-        <div className="barrage-container">
-          {barrages.map(barrage => (
-            <div
-              key={barrage.id}
-              className={`barrage ${!isPlaying ? 'paused' : ''}`}
-              style={{
-                top: `${barrage.position}%`,
-                color: barrage.color,
-                fontSize: `${barrage.size}px`,
-                animationDuration: `${barrage.duration}s`
-              }}
-            >
-              {barrage.text}
-            </div>
-          ))}
-        </div>
+
 
         {/* 视频控制栏 */}
         <div className={`video-controls ${showControls ? 'visible' : 'hidden'}`}>
-          {/* 播放按钮 */}
-          {controls.play && (
-            <PlayButton
-              isPlaying={isPlaying}
-              onToggle={togglePlay}
-              customIcons={customIcons ? {
-                playIcon: customIcons.playIcon,
-                pauseIcon: customIcons.pauseIcon
-              } : undefined}
-            />
-          )}
+          {/* 左侧控制按钮 */}
+          <div className="video-controls-left">
+            {/* 播放按钮 */}
+            {controls.play && (
+              <PlayButton
+                isPlaying={isPlaying}
+                onToggle={togglePlay}
+                customIcons={customIcons ? {
+                  playIcon: customIcons.playIcon,
+                  pauseIcon: customIcons.pauseIcon
+                } : undefined}
+              />
+            )}
+            
+            {controlButtons
+              .filter(button => button.position === 'left')
+              .sort((a, b) => (a.order || 0) - (b.order || 0))
+              .map(button => (
+                <React.Fragment key={button.id}>
+                  {button.customComponent ? (
+                    button.customComponent
+                  ) : button.component ? (
+                    button.component
+                  ) : (
+                    <button
+                      className="control-button plugin-control-button"
+                      title={button.title}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (button.onClick) button.onClick();
+                      }}
+                      aria-label={button.title}
+                    >
+                      {button.icon}
+                    </button>
+                  )}
+                </React.Fragment>
+              ))
+            }
+          </div>
 
           {/* 音量控制 */}
           {controls.volume && (
@@ -467,22 +543,16 @@ const CluoubVideo: React.FC<VideoProps> = ({
             />
           )}
 
-          {/* 弹幕控制按钮 - 使用组件 */}
-          {controls.barrage && (
-            <BarrageToggleButton
-              isActive={playerCore.showBarrageInput}
-              onClick={toggleBarrageInput}
-              title={playerCore.showBarrageInput ? "隐藏弹幕输入框" : "显示弹幕输入框"}
-            />
-          )}
+
           
           {/* 字幕控制按钮 - 使用SubtitlesMenu组件 */}
           {controls.subtitles && tracks.length > 0 && (
             <SubtitlesMenu
               options={tracks.map((track, index) => ({
-                id: track.id,
+                id: track.id || `track-${index}`,
+                kind: track.kind || 'subtitles',
                 label: track.label,
-                language: track.srclang,
+                language: track.srclang || 'auto',
                 isActive: playerCore.showSubtitles && index === playerCore.currentTrackIndex
               }))}
               isOpen={isSubtitlesMenuOpen}
@@ -511,21 +581,36 @@ const CluoubVideo: React.FC<VideoProps> = ({
               } : undefined}
             />
           )}
+          
+          {controlButtons
+            .filter(button => button.position === 'right')
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+            .map(button => (
+              <React.Fragment key={button.id}>
+                {button.customComponent ? (
+                  button.customComponent
+                ) : button.component ? (
+                  button.component
+                ) : (
+                  <button
+                    className="control-button plugin-control-button"
+                    title={button.title}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (button.onClick) button.onClick();
+                    }}
+                    aria-label={button.title}
+                  >
+                    {button.icon}
+                  </button>
+                )}
+              </React.Fragment>
+            ))
+          }
         </div>
       </div>
-
-      {/* 弹幕输入框 - 现在由PlayerCore控制 */}
-      {controls.barrage && playerCore.showBarrageInput && (
-        <BarrageInput
-          isPlaying={isPlaying}
-          onSend={sendBarrage}
-          customIcons={customIcons ? {
-            sendIcon: customIcons.sendIcon
-          } : undefined}
-        />
-      )}
     </div>
   );
 };
 
-export default CluoubVideo;
+export default React.forwardRef<VideoRef, VideoProps>(CluoubVideo);

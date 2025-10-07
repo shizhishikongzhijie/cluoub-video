@@ -1,4 +1,82 @@
 /**
+ * Player插件接口定义
+ */
+export interface IPlayerPlugin {
+  name: string;
+  install(player: IPlayerCore, options?: any): void;
+  destroy?(): void;
+}
+
+/**
+ * 控制按钮配置接口定义
+ */
+export interface ControlButtonConfig {
+  /** 按钮ID */
+  id: string;
+  /** 按钮图标 */
+  icon?: React.ReactNode;
+  /** 按钮位置：left(播放按钮右边)、right(进度拖动条右边) */
+  position: 'left' | 'right';
+  /** 按钮标题 */
+  title?: string;
+  /** 按钮顺序 */
+  order?: number;
+  /** 自定义按钮组件，如果提供则使用自定义组件 */
+  customComponent?: React.ReactNode;
+  /** 点击事件处理函数 */
+  onClick?: () => void;
+}
+
+/**
+ * 播放器组件位置枚举
+ */
+export enum PlayerComponentPosition {
+  // 视频容器级别的位置
+  TOP = 'TOP',
+  BOTTOM = 'BOTTOM',
+  LEFT = 'LEFT',
+  RIGHT = 'RIGHT',
+  CENTER = 'CENTER',
+  // 控制栏中的位置
+  CONTROLS_LEFT = 'CONTROLS_LEFT',
+  CONTROLS_RIGHT = 'CONTROLS_RIGHT',
+  CONTROLS_CENTER = 'CONTROLS_CENTER',
+}
+
+/**
+ * 播放器组件配置接口定义
+ */
+export interface PlayerComponentConfig {
+  /** 组件ID */
+  id: string;
+  /** 组件内容 */
+  component: React.ReactNode;
+  /** 组件位置 */
+  position: PlayerComponentPosition;
+  /** 组件顺序 */
+  order?: number;
+  /** 是否绝对定位 */
+  absolute?: boolean;
+}
+
+/**
+ * 播放器插件接口定义
+ */
+export interface IPlayerPlugin {
+  /** 插件名称 */
+  name: string;
+  /** 插件安装方法 */
+  install(player: IPlayerCore, options?: any): void;
+  /**
+   * 接收插件API（可选）
+   * @param api 插件API对象
+   */
+  setAPI?(api: any): void;
+  /** 插件销毁方法 */
+  destroy?(): void;
+}
+
+/**
  * PlayerCore接口定义，提供标准化的API接口
  */
 export interface IPlayerCore {
@@ -40,6 +118,20 @@ export interface IPlayerCore {
   
   // 插件系统
   use(plugin: IPlayerPlugin, options?: any): void;
+  getPlugin(pluginName: string): IPlayerPlugin | undefined;
+  
+  // 控制按钮注册
+  registerControlButton(button: ControlButtonConfig): void;
+  unregisterControlButton(buttonId: string): void;
+  getControlButtons(): ControlButtonConfig[];
+  
+  // 组件注册
+  // 获取播放器状态 (使用下面的readonly属性)
+    
+  // 组件注册
+  registerComponent(component: PlayerComponentConfig): void;
+  unregisterComponent(componentId: string): void;
+  getComponents(position?: string): PlayerComponentConfig[];
   
   // 清理
   destroy(): void;
@@ -58,13 +150,4 @@ export interface IPlayerCore {
   readonly videoId: string;
   readonly userId: string;
   readonly username: string;
-}
-
-/**
- * Player插件接口定义
- */
-export interface IPlayerPlugin {
-  name: string;
-  install(player: IPlayerCore, options?: any): void;
-  destroy?(): void;
 }

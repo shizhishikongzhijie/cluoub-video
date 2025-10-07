@@ -1,5 +1,5 @@
 import './App.css'
-import CluoubVideo from "./libs/Video";
+import {CluoubVideo} from "./libs/Video";
 import {Circle} from "lucide-react";
 
 function App() {

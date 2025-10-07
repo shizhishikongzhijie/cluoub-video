@@ -1,6 +1,6 @@
-import {WebSocketManager} from '../WebSocketManager';
 import {EventEmitter} from './EventEmitter';
 import {IPlayerCore, IPlayerPlugin} from './IPlayerCore';
+import {ControlButtonConfig, PlayerComponentConfig} from '../Video.types';
 import {PluginManager} from '../plugins';
 import Logger from '../utils/Logger';
 
@@ -19,10 +19,6 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   private _progress: number = 0;
   private _isFullscreen: boolean = false;
 
-  // 弹幕相关
-  private _showBarrageInput: boolean = false;
-  private _isBarrageEnabled: boolean = true;
-  
   // 字幕相关
   private _showSubtitles: boolean = true;
   private _currentTrackIndex: number = 0;
@@ -34,10 +30,13 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   private _username: string;
   
   // 管理器
-  private _wsManager: WebSocketManager | null = null;
   private _pluginManager: PluginManager;
   private logger: Logger;
   private isInitialized: boolean = false;
+  
+  // 插件系统扩展
+  private _controlButtons: ControlButtonConfig[] = [];
+  private _components: PlayerComponentConfig[] = [];
   
   // 定时器
   private _controlsTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -66,15 +65,6 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     
     // 初始化插件管理器
     this._pluginManager = new PluginManager(this);
-    
-    this._initWebSocket();
-  }
-
-  private _initWebSocket() {
-    this._wsManager = new WebSocketManager(this._videoId);
-    
-    // 连接WebSocket
-    this._wsManager.connect(this._userId);
   }
 
   // 播放控制方法
@@ -142,29 +132,59 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     this.emit('fullscreenChange', this._isFullscreen);
   }
 
-  // 弹幕控制方法
-  toggleBarrageInput() {
-    this.logger.debug('切换弹幕输入框显示');
-    this._showBarrageInput = !this._showBarrageInput;
-    this.emit('barrageInputChange', this._showBarrageInput);
+  // 弹幕相关方法已移除
+  
+  // 控制按钮注册方法
+  registerControlButton(button: ControlButtonConfig): void {
+    this.logger.debug('注册控制按钮', { buttonId: button.id });
+    // 检查是否已存在相同ID的按钮
+    const existingIndex = this._controlButtons.findIndex(b => b.id === button.id);
+    if (existingIndex !== -1) {
+      this._controlButtons[existingIndex] = button;
+    } else {
+      this._controlButtons.push(button);
+    }
+    this.emit('controlButtonsUpdate', this._controlButtons);
   }
-
-  toggleBarrageEnabled() {
-    this.logger.debug('切换弹幕启用状态');
-    this._isBarrageEnabled = !this._isBarrageEnabled;
-    this.emit('barrageEnabledChange', this._isBarrageEnabled);
+  
+  unregisterControlButton(buttonId: string): void {
+    this.logger.debug('注销控制按钮', { buttonId });
+    const initialLength = this._controlButtons.length;
+    this._controlButtons = this._controlButtons.filter(button => button.id !== buttonId);
+    if (this._controlButtons.length !== initialLength) {
+      this.emit('controlButtonsUpdate', this._controlButtons);
+    }
   }
-
-  setShowBarrageInput(show: boolean) {
-    this.logger.debug('设置弹幕输入框显示状态', { show });
-    this._showBarrageInput = show;
-    this.emit('barrageInputChange', this._showBarrageInput);
+  
+  getControlButtons(): ControlButtonConfig[] {
+    return [...this._controlButtons];
   }
-
-  setBarrageEnabled(enabled: boolean) {
-    this.logger.debug('设置弹幕启用状态', { enabled });
-    this._isBarrageEnabled = enabled;
-    this.emit('barrageEnabledChange', this._isBarrageEnabled);
+  
+  // 组件注册方法
+  // 组件注册方法
+  registerComponent(component: PlayerComponentConfig): void {
+    this.logger.debug('注册播放器组件', { componentId: component.id, position: component.position });
+    // 检查是否已存在相同ID的组件
+    const existingIndex = this._components.findIndex(c => c.id === component.id);
+    if (existingIndex !== -1) {
+      this._components[existingIndex] = component;
+    } else {
+      this._components.push(component);
+    }
+    this.emit('componentsUpdate', this._components);
+  }
+  
+  unregisterComponent(componentId: string): void {
+    this.logger.debug('注销播放器组件', { componentId });
+    const initialLength = this._components.length;
+    this._components = this._components.filter(component => component.id !== componentId);
+    if (this._components.length !== initialLength) {
+      this.emit('componentsUpdate', this._components);
+    }
+  }
+  
+  getComponents(): PlayerComponentConfig[] {
+    return [...this._components];
   }
 
   // 字幕控制方法
@@ -220,6 +240,11 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     this.logger.debug('使用插件', { plugin: plugin.name, options });
     this._pluginManager.use(plugin, options);
   }
+  
+  // 获取插件实例
+  getPlugin(pluginName: string): IPlayerPlugin | undefined {
+    return this._pluginManager.get(pluginName);
+  }
 
   // 清理方法
   destroy() {
@@ -263,13 +288,7 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     return this._isFullscreen;
   }
 
-  get showBarrageInput() {
-    return this._showBarrageInput;
-  }
-
-  get isBarrageEnabled() {
-    return this._isBarrageEnabled;
-  }
+  // 弹幕相关getter已移除
 
   get showSubtitles() {
     return this._showSubtitles;

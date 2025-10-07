@@ -1,155 +1,273 @@
 /**
+ * 视频播放器类型定义
+ * 包含所有组件、配置和状态接口
+ */
+
+import React from 'react';
+import { 
+  ControlButtonConfig, 
+  PlayerComponentConfig, 
+  PlayerComponentPosition, 
+  IPlayerPlugin 
+} from './core/IPlayerCore';
+
+/**
+ * 重新导出核心接口以保持模块一致性
+ * 允许直接从Video.types导入这些接口
+ */
+export { 
+  ControlButtonConfig, 
+  PlayerComponentConfig, 
+  PlayerComponentPosition, 
+  IPlayerPlugin 
+};
+
+/**
+ * 向后兼容的类型别名
+ * 支持旧版代码的引用方式
+ */
+export type ControlButton = ControlButtonConfig;
+export type PlayerComponent = PlayerComponentConfig;
+
+/**
  * 弹幕接口定义
+ * 描述视频弹幕的结构和属性
  * @interface Barrage
  */
 export interface Barrage {
   /** 弹幕唯一标识符 */
   id: string;
+  
   /** 弹幕文本内容 */
   text: string;
+  
   /** 发送用户ID */
   userId: string;
+  
   /** 发送用户名 */
   username: string;
-  /** 弹幕时间戳（毫秒） */
+  
+  /** 弹幕发送时间戳（毫秒） */
   timestamp: number;
-  /** 弹幕颜色（可选） */
+  
+  /** 弹幕显示颜色（可选） */
   color?: string;
-  /** 弹幕字体大小（可选） */
+  
+  /** 弹幕字体大小（可选，像素） */
   size?: number;
-  /** 弹幕位置（可选） */
+  
+  /** 弹幕显示位置（可选，0-1表示垂直位置比例） */
   position?: number;
-  /** 弹幕动画持续时间（可选） */
+  
+  /** 弹幕动画持续时间（可选，毫秒） */
   duration?: number;
-  /** 弹幕在视频中的时间点（秒）- 用于与视频进度同步 */
+  
+  /** 弹幕在视频中的时间点（可选，秒）- 用于与视频进度同步 */
   videoTime?: number;
 }
 
 /**
  * 字幕轨道接口定义
+ * 描述视频字幕轨道的配置信息
  * @interface Track
  */
 export interface Track {
   /** 字幕轨道唯一标识符 */
   id: string;
-  /** 字幕轨道标签 */
+  
+  /** 字幕轨道显示标签，用于UI选择 */
   label: string;
-  /** 字幕语言 */
+  
+  /** 字幕语言代码（如 'en', 'zh', 'ja'） */
   srclang: string;
-  /** 字幕文件路径 */
+  
+  /** 字幕文件URL或路径 */
   src: string;
+  
   /** 字幕类型 */
   kind: 'subtitles' | 'captions' | 'descriptions' | 'chapters' | 'metadata';
-  /** 是否为默认轨道 */
+  
+  /** 是否设为默认字幕轨道 */
   default?: boolean;
 }
 
 /**
  * 控制配置接口定义
+ * 配置视频播放器UI控件的显示与隐藏
  * @interface ControlConfig
  */
 export interface ControlConfig {
-  /** 播放/暂停控制（可选） */
+  /** 是否显示播放/暂停控制按钮 */
   play?: boolean;
-  /** 音量控制（可选） */
+  
+  /** 是否显示音量控制滑块 */
   volume?: boolean;
-  /** 时间显示（可选） */
+  
+  /** 是否显示时间（当前时间/总时长） */
   time?: boolean;
-  /** 进度条控制（可选） */
+  
+  /** 是否显示进度条控制 */
   progress?: boolean;
-  /** 设置按钮（可选） */
+  
+  /** 是否显示设置按钮 */
   settings?: boolean;
-  /** 全屏控制（可选） */
+  
+  /** 是否显示全屏切换按钮 */
   fullscreen?: boolean;
-  /** 弹幕控制（可选） */
-  barrage?: boolean;
-  /** 字幕控制（可选） */
+  
+  /** 是否显示字幕控制 */
   subtitles?: boolean;
 }
 
 /**
  * 视频组件属性接口定义
+ * 配置视频播放器组件的所有属性和行为
  * @interface VideoProps
  */
 export interface VideoProps {
   /** 视频源URL */
   videoSrc: string;
+  
   /** 视频唯一标识符 */
   videoId: string;
+  
   /** 当前用户ID */
   userId: string;
+  
   /** 当前用户名 */
   username: string;
-  /** 视频宽度（可选） */
+  
+  /** 视频宽度（可选，像素值或CSS单位） */
   width?: string | number;
-  /** 视频高度（可选） */
+  
+  /** 视频高度（可选，像素值或CSS单位） */
   height?: string | number;
+  
   /** 视频宽高比（可选），例如: "16:9", "4:3" */
   aspectRatio?: string; // e.g., "16:9", "4:3"
-  /** 控制配置（可选） */
+  
+  /** 控制UI元素配置 */
   controls?: ControlConfig;
-  /** 自定义图标配置（可选） */
-  customIcons?: {
-    /** 播放图标（可选） */
-    playIcon?: React.ReactNode;
-    /** 暂停图标（可选） */
-    pauseIcon?: React.ReactNode;
-    /** 音量图标（可选） */
-    volumeIcon?: React.ReactNode;
-    /** 静音图标（可选） */
-    muteIcon?: React.ReactNode;
-    /** 全屏图标（可选） */
-    fullscreenIcon?: React.ReactNode;
-    /** 设置图标（可选） */
-    settingsIcon?: React.ReactNode;
-    /** 发送图标（可选） */
-    sendIcon?: React.ReactNode;
-    /** 进度条拖拽点图标（可选） */
-    progressThumbIcon?: React.ReactNode;
+  
+  /** 自定义图标配置，用于替换默认图标 */
+  icons?: {
+    [key: string]: React.ReactNode;
   };
-  /** 缩略图URL（可选） */
-  thumbnailUrl?: string;
-  /** 缩略图宽度（可选） */
-  thumbnailWidth?: number;
-  /** 缩略图高度（可选） */
-  thumbnailHeight?: number;
-  /** 字幕轨道列表（可选） */
+  
+  /** 是否自动播放（注意：受浏览器策略限制） */
+  autoPlay?: boolean;
+  
+  /** 是否循环播放 */
+  loop?: boolean;
+  
+  /** 是否静音启动 */
+  muted?: boolean;
+  
+  /** 预加载模式 */
+  preload?: 'none' | 'metadata' | 'auto';
+  
+  /** 初始音量（0-1范围） */
+  initialVolume?: number;
+  
+  /** 视频状态变化回调函数 */
+  onVideoStateChange?: (state: {
+    /** 是否正在播放 */
+    isPlaying: boolean;
+    /** 当前播放时间（秒） */
+    currentTime: number;
+    /** 视频总时长（秒） */
+    duration: number;
+    /** 当前音量（0-1） */
+    volume: number;
+    /** 是否静音 */
+    isMuted: boolean;
+    /** 是否全屏 */
+    isFullscreen: boolean;
+  }) => void;
+  
+  /** 错误回调函数 */
+  onError?: (error: MediaError) => void;
+  
+  /** 字幕轨道配置列表 */
   tracks?: Track[];
-  /** 是否启用快捷键（默认为true） */
-  enableShortcuts?: boolean;
-  /** 是否启用调试模式（默认为false） */
-  debug?: boolean;
+  
+  /** 插件配置列表 */
+  plugins?: Array<{
+    /** 插件实例 */
+    plugin: IPlayerPlugin;
+    /** 插件配置选项 */
+    options?: any;
+  }>;
+  
+  /** 是否启用弹幕功能 */
+  enableBarrage?: boolean;
+  
+  /** 是否显示弹幕输入框 */
+  showBarrageInput?: boolean;
 }
 
 /**
- * 音量变化事件数据接口
- * @interface VolumeChangeData
+ * 视频组件引用接口定义
+ * 提供对视频播放器实例的编程访问
+ * @interface VideoRef
  */
-export interface VolumeChangeData {
-  /** 是否静音 */
-  isMuted: boolean;
-  /** 音量值 */
-  volume: number;
-}
-
-/**
- * 时间更新事件数据接口
- * @interface TimeUpdateData
- */
-export interface TimeUpdateData {
-  /** 当前时间 */
+export interface VideoRef {
+  /**
+   * 开始播放视频
+   */
+  play: () => void;
+  
+  /**
+   * 暂停视频播放
+   */
+  pause: () => void;
+  
+  /**
+   * 切换视频播放/暂停状态
+   */
+  togglePlay: () => void;
+  
+  /**
+   * 跳转到指定时间点
+   * @param time - 目标时间点（秒）
+   */
+  seekTo: (time: number) => void;
+  
+  /**
+   * 设置视频音量
+   * @param volume - 音量值（0-1）
+   */
+  setVolume: (volume: number) => void;
+  
+  /**
+   * 切换静音状态
+   */
+  toggleMute: () => void;
+  
+  /**
+   * 切换全屏显示状态
+   */
+  toggleFullscreen: () => void;
+  
+  /**
+   * 获取已注册的插件实例
+   * @param pluginName - 插件名称
+   * @returns 插件实例或undefined（如果插件未注册）
+   */
+  getPlugin: (pluginName: string) => any;
+  
+  /**
+   * 当前播放时间（秒）
+   */
   currentTime: number;
-  /** 进度百分比 */
-  progress: number;
-}
-
-/**
- * 跳转事件数据接口
- * @interface SeekData
- */
-export interface SeekData {
-  /** 跳转时间 */
-  time: number;
-  /** 进度百分比 */
-  progress: number;
+  
+  /**
+   * 视频总时长（秒）
+   */
+  duration: number;
+  
+  /**
+   * 是否正在播放
+   */
+  isPlaying: boolean;
 }
