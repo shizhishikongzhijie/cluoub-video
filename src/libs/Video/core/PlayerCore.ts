@@ -81,12 +81,9 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   }
 
   private _initBarrageCleanup() {
-    // 定期清理过期弹幕以提高性能
-    this._barrageCleanupInterval = setInterval(() => {
-      const now = Date.now();
-      this._barrages = this._barrages.filter(barrage => now - barrage.timestamp < 10000); // 只保留10秒内的弹幕
-      this.emit('barragesUpdate', this._barrages);
-    }, 1000);
+    // 不再定期清理过期弹幕，避免视频暂停时弹幕消失
+    // 如果需要清理过期弹幕，应该在合适的时机手动调用
+    console.log('[PlayerCore] 弹幕清理功能已禁用，避免视频暂停时弹幕消失');
   }
 
   // 播放控制方法
@@ -184,25 +181,56 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
 
   // 弹幕相关方法
   addBarrage(barrage: Barrage) {
-    this._barrages.push(barrage);
+    console.log('[PlayerCore] 添加弹幕:', barrage);
+    // 确保弹幕有位置、颜色、大小和动画持续时间属性
+    const normalizedBarrage: Barrage = {
+      ...barrage,
+      position: barrage.position ?? Math.random() * 80 + 10, // 10% to 90% 垂直位置
+      color: barrage.color ?? '#ffffff',
+      size: barrage.size ?? 16,
+      duration: barrage.duration ?? 8 // 默认8秒持续时间
+    };
+    
+    console.log('[PlayerCore] 标准化后的弹幕:', normalizedBarrage);
+    this._barrages.push(normalizedBarrage);
+    console.log('[PlayerCore] 当前弹幕总数:', this._barrages.length);
     this.emit('barragesUpdate', this._barrages);
+    console.log('[PlayerCore] 已发送barragesUpdate事件');
   }
 
   sendBarrage(text: string, userId: string, username: string) {
+    console.log('[PlayerCore] 发送弹幕请求:', { text, userId, username });
+    
+    // 检查是否与上一条弹幕重复且时间间隔很短
+    const lastBarrage = this._barrages[this._barrages.length - 1];
+    if (lastBarrage && lastBarrage.text === text && 
+        Date.now() - lastBarrage.timestamp < 100) {
+      console.log('[PlayerCore] 检测到重复弹幕，取消发送');
+      return;
+    }
+    
     const newBarrage: Barrage = {
       id: uuidv4(),
       text,
       userId,
       username,
       timestamp: Date.now(),
+      position: Math.random() * 80 + 10, // 10% to 90% 垂直位置
+      color: '#ffffff',
+      size: 16,
+      duration: Math.random() * 5 + 5 // 5-10秒持续时间
     };
+    
+    console.log('[PlayerCore] 创建新弹幕:', newBarrage);
     
     // 发送至服务器
     if (this._wsManager) {
+      console.log('[PlayerCore] 通过WebSocket发送弹幕');
       this._wsManager.sendBarrage(text, userId, username);
     }
     
     // 本地立即显示
+    console.log('[PlayerCore] 本地添加弹幕');
     this.addBarrage(newBarrage);
   }
 

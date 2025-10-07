@@ -19,6 +19,8 @@ export interface Barrage {
   size?: number;
   /** 弹幕位置（可选） */
   position?: number;
+  /** 弹幕动画持续时间（可选） */
+  duration?: number;
 }
 
 /**

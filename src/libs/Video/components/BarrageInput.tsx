@@ -24,9 +24,17 @@ const BarrageInput: React.FC<BarrageInputProps> = ({
 
   // 发送弹幕
   const sendBarrage = () => {
-    if (!input.trim() || !isPlaying) return;
-    onSend(input);
+    console.log('[BarrageInput] 准备发送弹幕:', input);
+    if (!input.trim() || !isPlaying) {
+      console.log('[BarrageInput] 弹幕为空或视频未播放，取消发送');
+      return;
+    }
+    
+    // 防止重复发送
+    const textToSend = input.trim();
     setInput('');
+    console.log('[BarrageInput] 发送弹幕:', textToSend);
+    onSend(textToSend);
   };
 
   return (

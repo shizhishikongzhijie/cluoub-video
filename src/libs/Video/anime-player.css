@@ -6,17 +6,11 @@
 @keyframes scrollBarrage {
   0% { 
     transform: translateX(100%);
-    opacity: 0;
-  }
-  10% { 
-    opacity: 1;
-  }
-  90% { 
     opacity: 1;
   }
   100% { 
-    transform: translateX(-100%);
-    opacity: 0;
+    transform: translateX(-100vw);
+    opacity: 1;
   }
 }
 
@@ -81,7 +75,7 @@
   animation: scrollBarrage linear forwards;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
   font-family: 'Comic Sans MS', 'Microsoft YaHei', sans-serif;
-  left: 100%;
+  right: 0;
   padding: 2px 8px;
   border-radius: 10px;
   backdrop-filter: blur(2px);

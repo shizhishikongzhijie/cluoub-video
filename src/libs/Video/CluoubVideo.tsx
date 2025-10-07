@@ -90,6 +90,8 @@ const CluoubVideo: React.FC<VideoProps> = ({
       handleFullscreenToggle(fullscreen);
     };
     const handleBarragesUpdate = (barrages: Barrage[]) => {
+      console.log('[CluoubVideo] 弹幕更新，当前弹幕数量:', barrages.length);
+      console.log('[CluoubVideo] 弹幕列表:', barrages);
       setBarrages(barrages);
     };
     const handleTimeUpdate = (data: { currentTime: number; progress: number }) => {
@@ -277,10 +279,23 @@ const CluoubVideo: React.FC<VideoProps> = ({
 
   // 发送弹幕
   const sendBarrage = (text: string) => {
+    console.log('[CluoubVideo] 准备发送弹幕:', text);
     const filteredText = filter.current.filter(text);
-    if (!filteredText) return; // 过滤后为空
+    if (!filteredText) {
+      console.log('[CluoubVideo] 弹幕文本被过滤器过滤');
+      return; // 过滤后为空
+    }
+
+    // 防止重复发送相同弹幕
+    const lastBarrage = barrages[barrages.length - 1];
+    if (lastBarrage && lastBarrage.text === filteredText && 
+        Date.now() - lastBarrage.timestamp < 100) {
+      console.log('[CluoubVideo] 检测到重复弹幕，取消发送');
+      return;
+    }
 
     // 发送弹幕到播放器核心
+    console.log('[CluoubVideo] 发送弹幕到PlayerCore:', { filteredText, userId, username });
     playerCore.sendBarrage(filteredText, userId, username);
   };
 
@@ -324,10 +339,10 @@ const CluoubVideo: React.FC<VideoProps> = ({
               key={barrage.id}
               className="barrage"
               style={{
-                top: `${barrage.position}%`,
-                color: barrage.color,
-                fontSize: `${barrage.size}px`,
-                animationDuration: `${Math.random() * 10 + 8}s`
+                top: `${barrage.position || Math.random() * 80 + 10}%`,
+                color: barrage.color || '#ffffff',
+                fontSize: `${barrage.size || 16}px`,
+                animationDuration: `${barrage.duration || 8}s`
               }}
             >
               {barrage.text}
