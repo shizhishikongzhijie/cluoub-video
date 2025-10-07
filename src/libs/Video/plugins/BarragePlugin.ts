@@ -1,4 +1,4 @@
-import {IPlayerCore, IPlayerPlugin} from '../core/IPlayerCore';
+import {IPlayerCore, IPlayerPlugin} from '../core';
 import {Barrage} from '../Video.types';
 import {WebSocketManager} from '../WebSocketManager';
 import {v4 as uuidv4} from 'uuid';
@@ -17,6 +17,8 @@ export class BarragePlugin implements IPlayerPlugin {
   private options: BarragePluginOptions;
   private logger: Logger;
   private isInitialized: boolean = false;
+  private timeUpdateHandler: (() => void) | null = null;
+  private seekHandler: (() => void) | null = null;
 
   constructor(options?: BarragePluginOptions) {
     this.logger = Logger.getInstance();
@@ -65,6 +67,29 @@ export class BarragePlugin implements IPlayerPlugin {
     
     // 初始化弹幕清理定时器
     this.initBarrageCleanup();
+    
+    // 绑定事件监听器
+    this.bindEvents();
+  }
+
+  private bindEvents(): void {
+    // 监听视频时间更新事件，用于同步弹幕显示
+    this.timeUpdateHandler = () => {
+      this.filterBarragesByVideoTime();
+    };
+    
+    // 监听视频跳转事件，用于同步弹幕显示
+    this.seekHandler = () => {
+      this.filterBarragesByVideoTime();
+    };
+    
+    if (this.timeUpdateHandler) {
+      this.player.on('timeUpdate', this.timeUpdateHandler);
+    }
+    
+    if (this.seekHandler) {
+      this.player.on('seek', this.seekHandler);
+    }
   }
 
   private initWebSocket(): void {
@@ -119,7 +144,17 @@ export class BarragePlugin implements IPlayerPlugin {
    */
   addBarrage(barrage: Barrage): void {
     this.logger.debug('Adding barrage:', barrage);
-    this.barrages.push(barrage);
+    // 确保弹幕有位置、颜色、大小和动画持续时间属性
+    const normalizedBarrage: Barrage = {
+      ...barrage,
+      position: barrage.position ?? Math.random() * 80 + 10, // 10% to 90% 垂直位置
+      color: barrage.color ?? '#ffffff',
+      size: barrage.size ?? 16,
+      duration: barrage.duration ?? 8, // 默认8秒持续时间
+      videoTime: barrage.videoTime ?? this.player.currentTime // 默认为当前视频时间
+    };
+    
+    this.barrages.push(normalizedBarrage);
     // 通知播放器更新弹幕
     this.player.emit('barragesUpdate', this.barrages);
   }
@@ -142,8 +177,11 @@ export class BarragePlugin implements IPlayerPlugin {
       userId,
       username,
       timestamp: Date.now(),
-      videoTime: currentTime, // 记录视频时间
-      duration: Math.random() * 5 + 5 // 5-10秒持续时间
+      position: Math.random() * 80 + 10, // 10% to 90% 垂直位置
+      color: '#ffffff',
+      size: 16,
+      duration: Math.random() * 5 + 5, // 5-10秒持续时间
+      videoTime: currentTime // 记录视频时间
     };
     
     // 发送至服务器
@@ -197,6 +235,38 @@ export class BarragePlugin implements IPlayerPlugin {
     this.logger.debug('Getting display options');
     return this.options.display;
   }
+  
+  // 根据视频时间过滤弹幕
+  filterBarragesByVideoTime() {
+    this.logger.debug('根据视频时间过滤弹幕，当前时间', this.player.currentTime);
+    
+    // 获取当前应该显示的弹幕
+    const relevantBarrages = this.getCurrentBarrages();
+    this.logger.debug('过滤后的弹幕数量', relevantBarrages.length);
+    
+    // 发送过滤后的弹幕到UI层
+    this.player.emit('barragesUpdate', relevantBarrages);
+  }
+
+  // 获取当前应该显示的弹幕
+  getCurrentBarrages(): Barrage[] {
+    // 根据视频当前时间过滤弹幕
+    const timeWindow = 5; // 5秒时间窗口
+    
+    const relevantBarrages = this.barrages.filter(barrage => {
+      // 如果弹幕没有videoTime信息，则默认显示
+      if (barrage.videoTime === undefined) {
+        return true;
+      }
+      
+      // 检查弹幕时间是否在当前时间的附近
+      // 我们允许稍微提前一点显示弹幕，但不允许延后显示
+      const timeDiff = this.player.currentTime - barrage.videoTime;
+      return timeDiff >= -1 && timeDiff <= timeWindow;
+    });
+    
+    return relevantBarrages;
+  }
 
   destroy(): void {
     this.logger.info('Destroying barrage plugin');
@@ -206,6 +276,15 @@ export class BarragePlugin implements IPlayerPlugin {
     
     if (this.wsManager) {
       // 销毁WebSocket连接
+    }
+    
+    // 移除事件监听器
+    if (this.timeUpdateHandler) {
+      this.player.removeListener('timeUpdate', this.timeUpdateHandler);
+    }
+    
+    if (this.seekHandler) {
+      this.player.removeListener('seek', this.seekHandler);
     }
   }
 }

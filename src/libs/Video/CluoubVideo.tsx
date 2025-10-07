@@ -16,6 +16,7 @@ import {useSubtitles} from "./hooks/useSubtitles";
 import {useKeyboardShortcuts} from "./hooks/useKeyboardShortcuts";
 import {useControlsVisibility} from "./hooks/useControlsVisibility";
 import Logger from "./utils/Logger";
+import {BarragePlugin} from "./plugins";
 
 const CluoubVideo: React.FC<VideoProps> = ({
   videoSrc,
@@ -58,6 +59,15 @@ const CluoubVideo: React.FC<VideoProps> = ({
   // 使用播放器核心
   const playerCore = usePlayerCore({ videoSrc, videoId, userId, username });
   
+  // 初始化弹幕插件
+  const barragePluginRef = useRef<BarragePlugin | null>(null);
+  useEffect(() => {
+    if (controls.barrage && !barragePluginRef.current) {
+      barragePluginRef.current = new BarragePlugin();
+      playerCore.use(barragePluginRef.current);
+    }
+  }, [playerCore, controls.barrage]);
+  
   // 使用控制栏管理器
   const controlsManager = useControlsManager();
   
@@ -94,9 +104,6 @@ const CluoubVideo: React.FC<VideoProps> = ({
     const handleSeek = (data: { time: number; progress: number }) => {
       setCurrentTime(data.time);
       setProgress(data.progress);
-      
-      // 当视频跳转时，清理过期弹幕
-      logger.debug('Video seeked to:', data.time);
     };
     const handleProgressChange = (progress: number) => {
       setProgress(progress);
@@ -114,9 +121,6 @@ const CluoubVideo: React.FC<VideoProps> = ({
     const handleTimeUpdate = (data: { currentTime: number; progress: number }) => {
       setCurrentTime(data.currentTime);
       setProgress(data.progress);
-      
-      // 当时间更新时，也更新弹幕
-      logger.debug('Video time updated to:', data.currentTime);
     };
     const handleDurationChange = (duration: number) => {
       setDuration(duration);
@@ -310,7 +314,11 @@ const CluoubVideo: React.FC<VideoProps> = ({
 
   // 切换弹幕输入框显示/隐藏
   const toggleBarrageInput = () => {
-    playerCore.toggleBarrageInput();
+    if (barragePluginRef.current) {
+      barragePluginRef.current.toggleBarrageInput();
+    } else {
+      playerCore.toggleBarrageInput();
+    }
   };
 
   // 字幕菜单是否打开
@@ -346,18 +354,12 @@ const CluoubVideo: React.FC<VideoProps> = ({
       return; // 过滤后为空
     }
 
-    // 防止重复发送相同弹幕
-    const lastBarrage = barrages[barrages.length - 1];
-    if (lastBarrage && lastBarrage.text === filteredText && 
-        Date.now() - lastBarrage.timestamp < 100) {
-      logger.debug('Detected duplicate barrage, canceling send');
-      return;
+    // 通过弹幕插件发送弹幕
+    if (barragePluginRef.current) {
+      logger.debug('Sending barrage via BarragePlugin:', { filteredText, userId, username });
+      barragePluginRef.current.sendBarrage(filteredText, userId, username);
     }
-
-    // 发送弹幕到播放器核心
-    logger.debug('Sending barrage to PlayerCore:', { filteredText, userId, username });
-    playerCore.sendBarrage(filteredText, userId, username);
-  }, [barrages, playerCore, userId, username]);
+  }, [userId, username]);
 
   // 计算容器样式
   const getContainerStyle = () => {
@@ -399,10 +401,10 @@ const CluoubVideo: React.FC<VideoProps> = ({
               key={barrage.id}
               className={`barrage ${!isPlaying ? 'paused' : ''}`}
               style={{
-                top: `${barrage.position || Math.random() * 80 + 10}%`,
-                color: barrage.color || '#ffffff',
-                fontSize: `${barrage.size || 16}px`,
-                animationDuration: `${barrage.duration || 8}s`
+                top: `${barrage.position}%`,
+                color: barrage.color,
+                fontSize: `${barrage.size}px`,
+                animationDuration: `${barrage.duration}s`
               }}
             >
               {barrage.text}

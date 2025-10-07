@@ -19,13 +19,6 @@ export interface IPlayerCore {
   // 全屏控制
   toggleFullscreen(): void;
   
-  // 弹幕控制
-  toggleBarrageInput(): void;
-  toggleBarrageEnabled(): void;
-  setShowBarrageInput(show: boolean): void;
-  setBarrageEnabled(enabled: boolean): void;
-  sendBarrage(text: string, userId: string, username: string): void;
-  
   // 字幕控制
   toggleSubtitles(): void;
   setSubtitleTrack(index: number): void;
@@ -59,9 +52,6 @@ export interface IPlayerCore {
   readonly currentTime: number;
   readonly progress: number;
   readonly isFullscreen: boolean;
-  readonly barrages: any[];
-  readonly showBarrageInput: boolean;
-  readonly isBarrageEnabled: boolean;
   readonly showSubtitles: boolean;
   readonly currentTrackIndex: number;
   readonly videoSrc: string;
