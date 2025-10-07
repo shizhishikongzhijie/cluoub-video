@@ -31,7 +31,7 @@ export interface Track {
   /** 字幕轨道标签 */
   label: string;
   /** 字幕语言 */
-  language: string;
+  srclang: string;
   /** 字幕文件路径 */
   src: string;
   /** 字幕类型 */

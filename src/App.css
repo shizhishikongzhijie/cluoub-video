@@ -5,6 +5,50 @@
   text-align: center;
 }
 
+/* 视频播放器样式 */
+.anime-player-container {
+  position: relative;
+  display: inline-block;
+  background: #000;
+}
+
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.video-element {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 字幕容器样式 */
+.subtitles-container {
+  position: absolute;
+  bottom: 60px;
+  left: 0;
+  right: 0;
+  color: white;
+  font-size: 16px;
+  text-align: center;
+  text-shadow: 1px 1px 2px black;
+  z-index: 10;
+  padding: 10px;
+  font-family: Arial, sans-serif;
+}
+
+/* 浏览器原生字幕样式 */
+video::cue {
+  color: white;
+  background-color: rgba(0, 0, 0, 0.5);
+  font-size: 16px;
+  line-height: 1.4;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;

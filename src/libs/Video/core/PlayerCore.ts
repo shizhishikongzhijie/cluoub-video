@@ -19,6 +19,12 @@ export class PlayerCore extends EventEmitter {
 
   // 弹幕相关
   private _barrages: Barrage[] = [];
+  private _showBarrageInput: boolean = false;
+  private _isBarrageEnabled: boolean = true;
+  
+  // 字幕相关
+  private _showSubtitles: boolean = true;
+  private _currentTrackIndex: number = 0;
   
   // 配置
   private _videoSrc: string;
@@ -129,6 +135,46 @@ export class PlayerCore extends EventEmitter {
     this.emit('fullscreenChange', this._isFullscreen);
   }
 
+  // 弹幕控制方法
+  toggleBarrageInput() {
+    this._showBarrageInput = !this._showBarrageInput;
+    this.emit('barrageInputChange', this._showBarrageInput);
+  }
+
+  toggleBarrageEnabled() {
+    this._isBarrageEnabled = !this._isBarrageEnabled;
+    this.emit('barrageEnabledChange', this._isBarrageEnabled);
+  }
+
+  setShowBarrageInput(show: boolean) {
+    this._showBarrageInput = show;
+    this.emit('barrageInputChange', this._showBarrageInput);
+  }
+
+  setBarrageEnabled(enabled: boolean) {
+    this._isBarrageEnabled = enabled;
+    this.emit('barrageEnabledChange', this._isBarrageEnabled);
+  }
+
+  // 字幕控制方法
+  toggleSubtitles() {
+    this._showSubtitles = !this._showSubtitles;
+    this.emit('subtitlesVisibilityChange', this._showSubtitles);
+  }
+
+  setSubtitleTrack(index: number) {
+    this._currentTrackIndex = index;
+    this.emit('subtitleTrackChange', {
+      trackIndex: this._currentTrackIndex,
+      showSubtitles: this._showSubtitles
+    });
+  }
+
+  setShowSubtitles(show: boolean) {
+    this._showSubtitles = show;
+    this.emit('subtitlesVisibilityChange', this._showSubtitles);
+  }
+
   // 弹幕相关方法
   addBarrage(barrage: Barrage) {
     this._barrages.push(barrage);
@@ -220,6 +266,22 @@ export class PlayerCore extends EventEmitter {
 
   get barrages() {
     return this._barrages;
+  }
+
+  get showBarrageInput() {
+    return this._showBarrageInput;
+  }
+
+  get isBarrageEnabled() {
+    return this._isBarrageEnabled;
+  }
+
+  get showSubtitles() {
+    return this._showSubtitles;
+  }
+
+  get currentTrackIndex() {
+    return this._currentTrackIndex;
   }
 
   get videoSrc() {

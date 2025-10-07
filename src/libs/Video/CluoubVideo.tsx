@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
-import {Barrage, Track, VideoProps} from "./Video.types";
+import {Barrage, VideoProps} from "./Video.types";
 import {BarrageFilter} from "./BarrageFilter";
 import PlayButton from "./components/PlayButton";
 import VolumeControl from "./components/VolumeControl";
@@ -8,6 +8,8 @@ import ProgressControl from "./components/ProgressControl";
 import SettingsButton from "./components/SettingsButton";
 import FullscreenButton from "./components/FullscreenButton";
 import BarrageInput from "./components/BarrageInput";
+import BarrageToggleButton from "./components/BarrageToggleButton";
+import SubtitlesMenu from "./components/SubtitlesMenu";
 import {useControlsManager, usePlayerCore, useThumbnailManager} from "./hooks";
 
 const CluoubVideo: React.FC<VideoProps> = ({
@@ -56,7 +58,6 @@ const CluoubVideo: React.FC<VideoProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [showThumbnail, setShowThumbnail] = useState(false);
   const [thumbnailPosition, setThumbnailPosition] = useState({ x: 0, time: 0 });
-  const [activeTrack, setActiveTrack] = useState<Track | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -100,6 +101,44 @@ const CluoubVideo: React.FC<VideoProps> = ({
     const handleDurationChange = (duration: number) => {
       setDuration(duration);
     };
+    
+    // 字幕相关事件处理
+    const handleSubtitleTrackChange = ({ trackIndex, showSubtitles }: { trackIndex: number, showSubtitles: boolean }) => {
+      const video = videoRef.current;
+      if (!video || !video.textTracks) return;
+      
+      console.log('PlayerCore字幕轨道变化:', { trackIndex, showSubtitles }, '轨道数量:', video.textTracks.length);
+      
+      if (showSubtitles && video.textTracks.length > 0) {
+        const validIndex = Math.min(trackIndex, video.textTracks.length - 1);
+        for (let i = 0; i < video.textTracks.length; i++) {
+          video.textTracks[i].mode = i === validIndex ? 'showing' : 'hidden';
+        }
+      } else {
+        for (let i = 0; i < video.textTracks.length; i++) {
+          video.textTracks[i].mode = 'hidden';
+        }
+      }
+    };
+
+    const handleSubtitlesVisibilityChange = (show: boolean) => {
+      const video = videoRef.current;
+      if (!video || !video.textTracks) return;
+      
+      console.log('PlayerCore字幕可见性变化:', { show });
+      
+      const trackIndex = playerCore.currentTrackIndex;
+      if (show && video.textTracks.length > 0) {
+        const validIndex = Math.min(trackIndex, video.textTracks.length - 1);
+        for (let i = 0; i < video.textTracks.length; i++) {
+          video.textTracks[i].mode = i === validIndex ? 'showing' : 'hidden';
+        }
+      } else {
+        for (let i = 0; i < video.textTracks.length; i++) {
+          video.textTracks[i].mode = 'hidden';
+        }
+      }
+    };
 
     playerCore.on('play', handlePlay);
     playerCore.on('pause', handlePause);
@@ -111,6 +150,8 @@ const CluoubVideo: React.FC<VideoProps> = ({
     playerCore.on('controlsVisibilityChange', handleControlsVisibilityChange);
     playerCore.on('timeUpdate', handleTimeUpdate);
     playerCore.on('durationChange', handleDurationChange);
+    playerCore.on('subtitleTrackChange', handleSubtitleTrackChange);
+    playerCore.on('subtitlesVisibilityChange', handleSubtitlesVisibilityChange);
 
     return () => {
       playerCore.removeListener('play', handlePlay);
@@ -123,6 +164,8 @@ const CluoubVideo: React.FC<VideoProps> = ({
       playerCore.removeListener('controlsVisibilityChange', handleControlsVisibilityChange);
       playerCore.removeListener('timeUpdate', handleTimeUpdate);
       playerCore.removeListener('durationChange', handleDurationChange);
+      playerCore.removeListener('subtitleTrackChange', handleSubtitleTrackChange);
+      playerCore.removeListener('subtitlesVisibilityChange', handleSubtitlesVisibilityChange);
     };
   }, [playerCore]);
 
@@ -165,34 +208,105 @@ const CluoubVideo: React.FC<VideoProps> = ({
     }
   }, [currentTime]);
 
+
+
   // 添加字幕轨道
   useEffect(() => {
     const video = videoRef.current;
     if (!video || tracks.length === 0) return;
 
-    // 清除现有的字幕轨道
-    while (video.textTracks.length > 0) {
-      video.removeChild(video.children[0]);
-    }
+    console.log('添加字幕轨道:', tracks);
+
+    // 清除现有的字幕轨道（仅移除track元素）
+    const existingTracks = Array.from(video.children).filter(child => child.tagName === 'TRACK');
+    existingTracks.forEach(track => video.removeChild(track));
 
     // 添加新的字幕轨道
     tracks.forEach(track => {
       const trackElement = document.createElement('track');
       trackElement.kind = track.kind;
       trackElement.label = track.label;
-      trackElement.language = track.language;
+      trackElement.srclang = track.srclang; // 使用srclang而不是language
       trackElement.src = track.src;
       if (track.default) {
         trackElement.default = true;
+        console.log('设置默认轨道:', track.label, track.src);
       }
+      
+        // 添加轨道就绪事件监听
+      trackElement.addEventListener('load', () => {
+        console.log('轨道加载完成:', track.label, track.src);
+        // 尝试重新设置轨道
+        setupTextTracks();
+      });
+      
+      trackElement.addEventListener('error', (e) => {
+        console.error('轨道加载错误:', track.label, track.src, e);
+        // 即使轨道加载失败，也尝试设置其他轨道
+        setupTextTracks();
+      });
+      
       video.appendChild(trackElement);
     });
 
-    // 设置默认激活的轨道
-    const defaultTrack = tracks.find(track => track.default);
-    if (defaultTrack) {
-      setActiveTrack(defaultTrack);
-    }
+    // 立即尝试设置轨道（不等待loadedmetadata）
+    const setupTextTracks = () => {
+      setTimeout(() => {
+        if (video && video.textTracks && video.textTracks.length > 0) {
+          console.log('找到的文本轨道数量:', video.textTracks.length);
+          
+          // 打印所有轨道信息
+          for (let i = 0; i < video.textTracks.length; i++) {
+            const track = video.textTracks[i];
+            console.log(`轨道 ${i}:`, track.label || '无标签', track.language || '无语言', track.mode);
+          }
+          
+          // 查找默认轨道或第一个轨道
+          let targetTrackIndex = -1;
+          
+          // 1. 先查找标记为default的轨道
+          for (let i = 0; i < tracks.length; i++) {
+            if (tracks[i].default) {
+              targetTrackIndex = i;
+              break;
+            }
+          }
+          
+          // 2. 如果没有default轨道，使用第一个轨道
+          if (targetTrackIndex === -1 && video.textTracks.length > 0) {
+            targetTrackIndex = 0;
+          }
+          
+          // 3. 设置轨道模式
+          if (targetTrackIndex !== -1 && playerCore.showSubtitles) {
+            console.log('显示轨道索引:', targetTrackIndex);
+            // 更新PlayerCore中的字幕轨道索引
+            playerCore.setSubtitleTrack(targetTrackIndex);
+            // 设置轨道模式
+            for (let i = 0; i < video.textTracks.length; i++) {
+              video.textTracks[i].mode = i === targetTrackIndex ? 'showing' : 'hidden';
+            }
+          }
+        } else {
+          console.log('未找到文本轨道');
+        }
+      }, 500); // 给更多时间让轨道加载
+    };
+    
+    // 调用设置函数
+    setupTextTracks();
+    
+    // 同时监听loadedmetadata事件作为后备
+    const handleLoadedMetadata = () => {
+      console.log('视频元数据加载完成，重新设置字幕轨道');
+      setupTextTracks();
+    };
+    
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    };
   }, [tracks]);
 
   // 监听视频播放状态变化（来自video元素）
@@ -333,7 +447,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
   };
 
   // 进度条控制
-  const handleProgressChange = (newProgress: number, newTime: number) => {
+  const handleProgressChange = (newProgress: number, _newTime: number) => {
     playerCore.setProgress(newProgress);
   };
 
@@ -378,22 +492,33 @@ const CluoubVideo: React.FC<VideoProps> = ({
     }
   };
 
-  // 切换字幕轨道
-  const toggleSubtitleTrack = (track: Track | null) => {
-    setActiveTrack(track);
-    
-    const video = videoRef.current;
-    if (!video) return;
-    
-    // 启用或禁用字幕轨道
-    for (let i = 0; i < video.textTracks.length; i++) {
-      const textTrack = video.textTracks[i];
-      if (track && textTrack.language === track.language) {
-        textTrack.mode = 'showing';
-      } else {
-        textTrack.mode = 'hidden';
-      }
+  // 切换弹幕输入框显示/隐藏
+  const toggleBarrageInput = () => {
+    playerCore.toggleBarrageInput();
+  };
+
+  // 字幕菜单是否打开
+  const [isSubtitlesMenuOpen, setIsSubtitlesMenuOpen] = useState(false);
+  
+  // 切换字幕菜单显示状态
+  const toggleSubtitlesMenu = () => {
+    setIsSubtitlesMenuOpen(!isSubtitlesMenuOpen);
+  };
+  
+  // 选择字幕轨道
+  const selectSubtitleTrack = (trackId: string) => {
+    const trackIndex = tracks.findIndex(track => track.id === trackId);
+    if (trackIndex !== -1) {
+      playerCore.setSubtitleTrack(trackIndex);
+      playerCore.setShowSubtitles(true);
     }
+    setIsSubtitlesMenuOpen(false);
+  };
+  
+  // 关闭字幕
+  const closeSubtitles = () => {
+    playerCore.setShowSubtitles(false);
+    setIsSubtitlesMenuOpen(false);
   };
 
   // 发送弹幕
@@ -437,13 +562,6 @@ const CluoubVideo: React.FC<VideoProps> = ({
           muted={isMuted}
           className="video-element"
         />
-
-        {/* 字幕显示区域 */}
-        {controls.subtitles && tracks.length > 0 && (
-          <div className="subtitle-container">
-            {/* 字幕将由浏览器自动渲染到这个区域 */}
-          </div>
-        )}
 
         {/* 弹幕渲染层 */}
         <div className="barrage-container">
@@ -518,6 +636,31 @@ const CluoubVideo: React.FC<VideoProps> = ({
             />
           )}
 
+          {/* 弹幕控制按钮 - 使用组件 */}
+          {controls.barrage && (
+            <BarrageToggleButton
+              isActive={playerCore.showBarrageInput}
+              onClick={toggleBarrageInput}
+              title={playerCore.showBarrageInput ? "隐藏弹幕输入框" : "显示弹幕输入框"}
+            />
+          )}
+          
+          {/* 字幕控制按钮 - 使用SubtitlesMenu组件 */}
+          {controls.subtitles && tracks.length > 0 && (
+            <SubtitlesMenu
+              options={tracks.map((track, index) => ({
+                id: track.id,
+                label: track.label,
+                language: track.srclang,
+                isActive: playerCore.showSubtitles && index === playerCore.currentTrackIndex
+              }))}
+              isOpen={isSubtitlesMenuOpen}
+              onToggle={toggleSubtitlesMenu}
+              onSelect={selectSubtitleTrack}
+              onCloseSubtitles={closeSubtitles}
+            />
+          )}
+          
           {/* 设置按钮 */}
           {controls.settings && (
             <SettingsButton
@@ -540,8 +683,8 @@ const CluoubVideo: React.FC<VideoProps> = ({
         </div>
       </div>
 
-      {/* 弹幕输入框 */}
-      {controls.barrage && (
+      {/* 弹幕输入框 - 现在由PlayerCore控制 */}
+      {controls.barrage && playerCore.showBarrageInput && (
         <BarrageInput
           isPlaying={isPlaying}
           onSend={sendBarrage}
