@@ -2,12 +2,15 @@ import {Barrage} from '../Video.types';
 import {WebSocketManager} from '../WebSocketManager';
 import {v4 as uuidv4} from 'uuid';
 import {EventEmitter} from './EventEmitter';
+import {IPlayerCore, IPlayerPlugin} from './IPlayerCore';
+import {PluginManager} from '../plugins/PluginManager';
 
 /**
  * 播放器核心类，负责管理播放器状态和逻辑
  * 与UI组件解耦，提供统一的事件接口
+ * 实现标准化API接口和插件化架构
  */
-export class PlayerCore extends EventEmitter {
+export class PlayerCore extends EventEmitter implements IPlayerCore {
   // 视频相关状态
   private _isPlaying: boolean = false;
   private _isMuted: boolean = false;
@@ -34,6 +37,7 @@ export class PlayerCore extends EventEmitter {
   
   // 管理器
   private _wsManager: WebSocketManager | null = null;
+  private _pluginManager: PluginManager;
   
   // 定时器
   private _controlsTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -50,6 +54,9 @@ export class PlayerCore extends EventEmitter {
     this._videoId = options.videoId;
     this._userId = options.userId;
     this._username = options.username;
+    
+    // 初始化插件管理器
+    this._pluginManager = new PluginManager(this);
     
     this._initWebSocket();
     this._initBarrageCleanup();
@@ -222,6 +229,11 @@ export class PlayerCore extends EventEmitter {
     this.emit('controlsVisibilityChange', false);
   }
 
+  // 插件系统
+  use(plugin: IPlayerPlugin) {
+    this._pluginManager.use(plugin);
+  }
+
   // 清理方法
   destroy() {
     if (this._controlsTimeout) {
@@ -231,6 +243,9 @@ export class PlayerCore extends EventEmitter {
     if (this._barrageCleanupInterval) {
       clearInterval(this._barrageCleanupInterval);
     }
+    
+    // 销毁插件
+    this._pluginManager.destroy();
     
     this.removeAllListeners();
   }
