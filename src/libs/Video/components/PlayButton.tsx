@@ -27,8 +27,8 @@ const PlayButton: React.FC<PlayButtonProps> = ({
       onClick={onToggle}
     >
       {isPlaying ? 
-        getIcon('pauseIcon', <Pause size={20} />) : 
-        getIcon('playIcon', <Play size={20} />)}
+        getIcon('pauseIcon', <Pause size={20} fill={'white'} />) :
+        getIcon('playIcon', <Play size={20} fill={'white'} />)}
     </button>
   );
 };

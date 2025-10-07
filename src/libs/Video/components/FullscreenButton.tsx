@@ -1,5 +1,5 @@
 import React from 'react';
-import {Maximize} from 'lucide-react';
+import {Maximize, Minimize} from 'lucide-react';
 import './FullscreenButton.css';
 
 interface FullscreenButtonProps {
@@ -26,7 +26,7 @@ const FullscreenButton: React.FC<FullscreenButtonProps> = ({
       onClick={onToggle}
       aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
     >
-      {getIcon('fullscreenIcon', <Maximize size={20} />)}
+      {getIcon('fullscreenIcon', isFullscreen? <Minimize size={20} />:<Maximize size={20} />)}
     </button>
   );
 };

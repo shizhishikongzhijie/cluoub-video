@@ -89,3 +89,36 @@ export interface VideoProps {
   /** 缩略图高度（可选） */
   thumbnailHeight?: number;
 }
+
+/**
+ * 音量变化事件数据接口
+ * @interface VolumeChangeData
+ */
+export interface VolumeChangeData {
+  /** 是否静音 */
+  isMuted: boolean;
+  /** 音量值 */
+  volume: number;
+}
+
+/**
+ * 时间更新事件数据接口
+ * @interface TimeUpdateData
+ */
+export interface TimeUpdateData {
+  /** 当前时间 */
+  currentTime: number;
+  /** 进度百分比 */
+  progress: number;
+}
+
+/**
+ * 跳转事件数据接口
+ * @interface SeekData
+ */
+export interface SeekData {
+  /** 跳转时间 */
+  time: number;
+  /** 进度百分比 */
+  progress: number;
+}

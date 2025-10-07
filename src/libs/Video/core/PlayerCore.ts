@@ -1,0 +1,240 @@
+import {Barrage} from '../Video.types';
+import {WebSocketManager} from '../WebSocketManager';
+import {v4 as uuidv4} from 'uuid';
+import {EventEmitter} from './EventEmitter';
+
+/**
+ * 播放器核心类，负责管理播放器状态和逻辑
+ * 与UI组件解耦，提供统一的事件接口
+ */
+export class PlayerCore extends EventEmitter {
+  // 视频相关状态
+  private _isPlaying: boolean = false;
+  private _isMuted: boolean = false;
+  private _volume: number = 1;
+  private _duration: number = 0;
+  private _currentTime: number = 0;
+  private _progress: number = 0;
+  private _isFullscreen: boolean = false;
+
+  // 弹幕相关
+  private _barrages: Barrage[] = [];
+  
+  // 配置
+  private _videoSrc: string;
+  private _videoId: string;
+  private _userId: string;
+  private _username: string;
+  
+  // 管理器
+  private _wsManager: WebSocketManager | null = null;
+  
+  // 定时器
+  private _controlsTimeout: ReturnType<typeof setTimeout> | null = null;
+  private _barrageCleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+  constructor(options: {
+    videoSrc: string;
+    videoId: string;
+    userId: string;
+    username: string;
+  }) {
+    super();
+    this._videoSrc = options.videoSrc;
+    this._videoId = options.videoId;
+    this._userId = options.userId;
+    this._username = options.username;
+    
+    this._initWebSocket();
+    this._initBarrageCleanup();
+  }
+
+  private _initWebSocket() {
+    this._wsManager = new WebSocketManager(this._videoId);
+    
+    // 连接WebSocket
+    this._wsManager.connect();
+    
+    // 处理新弹幕
+    this._wsManager.onBarrage((newBarrage: Barrage) => {
+      this.addBarrage(newBarrage);
+    });
+    
+    // 获取历史弹幕
+    this._wsManager.onHistory((historyBarrages: Barrage[]) => {
+      this._barrages = historyBarrages;
+      this.emit('barragesUpdate', this._barrages);
+    });
+  }
+
+  private _initBarrageCleanup() {
+    // 定期清理过期弹幕以提高性能
+    this._barrageCleanupInterval = setInterval(() => {
+      const now = Date.now();
+      this._barrages = this._barrages.filter(barrage => now - barrage.timestamp < 10000); // 只保留10秒内的弹幕
+      this.emit('barragesUpdate', this._barrages);
+    }, 1000);
+  }
+
+  // 播放控制方法
+  play() {
+    this._isPlaying = true;
+    this.emit('play');
+  }
+
+  pause() {
+    this._isPlaying = false;
+    this.emit('pause');
+  }
+
+  togglePlay() {
+    if (this._isPlaying) {
+      this.pause();
+    } else {
+      this.play();
+    }
+  }
+
+  // 音量控制方法
+  setMuted(muted: boolean) {
+    this._isMuted = muted;
+    this.emit('volumeChange', { isMuted: this._isMuted, volume: this._volume });
+  }
+
+  setVolume(volume: number) {
+    this._volume = volume;
+    this._isMuted = volume === 0;
+    this.emit('volumeChange', { isMuted: this._isMuted, volume: this._volume });
+  }
+
+  toggleMute() {
+    this.setMuted(!this._isMuted);
+  }
+
+  // 进度控制方法
+  seek(time: number) {
+    this._currentTime = time;
+    this._progress = (time / (this._duration || 1)) * 100;
+    this.emit('seek', { time, progress: this._progress });
+  }
+
+  setProgress(progress: number) {
+    this._progress = progress;
+    this.emit('progressChange', progress);
+  }
+
+  // 全屏控制方法
+  toggleFullscreen() {
+    this._isFullscreen = !this._isFullscreen;
+    this.emit('fullscreenChange', this._isFullscreen);
+  }
+
+  // 弹幕相关方法
+  addBarrage(barrage: Barrage) {
+    this._barrages.push(barrage);
+    this.emit('barragesUpdate', this._barrages);
+  }
+
+  sendBarrage(text: string, userId: string, username: string) {
+    const newBarrage: Barrage = {
+      id: uuidv4(),
+      text,
+      userId,
+      username,
+      timestamp: Date.now(),
+    };
+    
+    // 发送至服务器
+    if (this._wsManager) {
+      this._wsManager.sendBarrage(text, userId, username);
+    }
+    
+    // 本地立即显示
+    this.addBarrage(newBarrage);
+  }
+
+  // 时间相关方法
+  setTimeUpdate(currentTime: number) {
+    this._currentTime = currentTime;
+    if (this._duration) {
+      this._progress = (currentTime / this._duration) * 100;
+    }
+    this.emit('timeUpdate', { currentTime: this._currentTime, progress: this._progress });
+  }
+
+  setDuration(duration: number) {
+    this._duration = duration;
+    this.emit('durationChange', duration);
+  }
+
+  // 控制栏显示方法
+  showControls() {
+    this.emit('controlsVisibilityChange', true);
+  }
+
+  hideControls() {
+    this.emit('controlsVisibilityChange', false);
+  }
+
+  // 清理方法
+  destroy() {
+    if (this._controlsTimeout) {
+      clearTimeout(this._controlsTimeout);
+    }
+    
+    if (this._barrageCleanupInterval) {
+      clearInterval(this._barrageCleanupInterval);
+    }
+    
+    this.removeAllListeners();
+  }
+
+  // Getter方法
+  get isPlaying() {
+    return this._isPlaying;
+  }
+
+  get isMuted() {
+    return this._isMuted;
+  }
+
+  get volume() {
+    return this._volume;
+  }
+
+  get duration() {
+    return this._duration;
+  }
+
+  get currentTime() {
+    return this._currentTime;
+  }
+
+  get progress() {
+    return this._progress;
+  }
+
+  get isFullscreen() {
+    return this._isFullscreen;
+  }
+
+  get barrages() {
+    return this._barrages;
+  }
+
+  get videoSrc() {
+    return this._videoSrc;
+  }
+
+  get videoId() {
+    return this._videoId;
+  }
+
+  get userId() {
+    return this._userId;
+  }
+
+  get username() {
+    return this._username;
+  }
+}
