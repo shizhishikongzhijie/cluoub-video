@@ -230,8 +230,8 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   }
 
   // 插件系统
-  use(plugin: IPlayerPlugin) {
-    this._pluginManager.use(plugin);
+  use(plugin: IPlayerPlugin, options?: any) {
+    this._pluginManager.use(plugin, options);
   }
 
   // 清理方法

@@ -14,15 +14,16 @@ export class PluginManager {
   /**
    * 注册插件
    * @param plugin 插件实例
+   * @param options 插件配置选项
    */
-  use(plugin: IPlayerPlugin): void {
+  use(plugin: IPlayerPlugin, options?: any): void {
     if (this.plugins.has(plugin.name)) {
       console.warn(`Plugin ${plugin.name} is already registered.`);
       return;
     }
 
     this.plugins.set(plugin.name, plugin);
-    plugin.install(this.player);
+    plugin.install(this.player, options);
   }
 
   /**

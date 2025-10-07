@@ -46,7 +46,7 @@ export interface IPlayerCore {
   emit(event: string, data?: any): void;
   
   // 插件系统
-  use(plugin: IPlayerPlugin): void;
+  use(plugin: IPlayerPlugin, options?: any): void;
   
   // 清理
   destroy(): void;
@@ -75,6 +75,6 @@ export interface IPlayerCore {
  */
 export interface IPlayerPlugin {
   name: string;
-  install(player: IPlayerCore): void;
+  install(player: IPlayerCore, options?: any): void;
   destroy?(): void;
 }

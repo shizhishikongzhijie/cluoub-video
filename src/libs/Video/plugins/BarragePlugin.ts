@@ -2,6 +2,7 @@ import {IPlayerCore, IPlayerPlugin} from '../core/IPlayerCore';
 import {Barrage} from '../Video.types';
 import {WebSocketManager} from '../WebSocketManager';
 import {v4 as uuidv4} from 'uuid';
+import {BarragePluginOptions} from './PluginOptions';
 
 /**
  * 弹幕插件
@@ -12,8 +13,35 @@ export class BarragePlugin implements IPlayerPlugin {
   private wsManager: WebSocketManager | null = null;
   private barrages: Barrage[] = [];
   private barrageCleanupInterval: ReturnType<typeof setInterval> | null = null;
+  private options: BarragePluginOptions;
 
-  install(player: IPlayerCore): void {
+  constructor(options?: BarragePluginOptions) {
+    this.options = {
+      enabled: true,
+      cleanupInterval: 1000,
+      maxDisplayTime: 10000,
+      websocket: {
+        reconnectInterval: 5000,
+        maxReconnectAttempts: 5
+      },
+      display: {
+        fontSize: 16,
+        color: '#ffffff',
+        opacity: 0.8,
+        speed: 5
+      },
+      ...options
+    };
+  }
+
+  install(player: IPlayerCore, options?: BarragePluginOptions): void {
+    // 合并配置选项
+    this.options = { ...this.options, ...options };
+    
+    if (!this.options.enabled) {
+      return;
+    }
+    
     this.player = player;
     
     // 初始化WebSocket连接
@@ -40,7 +68,8 @@ export class BarragePlugin implements IPlayerPlugin {
     // 获取历史弹幕
     this.wsManager.onHistory((historyBarrages: Barrage[]) => {
       this.barrages = historyBarrages;
-      // 需要通过某种方式通知UI更新
+      // 通知播放器更新弹幕
+      this.player.emit('barragesUpdate', this.barrages);
     });
     */
   }
@@ -49,9 +78,10 @@ export class BarragePlugin implements IPlayerPlugin {
     // 定期清理过期弹幕以提高性能
     this.barrageCleanupInterval = setInterval(() => {
       const now = Date.now();
-      this.barrages = this.barrages.filter(barrage => now - barrage.timestamp < 10000); // 只保留10秒内的弹幕
-      // 需要通过某种方式通知UI更新
-    }, 1000);
+      this.barrages = this.barrages.filter(barrage => now - barrage.timestamp < this.options.maxDisplayTime!); // 只保留指定时间内的弹幕
+      // 通知播放器更新弹幕
+      this.player.emit('barragesUpdate', this.barrages);
+    }, this.options.cleanupInterval);
   }
 
   /**
@@ -60,7 +90,8 @@ export class BarragePlugin implements IPlayerPlugin {
    */
   addBarrage(barrage: Barrage): void {
     this.barrages.push(barrage);
-    // 需要通过某种方式通知UI更新
+    // 通知播放器更新弹幕
+    this.player.emit('barragesUpdate', this.barrages);
   }
 
   /**
@@ -92,7 +123,7 @@ export class BarragePlugin implements IPlayerPlugin {
    */
   toggleBarrageInput(): void {
     // 通过player接口控制状态
-    // this.player.setShowBarrageInput(!this.player.showBarrageInput);
+    this.player.setShowBarrageInput(!this.player.showBarrageInput);
   }
 
   /**
@@ -100,7 +131,14 @@ export class BarragePlugin implements IPlayerPlugin {
    */
   toggleBarrageEnabled(): void {
     // 通过player接口控制状态
-    // this.player.setBarrageEnabled(!this.player.isBarrageEnabled);
+    this.player.setBarrageEnabled(!this.player.isBarrageEnabled);
+  }
+
+  /**
+   * 获取弹幕显示配置
+   */
+  getDisplayOptions(): any {
+    return this.options.display;
   }
 
   destroy(): void {
