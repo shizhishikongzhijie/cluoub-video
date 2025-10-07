@@ -83,6 +83,11 @@
   transform: translateZ(0);
 }
 
+/* 弹幕暂停状态 */
+.barrage.paused {
+  animation-play-state: paused;
+}
+
 /* 二次元风格弹幕颜色 */
 .barrage:nth-child(10n+1) { color: #ff6b6b; }
 .barrage:nth-child(10n+2) { color: #4ecdc4; }

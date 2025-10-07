@@ -337,7 +337,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
           {barrages.map(barrage => (
             <div
               key={barrage.id}
-              className="barrage"
+              className={`barrage ${!isPlaying ? 'paused' : ''}`}
               style={{
                 top: `${barrage.position || Math.random() * 80 + 10}%`,
                 color: barrage.color || '#ffffff',
