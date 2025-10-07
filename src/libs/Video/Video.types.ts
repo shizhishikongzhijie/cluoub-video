@@ -21,6 +21,8 @@ export interface Barrage {
   position?: number;
   /** 弹幕动画持续时间（可选） */
   duration?: number;
+  /** 弹幕在视频中的时间点（秒）- 用于与视频进度同步 */
+  videoTime?: number;
 }
 
 /**

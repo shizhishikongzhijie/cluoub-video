@@ -69,7 +69,7 @@ export class WebSocketManager {
     }, 2000 * this.reconnectAttempts);
   }
 
-  sendBarrage(text: string, userId: string, username: string): void {
+  sendBarrage(text: string, userId: string, username: string, videoTime: number = 0): void {
     // 在实际项目中，这里会通过WebSocket发送弹幕
     console.log(`Sending barrage: ${text} from ${username}`);
     
@@ -84,7 +84,8 @@ export class WebSocketManager {
         text,
         userId,
         username,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        videoTime: videoTime // 使用传递的视频时间
       };
       
       // 如果有回调函数，调用它

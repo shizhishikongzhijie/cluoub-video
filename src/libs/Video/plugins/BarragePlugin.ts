@@ -121,12 +121,17 @@ export class BarragePlugin implements IPlayerPlugin {
    */
   sendBarrage(text: string, userId: string, username: string): void {
     console.log('[BarragePlugin] 发送弹幕:', { text, userId, username });
+    
+    // 获取当前视频时间
+    const currentTime = this.player.currentTime || 0;
+    
     const newBarrage: Barrage = {
       id: uuidv4(),
       text,
       userId,
       username,
       timestamp: Date.now(),
+      videoTime: currentTime, // 记录视频时间
       duration: Math.random() * 5 + 5 // 5-10秒持续时间
     };
     

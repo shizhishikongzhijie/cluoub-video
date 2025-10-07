@@ -127,6 +127,12 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     this._currentTime = time;
     this._progress = (time / (this._duration || 1)) * 100;
     this.emit('seek', { time, progress: this._progress });
+    
+    // 当视频跳转时，过滤并显示相关弹幕
+    this.filterBarragesByVideoTime();
+    
+    // 强制更新所有监听器
+    this.emit('timeUpdate', { currentTime: this._currentTime, progress: this._progress });
   }
 
   setProgress(progress: number) {
@@ -189,7 +195,8 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
       position: barrage.position ?? Math.random() * 80 + 10, // 10% to 90% 垂直位置
       color: barrage.color ?? '#ffffff',
       size: barrage.size ?? 16,
-      duration: barrage.duration ?? 8 // 默认8秒持续时间
+      duration: barrage.duration ?? 8, // 默认8秒持续时间
+      videoTime: barrage.videoTime ?? this._currentTime // 默认为当前视频时间
     };
     
     console.log('[PlayerCore] 标准化后的弹幕:', normalizedBarrage);
@@ -229,7 +236,8 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
       position: Math.random() * 80 + 10, // 10% to 90% 垂直位置
       color: '#ffffff',
       size: 16,
-      duration: Math.random() * 5 + 5 // 5-10秒持续时间
+      duration: Math.random() * 5 + 5, // 5-10秒持续时间
+      videoTime: this._currentTime // 记录发送时的视频时间
     };
     
     console.log('[PlayerCore] 创建新弹幕:', newBarrage);
@@ -237,21 +245,60 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     // 发送至服务器
     if (this._wsManager) {
       console.log('[PlayerCore] 通过WebSocket发送弹幕');
-      this._wsManager.sendBarrage(text, userId, username);
+      this._wsManager.sendBarrage(text, userId, username, this._currentTime);
     }
     
-    // 本地立即显示（仅在WebSocketManager没有立即回调时才需要）
-    // 在WebSocketManager中已经处理了本地显示，这里不需要重复添加
+    // 本地立即显示（通过WebSocketManager回调）
     console.log('[PlayerCore] 本地添加弹幕（通过WebSocketManager回调）');
+  }
+
+  // 根据视频时间过滤弹幕
+  filterBarragesByVideoTime() {
+    console.log('[PlayerCore] 根据视频时间过滤弹幕，当前时间:', this._currentTime);
+    
+    // 获取当前应该显示的弹幕
+    const relevantBarrages = this.getCurrentBarrages();
+    console.log('[PlayerCore] 过滤后的弹幕数量:', relevantBarrages.length);
+    
+    // 发送过滤后的弹幕到UI层
+    this.emit('barragesUpdate', relevantBarrages);
+  }
+
+  // 获取当前应该显示的弹幕
+  getCurrentBarrages(): Barrage[] {
+    // 根据视频当前时间过滤弹幕
+    const timeWindow = 5; // 5秒时间窗口
+    
+    const relevantBarrages = this._barrages.filter(barrage => {
+      // 如果弹幕没有videoTime信息，则默认显示
+      if (barrage.videoTime === undefined) {
+        return true;
+      }
+      
+      // 检查弹幕时间是否在当前时间的附近
+      // 我们允许稍微提前一点显示弹幕，但不允许延后显示
+      const timeDiff = this._currentTime - barrage.videoTime;
+      return timeDiff >= -1 && timeDiff <= timeWindow;
+    });
+    
+    return relevantBarrages;
   }
 
   // 时间相关方法
   setTimeUpdate(currentTime: number) {
+    const oldTime = this._currentTime;
     this._currentTime = currentTime;
     if (this._duration) {
       this._progress = (currentTime / this._duration) * 100;
     }
     this.emit('timeUpdate', { currentTime: this._currentTime, progress: this._progress });
+    
+    // 当视频时间更新时，过滤并显示相关弹幕
+    // 只有当时间变化较大时才更新弹幕（避免过于频繁的更新）
+    const timeDiff = Math.abs(this._currentTime - oldTime);
+    if (timeDiff > 0.5) {
+      this.filterBarragesByVideoTime();
+    }
   }
 
   setDuration(duration: number) {
@@ -302,12 +349,12 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     return this._volume;
   }
 
-  get duration() {
-    return this._duration;
-  }
-
   get currentTime() {
     return this._currentTime;
+  }
+
+  get duration() {
+    return this._duration;
   }
 
   get progress() {
@@ -352,5 +399,27 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
 
   get username() {
     return this._username;
+  }
+
+  // 手动清理过期弹幕的方法
+  cleanupExpiredBarrages() {
+    console.log('[PlayerCore] 手动清理过期弹幕');
+    const now = Date.now();
+    const videoTime = this._currentTime;
+    const oldLength = this._barrages.length;
+    
+    // 保留最近10秒内的弹幕或者与当前视频时间相关的弹幕
+    this._barrages = this._barrages.filter(barrage => {
+      // 保留最近10秒内创建的弹幕
+      if (now - barrage.timestamp < 10000) return true;
+      
+      // 也可以根据其他逻辑判断是否保留弹幕
+      return false;
+    });
+    
+    if (oldLength !== this._barrages.length) {
+      console.log('[PlayerCore] 清理了', oldLength - this._barrages.length, '条过期弹幕');
+      this.emit('barragesUpdate', this._barrages);
+    }
   }
 }

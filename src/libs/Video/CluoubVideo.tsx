@@ -80,6 +80,9 @@ const CluoubVideo: React.FC<VideoProps> = ({
     const handleSeek = (data: { time: number; progress: number }) => {
       setCurrentTime(data.time);
       setProgress(data.progress);
+      
+      // 当视频跳转时，清理过期弹幕
+      console.log('[CluoubVideo] 视频跳转到:', data.time);
     };
     const handleProgressChange = (progress: number) => {
       setProgress(progress);
@@ -97,6 +100,9 @@ const CluoubVideo: React.FC<VideoProps> = ({
     const handleTimeUpdate = (data: { currentTime: number; progress: number }) => {
       setCurrentTime(data.currentTime);
       setProgress(data.progress);
+      
+      // 当时间更新时，也更新弹幕
+      console.log('[CluoubVideo] 视频时间更新到:', data.currentTime);
     };
     const handleDurationChange = (duration: number) => {
       setDuration(duration);
@@ -186,6 +192,46 @@ const CluoubVideo: React.FC<VideoProps> = ({
   useEffect(() => {
     thumbnailManager.updateThumbnailUrl(thumbnailUrl);
   }, [thumbnailUrl, thumbnailManager]);
+
+  // 监听视频播放状态变化（来自video元素）
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlay = () => playerCore.play();
+    const handlePause = () => playerCore.pause();
+    const handleMute = () => playerCore.setMuted(video.muted);
+    const handleVolumeChange = () => {
+      // 只有当音量真正改变时才通知PlayerCore
+      if (video.volume !== volume || video.muted !== isMuted) {
+        playerCore.setVolume(video.volume);
+      }
+    };
+    const handleTimeUpdate = () => {
+      playerCore.setTimeUpdate(video.currentTime);
+    };
+    const handleLoadedMetadata = () => {
+      playerCore.setDuration(video.duration);
+    };
+
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    const muteListener = () => handleMute();
+    const volumeListener = () => handleVolumeChange();
+    video.addEventListener('volumechange', muteListener);
+    video.addEventListener('volumechange', volumeListener);
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+
+    return () => {
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('volumechange', muteListener);
+      video.removeEventListener('volumechange', volumeListener);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    };
+  }, [playerCore, volume, isMuted]);
 
   // 播放/暂停
   const togglePlay = () => {
