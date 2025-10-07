@@ -1,5 +1,5 @@
-import { PluginManager } from './PluginManager';
-import type { IPlayerPlugin, PlayerComponentPosition } from '../core/IPlayerCore';
+import {PluginManager} from './PluginManager';
+import type {IPlayerPlugin, PlayerComponentPosition} from '../core';
 import DemoPlugin from './DemoPlugin';
 
 // 直接导出所有需要的内容

@@ -1,40 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
 
-// 定义VideoProps接口
-interface VideoProps {
-  videoSrc?: string;
-  videoId?: string;
-  userId?: string;
-  username?: string;
-  autoPlay?: boolean;
-  loop?: boolean;
-  muted?: boolean;
-  volume?: number;
-  themeColor?: string;
-  theme?: 'light' | 'dark';
-  showControls?: boolean;
-  controls?: {
-    play?: boolean;
-    volume?: boolean;
-    time?: boolean;
-    progress?: boolean;
-    settings?: boolean;
-    fullscreen?: boolean;
-    barrage?: boolean;
-    subtitles?: boolean;
-  };
-  customIcons?: Record<string, React.ReactNode>;
-  thumbnailUrl?: string;
-  thumbnailWidth?: number;
-  thumbnailHeight?: number;
-  tracks?: Array<{ id?: string; label: string; src: string; srclang?: string; kind?: string; default?: boolean }>;
-  enableShortcuts?: boolean;
-  debug?: boolean;
-  plugins?: Array<any>;
-  width?: string | number;
-  height?: string | number;
-  aspectRatio?: string;
-}
 import PlayButton from "./components/PlayButton";
 import VolumeControl from "./components/VolumeControl";
 import TimeDisplay from "./components/TimeDisplay";
@@ -48,7 +13,7 @@ import {useSubtitles} from "./hooks/useSubtitles";
 import {useKeyboardShortcuts} from "./hooks/useKeyboardShortcuts";
 import {useControlsVisibility} from "./hooks/useControlsVisibility";
 import Logger from "./utils/Logger";
-import { VideoRef } from "./Video.types";
+import {VideoProps, VideoRef} from "./Video.types";
 
 const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = ({
   videoSrc,

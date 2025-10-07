@@ -4,12 +4,7 @@
  */
 
 import React from 'react';
-import { 
-  ControlButtonConfig, 
-  PlayerComponentConfig, 
-  PlayerComponentPosition, 
-  IPlayerPlugin 
-} from './core/IPlayerCore';
+import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig, PlayerComponentPosition} from './core/IPlayerCore';
 
 /**
  * 重新导出核心接口以保持模块一致性
@@ -127,70 +122,73 @@ export interface ControlConfig {
 export interface VideoProps {
   /** 视频源URL */
   videoSrc: string;
-  
+
   /** 视频唯一标识符 */
   videoId: string;
-  
+
   /** 当前用户ID */
   userId: string;
-  
+
   /** 当前用户名 */
   username: string;
-  
+
   /** 视频宽度（可选，像素值或CSS单位） */
   width?: string | number;
-  
+
   /** 视频高度（可选，像素值或CSS单位） */
   height?: string | number;
-  
+
   /** 视频宽高比（可选），例如: "16:9", "4:3" */
-  aspectRatio?: string; // e.g., "16:9", "4:3"
-  
+  aspectRatio?: string;
+
   /** 控制UI元素配置 */
-  controls?: ControlConfig;
-  
-  /** 自定义图标配置，用于替换默认图标 */
-  icons?: {
-    [key: string]: React.ReactNode;
+  controls?: {
+    play?: boolean;
+    volume?: boolean;
+    time?: boolean;
+    progress?: boolean;
+    settings?: boolean;
+    fullscreen?: boolean;
+    barrage?: boolean;
+    subtitles?: boolean;
   };
-  
+
+  /** 自定义图标配置，用于替换默认图标 */
+  customIcons?: Record<string, React.ReactNode>;
+
   /** 是否自动播放（注意：受浏览器策略限制） */
   autoPlay?: boolean;
-  
+
   /** 是否循环播放 */
   loop?: boolean;
-  
+
   /** 是否静音启动 */
   muted?: boolean;
-  
+
   /** 预加载模式 */
   preload?: 'none' | 'metadata' | 'auto';
-  
+
   /** 初始音量（0-1范围） */
   initialVolume?: number;
-  
-  /** 视频状态变化回调函数 */
-  onVideoStateChange?: (state: {
-    /** 是否正在播放 */
-    isPlaying: boolean;
-    /** 当前播放时间（秒） */
-    currentTime: number;
-    /** 视频总时长（秒） */
-    duration: number;
-    /** 当前音量（0-1） */
-    volume: number;
-    /** 是否静音 */
-    isMuted: boolean;
-    /** 是否全屏 */
-    isFullscreen: boolean;
-  }) => void;
-  
-  /** 错误回调函数 */
-  onError?: (error: MediaError) => void;
-  
+
+  /** 缩略图URL */
+  thumbnailUrl?: string;
+
+  /** 缩略图宽度 */
+  thumbnailWidth?: number;
+
+  /** 缩略图高度 */
+  thumbnailHeight?: number;
+
   /** 字幕轨道配置列表 */
   tracks?: Track[];
-  
+
+  /** 是否启用快捷键 */
+  enableShortcuts?: boolean;
+
+  /** 是否开启调试模式 */
+  debug?: boolean;
+
   /** 插件配置列表 */
   plugins?: Array<{
     /** 插件实例 */
@@ -198,13 +196,17 @@ export interface VideoProps {
     /** 插件配置选项 */
     options?: any;
   }>;
-  
-  /** 是否启用弹幕功能 */
-  enableBarrage?: boolean;
-  
-  /** 是否显示弹幕输入框 */
-  showBarrageInput?: boolean;
+
+  /** 主题颜色 */
+  themeColor?: string;
+
+  /** 主题模式 */
+  theme?: 'light' | 'dark';
+
+  /** 是否显示控制栏 */
+  showControls?: boolean;
 }
+
 
 /**
  * 视频组件引用接口定义

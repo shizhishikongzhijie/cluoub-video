@@ -23,7 +23,7 @@ export default defineConfig({
   ],
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/libs/Video/index.tsx'),
+      entry: resolve(__dirname, 'src/libs/Video/index.ts'),
       name: 'CluoubVideo',
       formats: ['es', 'cjs'],
       fileName: (format) => `index.${format}.js`

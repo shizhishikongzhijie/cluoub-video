@@ -1,11 +1,4 @@
-/**
- * Player插件接口定义
- */
-export interface IPlayerPlugin {
-  name: string;
-  install(player: IPlayerCore, options?: any): void;
-  destroy?(): void;
-}
+import {PluginManager} from "../plugins";
 
 /**
  * 控制按钮配置接口定义
@@ -71,7 +64,7 @@ export interface IPlayerPlugin {
    * 接收插件API（可选）
    * @param api 插件API对象
    */
-  setAPI?(api: any): void;
+  setAPI?(api: PluginManager): void;
   /** 插件销毁方法 */
   destroy?(): void;
 }
