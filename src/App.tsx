@@ -17,23 +17,23 @@ function App() {
                 // playIcon: <Heart size={20} />,
                 progressThumbIcon: <Circle size={16} fill="white" />
             }}
-            // tracks={[
-            //     {
-            //         id: "subtitle1",
-            //         label: "中文",
-            //         language: "zh",
-            //         src: "/video_%E7%BF%BB%E8%AF%91.srt",
-            //         kind: "subtitles",
-            //         default: true
-            //     },
-            //     {
-            //         id: "subtitle2",
-            //         label: "Japanese",
-            //         language: "ja",
-            //         src: "/video_%E5%8E%9F%E5%A7%8B.srt",
-            //         kind: "subtitles"
-            //     }
-            // ]}
+            tracks={[
+                {
+                    id: "subtitle1",
+                    label: "中文",
+                    language: "zh",
+                    src: "/video_%E7%BF%BB%E8%AF%91.srt",
+                    kind: "subtitles",
+                    default: true
+                },
+                {
+                    id: "subtitle2",
+                    label: "Japanese",
+                    language: "ja",
+                    src: "/video_%E5%8E%9F%E5%A7%8B.srt",
+                    kind: "subtitles"
+                }
+            ]}
         />
     </>
   )

@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Circle} from 'lucide-react';
 import './ProgressControl.css';
 
@@ -36,6 +36,7 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
   const progressThumbRef = useRef<HTMLDivElement>(null);
   const thumbnailRef = useRef<HTMLDivElement>(null);
   const isSeeking = useRef(false);
+  const [localProgress, setLocalProgress] = useState(progress);
 
   // 格式化时间
   const formatTime = (time: number) => {
@@ -47,7 +48,7 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
   // 更新进度条buffer宽度
   const updateProgressBuffer = useCallback(() => {
     if (progressBufferRef.current) {
-      progressBufferRef.current.style.width = `${progress}%`;
+      progressBufferRef.current.style.width = `${localProgress}%`;
       
       // 在拖拽过程中移除过渡效果，使操作更流畅
       if (isSeeking.current) {
@@ -56,14 +57,14 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
         progressBufferRef.current.style.transition = 'width 0.1s';
       }
     }
-  }, [progress]);
+  }, [localProgress]);
 
   // 更新进度条thumb位置和显示状态
   const updateThumbPosition = useCallback(() => {
     if (progressThumbRef.current && progressContainerRef.current) {
       // 计算thumb应该在的位置（相对于进度条容器）
       const containerWidth = progressContainerRef.current.clientWidth;
-      const positionX = (containerWidth * progress) / 100;
+      const positionX = (containerWidth * localProgress) / 100;
       
       // 应用transform，考虑thumb自身的宽度（-50%保持居中）
       progressThumbRef.current.style.transform = `translate(${positionX}px, -50%)`;
@@ -80,7 +81,7 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
         progressThumbRef.current.style.transition = 'transform 0.1s';
       }
     }
-  }, [progress]);
+  }, [localProgress]);
 
   // 更新缩略图位置
   const updateThumbnailPosition = useCallback(() => {
@@ -90,7 +91,7 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
     }
   }, [showThumbnail, thumbnailPosition.x]);
 
-  // 当progress变化时更新buffer宽度和thumb位置
+  // 当localProgress变化时更新buffer宽度和thumb位置
   useEffect(() => {
     updateProgressBuffer();
     updateThumbPosition();
@@ -101,6 +102,13 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
     updateThumbnailPosition();
   }, [updateThumbnailPosition]);
 
+  // 当外部progress变化且不在拖拽状态时，更新本地进度
+  useEffect(() => {
+    if (!isSeeking.current) {
+      setLocalProgress(progress);
+    }
+  }, [progress]);
+
   // 进度条控制移动
   const handleProgressMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isSeeking.current || !progressContainerRef.current || !duration) return;
@@ -109,6 +117,9 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
     const rect = progressContainerRef.current.getBoundingClientRect();
     const position = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const newTime = position * duration;
+    
+    // 更新本地进度状态
+    setLocalProgress(position * 100);
     
     // 只更新UI，不实际跳转视频时间
     onProgressChange(position * 100, newTime);
@@ -140,9 +151,9 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
     onShowThumbnail(false);
     
     // 执行实际的视频跳转
-    const newTime = (progress / 100) * duration;
+    const newTime = (localProgress / 100) * duration;
     onSeek(newTime);
-  }, [duration, progress, onSeek, onShowThumbnail]);
+  }, [duration, localProgress, onSeek, onShowThumbnail]);
 
   // 添加事件监听器处理拖拽
   useEffect(() => {
