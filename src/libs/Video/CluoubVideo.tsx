@@ -11,6 +11,10 @@ import BarrageInput from "./components/BarrageInput";
 import BarrageToggleButton from "./components/BarrageToggleButton";
 import SubtitlesMenu from "./components/SubtitlesMenu";
 import {useControlsManager, usePlayerCore, useThumbnailManager} from "./hooks";
+import {useVideoEvents} from "./hooks/useVideoEvents";
+import {useSubtitles} from "./hooks/useSubtitles";
+import {useKeyboardShortcuts} from "./hooks/useKeyboardShortcuts";
+import {useControlsVisibility} from "./hooks/useControlsVisibility";
 
 const CluoubVideo: React.FC<VideoProps> = ({
   videoSrc,
@@ -52,7 +56,6 @@ const CluoubVideo: React.FC<VideoProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showControls, setShowControls] = useState(true);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -63,10 +66,8 @@ const CluoubVideo: React.FC<VideoProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const filter = useRef<BarrageFilter>(new BarrageFilter());
 
-  // 初始化控制管理器
-  useEffect(() => {
-    controlsManager.init(isPlaying);
-  }, [controlsManager, isPlaying]);
+  // 使用控制栏可见性Hook
+  const { showControls, setShowControls } = useControlsVisibility(containerRef, controlsManager);
 
   // 监听播放器核心事件
   useEffect(() => {
@@ -90,9 +91,6 @@ const CluoubVideo: React.FC<VideoProps> = ({
     };
     const handleBarragesUpdate = (barrages: Barrage[]) => {
       setBarrages(barrages);
-    };
-    const handleControlsVisibilityChange = (show: boolean) => {
-      setShowControls(show);
     };
     const handleTimeUpdate = (data: { currentTime: number; progress: number }) => {
       setCurrentTime(data.currentTime);
@@ -147,7 +145,6 @@ const CluoubVideo: React.FC<VideoProps> = ({
     playerCore.on('progressChange', handleProgressChange);
     playerCore.on('fullscreenChange', handleFullscreenChange);
     playerCore.on('barragesUpdate', handleBarragesUpdate);
-    playerCore.on('controlsVisibilityChange', handleControlsVisibilityChange);
     playerCore.on('timeUpdate', handleTimeUpdate);
     playerCore.on('durationChange', handleDurationChange);
     playerCore.on('subtitleTrackChange', handleSubtitleTrackChange);
@@ -161,7 +158,6 @@ const CluoubVideo: React.FC<VideoProps> = ({
       playerCore.removeListener('progressChange', handleProgressChange);
       playerCore.removeListener('fullscreenChange', handleFullscreenChange);
       playerCore.removeListener('barragesUpdate', handleBarragesUpdate);
-      playerCore.removeListener('controlsVisibilityChange', handleControlsVisibilityChange);
       playerCore.removeListener('timeUpdate', handleTimeUpdate);
       playerCore.removeListener('durationChange', handleDurationChange);
       playerCore.removeListener('subtitleTrackChange', handleSubtitleTrackChange);
@@ -175,261 +171,19 @@ const CluoubVideo: React.FC<VideoProps> = ({
     setThumbnailPosition(thumbnailManager.thumbnailPosition);
   }, [thumbnailManager.isThumbnailVisible, thumbnailManager.thumbnailPosition]);
 
-  // 监听视频播放状态并同步到video元素
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+  // 使用视频事件Hook
+  useVideoEvents(videoRef, playerCore, isMuted, volume, currentTime);
 
-    // 同步播放状态
-    if (isPlaying) {
-      video.play().catch(e => console.error("播放失败:", e));
-    } else {
-      video.pause();
-    }
-  }, [isPlaying]);
+  // 使用字幕Hook
+  useSubtitles(videoRef, playerCore, tracks);
 
-  // 监听音量状态并同步到video元素
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    video.muted = isMuted;
-    video.volume = volume;
-  }, [isMuted, volume]);
-
-  // 监听时间跳转并同步到video元素
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    // 只有当差异较大时才跳转，避免频繁更新
-    if (Math.abs(video.currentTime - currentTime) > 0.1) {
-      video.currentTime = currentTime;
-    }
-  }, [currentTime]);
-
-
-
-  // 添加字幕轨道
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || tracks.length === 0) return;
-
-    console.log('添加字幕轨道:', tracks);
-
-    // 清除现有的字幕轨道（仅移除track元素）
-    const existingTracks = Array.from(video.children).filter(child => child.tagName === 'TRACK');
-    existingTracks.forEach(track => video.removeChild(track));
-
-    // 添加新的字幕轨道
-    tracks.forEach(track => {
-      const trackElement = document.createElement('track');
-      trackElement.kind = track.kind;
-      trackElement.label = track.label;
-      trackElement.srclang = track.srclang; // 使用srclang而不是language
-      trackElement.src = track.src;
-      if (track.default) {
-        trackElement.default = true;
-        console.log('设置默认轨道:', track.label, track.src);
-      }
-      
-        // 添加轨道就绪事件监听
-      trackElement.addEventListener('load', () => {
-        console.log('轨道加载完成:', track.label, track.src);
-        // 尝试重新设置轨道
-        setupTextTracks();
-      });
-      
-      trackElement.addEventListener('error', (e) => {
-        console.error('轨道加载错误:', track.label, track.src, e);
-        // 即使轨道加载失败，也尝试设置其他轨道
-        setupTextTracks();
-      });
-      
-      video.appendChild(trackElement);
-    });
-
-    // 立即尝试设置轨道（不等待loadedmetadata）
-    const setupTextTracks = () => {
-      setTimeout(() => {
-        if (video && video.textTracks && video.textTracks.length > 0) {
-          console.log('找到的文本轨道数量:', video.textTracks.length);
-          
-          // 打印所有轨道信息
-          for (let i = 0; i < video.textTracks.length; i++) {
-            const track = video.textTracks[i];
-            console.log(`轨道 ${i}:`, track.label || '无标签', track.language || '无语言', track.mode);
-          }
-          
-          // 查找默认轨道或第一个轨道
-          let targetTrackIndex = -1;
-          
-          // 1. 先查找标记为default的轨道
-          for (let i = 0; i < tracks.length; i++) {
-            if (tracks[i].default) {
-              targetTrackIndex = i;
-              break;
-            }
-          }
-          
-          // 2. 如果没有default轨道，使用第一个轨道
-          if (targetTrackIndex === -1 && video.textTracks.length > 0) {
-            targetTrackIndex = 0;
-          }
-          
-          // 3. 设置轨道模式
-          if (targetTrackIndex !== -1 && playerCore.showSubtitles) {
-            console.log('显示轨道索引:', targetTrackIndex);
-            // 更新PlayerCore中的字幕轨道索引
-            playerCore.setSubtitleTrack(targetTrackIndex);
-            // 设置轨道模式
-            for (let i = 0; i < video.textTracks.length; i++) {
-              video.textTracks[i].mode = i === targetTrackIndex ? 'showing' : 'hidden';
-            }
-          }
-        } else {
-          console.log('未找到文本轨道');
-        }
-      }, 500); // 给更多时间让轨道加载
-    };
-    
-    // 调用设置函数
-    setupTextTracks();
-    
-    // 同时监听loadedmetadata事件作为后备
-    const handleLoadedMetadata = () => {
-      console.log('视频元数据加载完成，重新设置字幕轨道');
-      setupTextTracks();
-    };
-    
-    video.addEventListener('loadedmetadata', handleLoadedMetadata);
-    
-    return () => {
-      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-    };
-  }, [tracks]);
-
-  // 监听视频播放状态变化（来自video元素）
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handlePlay = () => playerCore.play();
-    const handlePause = () => playerCore.pause();
-    const handleMute = () => playerCore.setMuted(video.muted);
-    const handleVolumeChange = () => {
-      // 只有当音量真正改变时才通知PlayerCore
-      if (video.volume !== volume || video.muted !== isMuted) {
-        playerCore.setVolume(video.volume);
-      }
-    };
-    const handleTimeUpdate = () => {
-      playerCore.setTimeUpdate(video.currentTime);
-    };
-    const handleLoadedMetadata = () => {
-      playerCore.setDuration(video.duration);
-    };
-
-    video.addEventListener('play', handlePlay);
-    video.addEventListener('pause', handlePause);
-    const muteListener = () => handleMute();
-    const volumeListener = () => handleVolumeChange();
-    video.addEventListener('volumechange', muteListener);
-    video.addEventListener('volumechange', volumeListener);
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('loadedmetadata', handleLoadedMetadata);
-
-    return () => {
-      video.removeEventListener('play', handlePlay);
-      video.removeEventListener('pause', handlePause);
-      video.removeEventListener('volumechange', muteListener);
-      video.removeEventListener('volumechange', volumeListener);
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-    };
-  }, [playerCore, volume, isMuted]);
-
-  // 控制栏显示/隐藏
-  useEffect(() => {
-    const handleMouseMove = () => {
-      controlsManager.handleMouseMove(setShowControls);
-    };
-
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener('mousemove', handleMouseMove);
-      return () => {
-        container.removeEventListener('mousemove', handleMouseMove);
-      };
-    }
-  }, [controlsManager]);
-
-  // 更新播放状态到控制管理器
-  useEffect(() => {
-    controlsManager.updatePlayingState(isPlaying);
-  }, [isPlaying, controlsManager]);
+  // 使用快捷键Hook
+  useKeyboardShortcuts(containerRef, playerCore, enableShortcuts, currentTime, duration, volume);
 
   // 更新缩略图URL到管理器
   useEffect(() => {
     thumbnailManager.updateThumbnailUrl(thumbnailUrl);
   }, [thumbnailUrl, thumbnailManager]);
-
-  // 快捷键支持
-  useEffect(() => {
-    if (!enableShortcuts) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // 防止在输入框中触发快捷键
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      switch (e.key) {
-        case ' ':
-          e.preventDefault();
-          playerCore.togglePlay();
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          playerCore.seek(Math.min(currentTime + 5, duration));
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          playerCore.seek(Math.max(currentTime - 5, 0));
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          playerCore.setVolume(Math.min(volume + 0.1, 1));
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          playerCore.setVolume(Math.max(volume - 0.1, 0));
-          break;
-        case 'f':
-        case 'F':
-          e.preventDefault();
-          playerCore.toggleFullscreen();
-          break;
-        case 'm':
-        case 'M':
-          e.preventDefault();
-          playerCore.toggleMute();
-          break;
-        default:
-          break;
-      }
-    };
-
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener('keydown', handleKeyDown);
-      container.setAttribute('tabindex', '0'); // 使容器可获得焦点
-      return () => {
-        container.removeEventListener('keydown', handleKeyDown);
-        container.removeAttribute('tabindex');
-      };
-    }
-  }, [enableShortcuts, playerCore, currentTime, duration, volume]);
 
   // 播放/暂停
   const togglePlay = () => {
