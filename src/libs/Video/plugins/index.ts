@@ -1,6 +1,6 @@
 import {PluginManager} from './PluginManager';
-import type {IPlayerPlugin, PlayerComponentPosition} from '../core';
 import DemoPlugin from './DemoPlugin';
+import {IPlayerPlugin} from "../core";
 
 // 直接导出所有需要的内容
 export {
@@ -8,10 +8,6 @@ export {
   DemoPlugin
 };
 
-export type {
-  IPlayerPlugin,
-  PlayerComponentPosition
-};
 
 // 默认插件列表
 export const DefaultPlugins = {

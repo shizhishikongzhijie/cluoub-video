@@ -37,7 +37,16 @@
   object-fit: contain;
   outline: none;
 }
-
+.plugin-component-center{
+  position: absolute;
+  bottom: 40px; /* 在控制栏上方 */
+  left: 0;
+  width: 100%;
+  height:calc(100% - 40px);
+  text-align: center;
+  z-index: 15;
+  pointer-events: none;
+}
 /* 字幕容器 */
 .subtitle-container {
   position: absolute;

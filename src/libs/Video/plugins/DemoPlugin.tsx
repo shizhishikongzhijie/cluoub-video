@@ -1,4 +1,4 @@
-import { IPlayerPlugin, ControlButtonConfig, PlayerComponentConfig, PlayerComponentPosition } from '../core/IPlayerCore';
+import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig} from '../core';
 
 // 示例插件
 class DemoPlugin implements IPlayerPlugin {
@@ -54,7 +54,6 @@ class DemoPlugin implements IPlayerPlugin {
     // 注册一个视频上层组件（类似弹幕容器）
     const overlayComponent: PlayerComponentConfig = {
       id: 'demo-overlay',
-      position: PlayerComponentPosition.CENTER,
       order: 10,
       absolute: true,
       component: (

@@ -1,17 +1,17 @@
-import {IPlayerPlugin, ControlButtonConfig, PlayerComponentConfig} from '../core/IPlayerCore';
+import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig, PlayerCore} from '../core';
 
 /**
  * 插件管理器
  */
 export class PluginManager {
   private plugins: Map<string, IPlayerPlugin> = new Map();
-  private player: any;
+  private player: PlayerCore;
   // 存储所有注册的控制按钮配置
   private controlButtons: ControlButtonConfig[] = [];
   // 存储所有注册的组件配置
   private components: PlayerComponentConfig[] = [];
 
-  constructor(player: any) {
+  constructor(player: PlayerCore) {
     this.player = player;
   }
 
@@ -31,10 +31,10 @@ export class PluginManager {
     // 提供插件API
     const pluginAPI = {
       player: this.player,
-      registerControlButton: this.registerControlButton.bind(this),
-      removeControlButton: this.removeControlButton.bind(this),
-      registerComponent: this.registerComponent.bind(this),
-      removeComponent: this.removeComponent.bind(this),
+      registerControlButton: this.player.registerControlButton.bind(this.player),
+      unregisterControlButton: this.player.unregisterControlButton.bind(this.player),
+      registerComponent: this.player.registerComponent.bind(this.player),
+      unregisterComponent: this.player.unregisterComponent.bind(this.player),
       // 提供播放器状态信息
       getPlayerState: () => ({
         isPlaying: this.player?.isPlaying,
@@ -52,60 +52,6 @@ export class PluginManager {
     // 额外提供插件API给插件
     if (plugin.setAPI) {
       plugin.setAPI(pluginAPI);
-    }
-  }
-
-  /**
-   * 注册控制按钮
-   * @param button 控制按钮配置
-   */
-  registerControlButton(button: ControlButtonConfig): void {
-    // 检查是否已存在相同ID的按钮
-    const existingIndex = this.controlButtons.findIndex(b => b.id === button.id);
-    if (existingIndex !== -1) {
-      // 更新已存在的按钮
-      this.controlButtons[existingIndex] = button;
-    } else {
-      // 添加新按钮
-      this.controlButtons.push(button);
-    }
-  }
-
-  /**
-   * 移除控制按钮
-   * @param id 按钮ID
-   */
-  removeControlButton(id: string): void {
-    const index = this.controlButtons.findIndex(b => b.id === id);
-    if (index !== -1) {
-      this.controlButtons.splice(index, 1);
-    }
-  }
-
-  /**
-   * 注册组件
-   * @param component 组件配置
-   */
-  registerComponent(component: PlayerComponentConfig): void {
-    // 检查是否已存在相同ID的组件
-    const existingIndex = this.components.findIndex(c => c.id === component.id);
-    if (existingIndex !== -1) {
-      // 更新已存在的组件
-      this.components[existingIndex] = component;
-    } else {
-      // 添加新组件
-      this.components.push(component);
-    }
-  }
-
-  /**
-   * 移除组件
-   * @param id 组件ID
-   */
-  removeComponent(id: string): void {
-    const index = this.components.findIndex(c => c.id === id);
-    if (index !== -1) {
-      this.components.splice(index, 1);
     }
   }
 

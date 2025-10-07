@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig, PlayerComponentPosition} from './core/IPlayerCore';
+import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig} from './core';
 
 /**
  * 重新导出核心接口以保持模块一致性
@@ -13,8 +13,7 @@ import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig, PlayerCompone
 export { 
   ControlButtonConfig, 
   PlayerComponentConfig, 
-  PlayerComponentPosition, 
-  IPlayerPlugin 
+  IPlayerPlugin
 };
 
 /**

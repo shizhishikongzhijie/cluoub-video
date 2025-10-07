@@ -31,13 +31,11 @@ export {
 } from './plugins';
 
 export type {
+    IPlayerPluginApi,
     IPlayerPlugin,
     ControlButtonConfig,
     PlayerComponentConfig,
     IPlayerCore
-} from './core/IPlayerCore';
-export {
-    PlayerComponentPosition,
 } from './core/IPlayerCore';
 // 导出自定义Hooks
 export {

@@ -2,22 +2,21 @@ import {
     type ControlButtonConfig,
     type IPlayerCore,
     type IPlayerPlugin,
+    type IPlayerPluginApi,
     type PlayerComponentConfig,
-    PlayerComponentPosition,
-    PluginManager
 } from "../libs/Video";
 import {MessageSquare} from "lucide-react";
 
 export class DanmuPlugin implements IPlayerPlugin{
     name = 'danmu';
     private player: IPlayerCore| null= null;
-    private api: PluginManager|null = null;
+    private api: IPlayerPluginApi | null = null;
     install(player: IPlayerCore, options?: any): void {
         this.player = player;
         console.log('DemoPlugin installed with options:', options);
     }
     // 接收插件API的方法
-    setAPI(api: PluginManager): void {
+    setAPI(api: IPlayerPluginApi): void {
         this.api = api;
         console.log('Plugin API received');
 
@@ -36,7 +35,6 @@ export class DanmuPlugin implements IPlayerPlugin{
         // 注册一个视频上层组件（类似弹幕容器）
         const overlayComponent: PlayerComponentConfig = {
             id: 'demo-overlay',
-            position:  PlayerComponentPosition.CENTER,
             order: 10,
             absolute: true,
             component: (
@@ -79,7 +77,7 @@ export class DanmuPlugin implements IPlayerPlugin{
                             if (overlay) overlay.style.display = 'none';
                         }, 2000);
                     }
-                    return originalPlay.apply(this, arguments);
+                    return originalPlay.apply(this, []);
                 };
 
                 // 定期获取和显示播放器状态
@@ -95,8 +93,8 @@ export class DanmuPlugin implements IPlayerPlugin{
         console.log('DemoPlugin destroyed');
         // 清理资源
         if (this.api) {
-            this.api.removeControlButton('danmu-toggle-button');
-            this.api.removeComponent('demo-overlay');
+            this.api.unregisterControlButton('danmu-toggle-button');
+            this.api.unregisterComponent('demo-overlay');
         }
     }
 }

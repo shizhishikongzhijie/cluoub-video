@@ -1,6 +1,5 @@
 import {EventEmitter} from './EventEmitter';
-import {IPlayerCore, IPlayerPlugin} from './IPlayerCore';
-import {ControlButtonConfig, PlayerComponentConfig} from '../Video.types';
+import {ControlButtonConfig, IPlayerCore, IPlayerPlugin, PlayerComponentConfig} from './IPlayerCore';
 import {PluginManager} from '../plugins';
 import Logger from '../utils/Logger';
 
@@ -161,9 +160,8 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   }
   
   // 组件注册方法
-  // 组件注册方法
   registerComponent(component: PlayerComponentConfig): void {
-    this.logger.debug('注册播放器组件', { componentId: component.id, position: component.position });
+    this.logger.debug('注册播放器组件', { componentId: component.id });
     // 检查是否已存在相同ID的组件
     const existingIndex = this._components.findIndex(c => c.id === component.id);
     if (existingIndex !== -1) {
