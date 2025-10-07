@@ -22,6 +22,25 @@ export interface Barrage {
 }
 
 /**
+ * 字幕轨道接口定义
+ * @interface Track
+ */
+export interface Track {
+  /** 字幕轨道唯一标识符 */
+  id: string;
+  /** 字幕轨道标签 */
+  label: string;
+  /** 字幕语言 */
+  language: string;
+  /** 字幕文件路径 */
+  src: string;
+  /** 字幕类型 */
+  kind: 'subtitles' | 'captions' | 'descriptions' | 'chapters' | 'metadata';
+  /** 是否为默认轨道 */
+  default?: boolean;
+}
+
+/**
  * 控制配置接口定义
  * @interface ControlConfig
  */
@@ -40,6 +59,8 @@ export interface ControlConfig {
   fullscreen?: boolean;
   /** 弹幕控制（可选） */
   barrage?: boolean;
+  /** 字幕控制（可选） */
+  subtitles?: boolean;
 }
 
 /**
@@ -88,6 +109,10 @@ export interface VideoProps {
   thumbnailWidth?: number;
   /** 缩略图高度（可选） */
   thumbnailHeight?: number;
+  /** 字幕轨道列表（可选） */
+  tracks?: Track[];
+  /** 是否启用快捷键（默认为true） */
+  enableShortcuts?: boolean;
 }
 
 /**

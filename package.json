@@ -2,14 +2,16 @@
   "name": "@cluoub-design/cluoub-video",
   "version": "1.0.0",
   "type": "module",
-  "description": "一个带动效的视频播放器组件，支持弹幕、自定义控件和多种交互功能",
+  "description": "一个现代化、可定制的 React 视频播放器组件，带有弹幕系统、字幕支持和快捷键功能",
   "keywords": [
     "react",
     "video",
     "player",
     "component",
     "barrage",
-    "ui"
+    "ui",
+    "subtitles",
+    "shortcuts"
   ],
   "author": "Cluoub Design Team",
   "license": "MIT",

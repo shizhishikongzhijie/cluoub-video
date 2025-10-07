@@ -1,3 +1,309 @@
+# Cluoub Video Player
+
+一个现代化、可定制的 React 视频播放器组件，带有弹幕系统、字幕支持和快捷键功能。
+
+## 特性
+
+- 🎬 完整的视频播放功能
+- 💬 实时弹幕系统（WebSocket 支持）
+- 📝 字幕轨道支持（WebVTT 格式）
+- ⌨️ 快捷键控制
+- 🎨 二次元风格 UI 设计
+- 📱 响应式设计，支持移动端
+- 🔧 高度可定制的控件
+- 🌐 TypeScript 类型支持
+
+## 安装
+
+```bash
+npm install @cluoub-design/cluoub-video
+```
+
+## 快速开始
+
+```jsx
+import CluoubVideo from '@cluoub-design/cluoub-video';
+import '@cluoub-design/cluoub-video/dist/cluoub-video.css';
+
+function App() {
+  return (
+    <CluoubVideo
+      videoSrc="https://example.com/video.mp4"
+      videoId="video1"
+      userId="user1"
+      username="用户名"
+      width="800px"
+      aspectRatio="16:9"
+    />
+  );
+}
+```
+
+## 功能详解
+
+### 1. 弹幕系统
+
+我们的弹幕系统具有以下特性：
+
+- 实时通信：基于 WebSocket 的实时弹幕传输
+- 弹幕过滤：多层过滤机制（敏感词、用户屏蔽词、长度限制、重复检测）
+- 性能优化：自动清理过期弹幕，限制同时显示的弹幕数量
+- 自定义样式：支持颜色、大小、位置等自定义属性
+- 二次元风格：专为二次元爱好者设计的视觉效果
+
+```jsx
+<CluoubVideo
+  videoSrc="https://example.com/video.mp4"
+  videoId="unique-video-id"
+  userId="user123"
+  username="用户名"
+  controls={{
+    barrage: true // 启用弹幕功能
+  }}
+/>
+```
+
+### 2. 字幕支持
+
+支持多种字幕格式和语言：
+
+```jsx
+<CluoubVideo
+  videoSrc="https://example.com/video.mp4"
+  videoId="video1"
+  userId="user1"
+  username="用户名"
+  tracks={[
+    {
+      id: "subtitle1",
+      label: "中文",
+      language: "zh",
+      src: "https://example.com/subtitle.vtt",
+      kind: "subtitles",
+      default: true
+    },
+    {
+      id: "subtitle2",
+      label: "English",
+      language: "en",
+      src: "https://example.com/subtitle-en.vtt",
+      kind: "subtitles"
+    }
+  ]}
+/>
+```
+
+### 3. 快捷键
+
+默认支持以下快捷键操作：
+
+| 快捷键 | 功能 |
+|--------|------|
+| 空格键 | 播放/暂停 |
+| ←/→ 方向键 | 快退/快进 5 秒 |
+| ↑/↓ 方向键 | 增加/减少音量 10% |
+| F | 全屏切换 |
+| M | 静音切换 |
+
+可以通过 `enableShortcuts` 属性控制是否启用快捷键：
+
+```jsx
+<CluoubVideo
+  videoSrc="https://example.com/video.mp4"
+  videoId="video1"
+  userId="user1"
+  username="用户名"
+  enableShortcuts={false} // 禁用快捷键
+/>
+```
+
+### 4. 自定义控件
+
+播放器支持自定义控件显示：
+
+```jsx
+<CluoubVideo
+  videoSrc="https://example.com/video.mp4"
+  videoId="video1"
+  userId="user1"
+  username="用户名"
+  controls={{
+    play: true,
+    volume: true,
+    time: true,
+    progress: true,
+    settings: false,
+    fullscreen: true,
+    barrage: true,
+    subtitles: true
+  }}
+/>
+```
+
+### 5. 自定义图标
+
+支持自定义控件图标：
+
+```jsx
+import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+
+<CluoubVideo
+  videoSrc="https://example.com/video.mp4"
+  videoId="video1"
+  userId="user1"
+  username="用户名"
+  customIcons={{
+    playIcon: <Play size={20} />,
+    pauseIcon: <Pause size={20} />,
+    volumeIcon: <Volume2 size={20} />,
+    muteIcon: <VolumeX size={20} />
+  }}
+/>
+```
+
+## API 参考
+
+### Props
+
+| 属性 | 类型 | 默认值 | 描述 |
+|------|------|--------|------|
+| videoSrc | string | 必需 | 视频源 URL |
+| videoId | string | 必需 | 视频唯一标识符 |
+| userId | string | 必需 | 当前用户 ID |
+| username | string | 必需 | 当前用户名 |
+| width | string \| number | '100%' | 视频宽度 |
+| height | string \| number | 'auto' | 视频高度 |
+| aspectRatio | string | '16:9' | 视频宽高比 |
+| controls | ControlConfig | 见下表 | 控件配置 |
+| customIcons | CustomIcons | undefined | 自定义图标 |
+| thumbnailUrl | string | undefined | 缩略图 URL |
+| thumbnailWidth | number | 120 | 缩略图宽度 |
+| thumbnailHeight | number | 80 | 缩略图高度 |
+| tracks | Track[] | [] | 字幕轨道列表 |
+| enableShortcuts | boolean | true | 是否启用快捷键 |
+
+### ControlConfig
+
+| 属性 | 类型 | 默认值 | 描述 |
+|------|------|--------|------|
+| play | boolean | true | 播放/暂停按钮 |
+| volume | boolean | true | 音量控制 |
+| time | boolean | true | 时间显示 |
+| progress | boolean | true | 进度条 |
+| settings | boolean | true | 设置按钮 |
+| fullscreen | boolean | true | 全屏按钮 |
+| barrage | boolean | true | 弹幕功能 |
+| subtitles | boolean | true | 字幕功能 |
+
+### Track
+
+| 属性 | 类型 | 描述 |
+|------|------|------|
+| id | string | 字幕轨道唯一标识符 |
+| label | string | 字幕轨道标签 |
+| language | string | 字幕语言 |
+| src | string | 字幕文件路径 |
+| kind | 'subtitles' \| 'captions' \| 'descriptions' \| 'chapters' \| 'metadata' | 字幕类型 |
+| default | boolean (可选) | 是否为默认轨道 |
+
+## 架构设计
+
+### 核心模块
+
+1. **PlayerCore** - 播放器核心逻辑管理
+   - 状态管理（播放状态、音量、时间等）
+   - 事件系统（基于自定义 EventEmitter）
+   - WebSocket 管理（弹幕通信）
+
+2. **Managers** - 功能管理器
+   - ControlsManager：控制栏显示/隐藏逻辑
+   - ThumbnailManager：缩略图管理
+
+3. **Hooks** - 自定义 React Hooks
+   - usePlayerCore：PlayerCore 实例管理
+   - useControlsManager：ControlsManager 实例管理
+   - useThumbnailManager：ThumbnailManager 实例管理
+
+4. **Components** - UI 组件
+   - PlayButton：播放按钮
+   - VolumeControl：音量控制
+   - ProgressControl：进度条
+   - FullscreenButton：全屏按钮
+   - BarrageInput：弹幕输入框
+
+### 事件驱动架构
+
+播放器采用事件驱动架构，核心模块通过事件进行通信：
+
+```javascript
+// 示例：播放事件处理
+playerCore.on('play', () => {
+  // 更新 UI 状态
+  setIsPlaying(true);
+});
+
+// 示例：发送播放命令
+playerCore.play(); // 触发 play 事件
+```
+
+## 开发指南
+
+### 项目结构
+
+```
+src/
+├── libs/
+│   └── Video/
+│       ├── core/              # 核心模块
+│       │   ├── PlayerCore.ts   # 播放器核心
+│       │   └── EventEmitter.ts # 事件系统
+│       ├── managers/           # 管理器
+│       │   ├── ControlsManager.ts
+│       │   └── ThumbnailManager.ts
+│       ├── hooks/              # 自定义 Hooks
+│       │   └── usePlayerCore.ts
+│       ├── components/         # UI 组件
+│       │   ├── PlayButton.tsx
+│       │   ├── VolumeControl.tsx
+│       │   ├── ProgressControl.tsx
+│       │   ├── FullscreenButton.tsx
+│       │   ├── BarrageInput.tsx
+│       │   └── ...
+│       ├── CluoubVideo.tsx     # 主组件
+│       ├── Video.types.ts      # TypeScript 类型定义
+│       ├── WebSocketManager.ts # WebSocket 管理
+│       ├── BarrageFilter.ts    # 弹幕过滤器
+│       └── anime-player.css    # 样式文件
+└── App.tsx
+```
+
+### 运行开发服务器
+
+```bash
+npm run dev
+```
+
+### 构建项目
+
+```bash
+npm run build
+```
+
+## 浏览器兼容性
+
+- Chrome >= 60
+- Firefox >= 60
+- Safari >= 12
+- Edge >= 79
+
+## 许可证
+
+MIT
+
+## 贡献
+
+欢迎提交 Issue 和 Pull Request 来改进这个项目！
+
 # 二次元视频播放器：弹幕系统深度实现指南
 
 ## 为什么需要深度定制弹幕系统
@@ -586,7 +892,7 @@ export default BarrageRenderer;
 ### 2. 弹幕过滤算法（核心）
 
 **四层过滤系统：**
-```mermaid
+```
 graph TD
     A[用户输入] --> B{敏感词过滤}
     B -->|包含敏感词| C[过滤]

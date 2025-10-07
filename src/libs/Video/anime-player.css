@@ -27,6 +27,7 @@
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  outline: none; /* 移除焦点轮廓 */
 }
 
 .video-wrapper {
@@ -41,6 +42,25 @@
   height: 100%;
   object-fit: contain;
   outline: none;
+}
+
+/* 字幕容器 */
+.subtitle-container {
+  position: absolute;
+  bottom: 60px; /* 在控制栏上方 */
+  left: 0;
+  width: 100%;
+  text-align: center;
+  z-index: 15;
+  pointer-events: none;
+}
+
+.subtitle-container::cue {
+  color: white;
+  background-color: rgba(0, 0, 0, 0.7);
+  font-size: 18px;
+  font-family: 'Comic Sans MS', 'Microsoft YaHei', sans-serif;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .barrage-container {

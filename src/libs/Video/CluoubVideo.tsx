@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from "react";
-import {Barrage, VideoProps} from "./Video.types";
+import {Barrage, Track, VideoProps} from "./Video.types";
 import {BarrageFilter} from "./BarrageFilter";
 import PlayButton from "./components/PlayButton";
 import VolumeControl from "./components/VolumeControl";
@@ -25,12 +25,15 @@ const CluoubVideo: React.FC<VideoProps> = ({
     progress: true,
     settings: true,
     fullscreen: true,
-    barrage: true
+    barrage: true,
+    subtitles: true
   },
   customIcons,
   thumbnailUrl,
   thumbnailWidth = 120,
-  thumbnailHeight = 80
+  thumbnailHeight = 80,
+  tracks = [],
+  enableShortcuts = true
 }) => {
   // 使用播放器核心
   const playerCore = usePlayerCore({ videoSrc, videoId, userId, username });
@@ -53,6 +56,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [showThumbnail, setShowThumbnail] = useState(false);
   const [thumbnailPosition, setThumbnailPosition] = useState({ x: 0, time: 0 });
+  const [activeTrack, setActiveTrack] = useState<Track | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -161,6 +165,36 @@ const CluoubVideo: React.FC<VideoProps> = ({
     }
   }, [currentTime]);
 
+  // 添加字幕轨道
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || tracks.length === 0) return;
+
+    // 清除现有的字幕轨道
+    while (video.textTracks.length > 0) {
+      video.removeChild(video.children[0]);
+    }
+
+    // 添加新的字幕轨道
+    tracks.forEach(track => {
+      const trackElement = document.createElement('track');
+      trackElement.kind = track.kind;
+      trackElement.label = track.label;
+      trackElement.language = track.language;
+      trackElement.src = track.src;
+      if (track.default) {
+        trackElement.default = true;
+      }
+      video.appendChild(trackElement);
+    });
+
+    // 设置默认激活的轨道
+    const defaultTrack = tracks.find(track => track.default);
+    if (defaultTrack) {
+      setActiveTrack(defaultTrack);
+    }
+  }, [tracks]);
+
   // 监听视频播放状态变化（来自video元素）
   useEffect(() => {
     const video = videoRef.current;
@@ -184,16 +218,18 @@ const CluoubVideo: React.FC<VideoProps> = ({
 
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
-    video.addEventListener('volumechange', handleMute);
-    video.addEventListener('volumechange', handleVolumeChange);
+    const muteListener = () => handleMute();
+    const volumeListener = () => handleVolumeChange();
+    video.addEventListener('volumechange', muteListener);
+    video.addEventListener('volumechange', volumeListener);
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('loadedmetadata', handleLoadedMetadata);
 
     return () => {
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
-      video.removeEventListener('volumechange', handleMute);
-      video.removeEventListener('volumechange', handleVolumeChange);
+      video.removeEventListener('volumechange', muteListener);
+      video.removeEventListener('volumechange', volumeListener);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
     };
@@ -223,6 +259,63 @@ const CluoubVideo: React.FC<VideoProps> = ({
   useEffect(() => {
     thumbnailManager.updateThumbnailUrl(thumbnailUrl);
   }, [thumbnailUrl, thumbnailManager]);
+
+  // 快捷键支持
+  useEffect(() => {
+    if (!enableShortcuts) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 防止在输入框中触发快捷键
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key) {
+        case ' ':
+          e.preventDefault();
+          playerCore.togglePlay();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          playerCore.seek(Math.min(currentTime + 5, duration));
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          playerCore.seek(Math.max(currentTime - 5, 0));
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          playerCore.setVolume(Math.min(volume + 0.1, 1));
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          playerCore.setVolume(Math.max(volume - 0.1, 0));
+          break;
+        case 'f':
+        case 'F':
+          e.preventDefault();
+          playerCore.toggleFullscreen();
+          break;
+        case 'm':
+        case 'M':
+          e.preventDefault();
+          playerCore.toggleMute();
+          break;
+        default:
+          break;
+      }
+    };
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('keydown', handleKeyDown);
+      container.setAttribute('tabindex', '0'); // 使容器可获得焦点
+      return () => {
+        container.removeEventListener('keydown', handleKeyDown);
+        container.removeAttribute('tabindex');
+      };
+    }
+  }, [enableShortcuts, playerCore, currentTime, duration, volume]);
 
   // 播放/暂停
   const togglePlay = () => {
@@ -285,6 +378,24 @@ const CluoubVideo: React.FC<VideoProps> = ({
     }
   };
 
+  // 切换字幕轨道
+  const toggleSubtitleTrack = (track: Track | null) => {
+    setActiveTrack(track);
+    
+    const video = videoRef.current;
+    if (!video) return;
+    
+    // 启用或禁用字幕轨道
+    for (let i = 0; i < video.textTracks.length; i++) {
+      const textTrack = video.textTracks[i];
+      if (track && textTrack.language === track.language) {
+        textTrack.mode = 'showing';
+      } else {
+        textTrack.mode = 'hidden';
+      }
+    }
+  };
+
   // 发送弹幕
   const sendBarrage = (text: string) => {
     const filteredText = filter.current.filter(text);
@@ -326,6 +437,13 @@ const CluoubVideo: React.FC<VideoProps> = ({
           muted={isMuted}
           className="video-element"
         />
+
+        {/* 字幕显示区域 */}
+        {controls.subtitles && tracks.length > 0 && (
+          <div className="subtitle-container">
+            {/* 字幕将由浏览器自动渲染到这个区域 */}
+          </div>
+        )}
 
         {/* 弹幕渲染层 */}
         <div className="barrage-container">
