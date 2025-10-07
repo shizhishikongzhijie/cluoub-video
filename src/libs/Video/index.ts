@@ -30,14 +30,15 @@ export {
     removePlugin
 } from './plugins';
 
-export {
+export type {
     IPlayerPlugin,
-    PlayerComponentPosition,
     ControlButtonConfig,
     PlayerComponentConfig,
     IPlayerCore
 } from './core/IPlayerCore';
-
+export {
+    PlayerComponentPosition,
+} from './core/IPlayerCore';
 // 导出自定义Hooks
 export {
     usePlayerCore,

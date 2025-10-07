@@ -1,7 +1,7 @@
 import {
     type ControlButtonConfig,
-    IPlayerCore,
-    IPlayerPlugin,
+    type IPlayerCore,
+    type IPlayerPlugin,
     type PlayerComponentConfig,
     PlayerComponentPosition,
     PluginManager
