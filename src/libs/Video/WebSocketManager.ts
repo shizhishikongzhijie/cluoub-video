@@ -1,4 +1,5 @@
 import {v4 as uuidv4} from 'uuid';
+import Logger from './utils/Logger';
 
 export class WebSocketManager {
   private ws: WebSocket | null = null;
@@ -7,9 +8,19 @@ export class WebSocketManager {
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
   private userId: string = ''; // 添加用户ID以识别自己发送的消息
+  private logger: Logger;
+  private isInitialized: boolean = false;
 
   constructor(videoId: string) {
     this.videoId = videoId;
+    this.logger = Logger.getInstance();
+    this.logger.setComponentName('WebSocketManager');
+    
+    // 确保初始化日志只打印一次
+    if (!this.isInitialized) {
+      this.logger.initSuccess();
+      this.isInitialized = true;
+    }
   }
 
   connect(userId: string): void {
@@ -20,12 +31,12 @@ export class WebSocketManager {
     
     // 在实际项目中，这里应该连接到真实的WebSocket服务器
     // 由于这是一个演示组件，我们暂时使用模拟方式
-    console.log(`Connecting to WebSocket for video ${this.videoId}`);
+    this.logger.info(`Connecting to WebSocket for video ${this.videoId}`);
     
     // 模拟连接过程
     setTimeout(() => {
       // 模拟连接成功
-      console.log('WebSocket connected (simulated)');
+      this.logger.info('WebSocket connected (simulated)');
       this.reconnectAttempts = 0;
       
       // 模拟发送历史弹幕
@@ -62,7 +73,7 @@ export class WebSocketManager {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) return;
     
     this.reconnectAttempts++;
-    console.log(`Reconnecting... attempt ${this.reconnectAttempts}`);
+    this.logger.info(`Reconnecting... attempt ${this.reconnectAttempts}`);
     
     setTimeout(() => {
       this.connect(this.userId);
@@ -71,7 +82,7 @@ export class WebSocketManager {
 
   sendBarrage(text: string, userId: string, username: string, videoTime: number = 0): void {
     // 在实际项目中，这里会通过WebSocket发送弹幕
-    console.log(`Sending barrage: ${text} from ${username}`);
+    this.logger.debug(`Sending barrage: ${text} from ${username}`);
     
     // 保存用户ID
     this.userId = userId;
@@ -96,13 +107,14 @@ export class WebSocketManager {
   }
 
   onBarrage(callback: Function): void {
+    this.logger.debug('Registering barrage callback');
     this.callbacks.barrage = callback;
   }
 
   handleBarrage(barrage: any): void {
     // 防止处理自己发送的消息
     if (barrage.userId === this.userId) {
-      console.log('Ignoring own barrage message');
+      this.logger.debug('Ignoring own barrage message');
       return;
     }
     
@@ -112,12 +124,14 @@ export class WebSocketManager {
   }
 
   handleHistory(barrages: any[]): void {
+    this.logger.debug('Handling history barrages', { count: barrages.length });
     if (this.callbacks.history) {
       this.callbacks.history(barrages);
     }
   }
 
   onHistory(callback: Function): void {
+    this.logger.debug('Registering history callback');
     this.callbacks.history = callback;
   }
 }

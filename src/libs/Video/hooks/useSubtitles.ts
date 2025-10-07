@@ -1,6 +1,7 @@
-import {useEffect} from 'react';
+import {useEffect, useRef} from 'react';
 import {PlayerCore} from '../core';
-import {SubtitleTrack} from '../Video.types';
+import {Track as SubtitleTrack} from '../Video.types';
+import Logger from "../utils/Logger";
 
 /**
  * 自定义Hook，用于处理字幕轨道
@@ -13,12 +14,14 @@ export const useSubtitles = (
   playerCore: PlayerCore,
   tracks: SubtitleTrack[]
 ) => {
+  const loggerRef = useRef(Logger.getInstance())
   // 添加字幕轨道
   useEffect(() => {
     const video = videoRef.current;
+    const logger = loggerRef.current
     if (!video || tracks.length === 0) return;
 
-    console.log('添加字幕轨道:', tracks);
+    logger.debug('添加字幕轨道:', tracks);
 
     // 清除现有的字幕轨道（仅移除track元素）
     const existingTracks = Array.from(video.children).filter(child => child.tagName === 'TRACK');
@@ -33,12 +36,12 @@ export const useSubtitles = (
       trackElement.src = track.src;
       if (track.default) {
         trackElement.default = true;
-        console.log('设置默认轨道:', track.label, track.src);
+        logger.debug('设置默认轨道:', track.label, track.src);
       }
       
         // 添加轨道就绪事件监听
       trackElement.addEventListener('load', () => {
-        console.log('轨道加载完成:', track.label, track.src);
+        logger.debug('轨道加载完成:', track.label, track.src);
         // 尝试重新设置轨道
         setupTextTracks();
       });
@@ -56,12 +59,12 @@ export const useSubtitles = (
     const setupTextTracks = () => {
       setTimeout(() => {
         if (video && video.textTracks && video.textTracks.length > 0) {
-          console.log('找到的文本轨道数量:', video.textTracks.length);
+          logger.debug('找到的文本轨道数量:', video.textTracks.length);
           
           // 打印所有轨道信息
           for (let i = 0; i < video.textTracks.length; i++) {
             const track = video.textTracks[i];
-            console.log(`轨道 ${i}:`, track.label || '无标签', track.language || '无语言', track.mode);
+            logger.debug(`轨道 ${i}:`, track.label || '无标签', track.language || '无语言', track.mode);
           }
           
           // 查找默认轨道或第一个轨道
@@ -82,7 +85,7 @@ export const useSubtitles = (
           
           // 3. 设置轨道模式
           if (targetTrackIndex !== -1 && playerCore.showSubtitles) {
-            console.log('显示轨道索引:', targetTrackIndex);
+            logger.debug('显示轨道索引:', targetTrackIndex);
             // 更新PlayerCore中的字幕轨道索引
             playerCore.setSubtitleTrack(targetTrackIndex);
             // 设置轨道模式
@@ -91,7 +94,7 @@ export const useSubtitles = (
             }
           }
         } else {
-          console.log('未找到文本轨道');
+          logger.debug('未找到文本轨道');
         }
       }, 500); // 给更多时间让轨道加载
     };
@@ -101,7 +104,7 @@ export const useSubtitles = (
     
     // 同时监听loadedmetadata事件作为后备
     const handleLoadedMetadata = () => {
-      console.log('视频元数据加载完成，重新设置字幕轨道');
+      logger.debug('视频元数据加载完成，重新设置字幕轨道');
       setupTextTracks();
     };
     

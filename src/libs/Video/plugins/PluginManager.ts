@@ -1,4 +1,4 @@
-import {IPlayerPlugin} from '../core/IPlayerCore';
+import {IPlayerPlugin} from '../core';
 
 /**
  * 插件管理器

@@ -4,6 +4,7 @@ import {v4 as uuidv4} from 'uuid';
 import {EventEmitter} from './EventEmitter';
 import {IPlayerCore, IPlayerPlugin} from './IPlayerCore';
 import {PluginManager} from '../plugins/PluginManager';
+import Logger from '../utils/Logger';
 
 /**
  * 播放器核心类，负责管理播放器状态和逻辑
@@ -39,6 +40,8 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   // 管理器
   private _wsManager: WebSocketManager | null = null;
   private _pluginManager: PluginManager;
+  private logger: Logger;
+  private isInitialized: boolean = false;
   
   // 定时器
   private _controlsTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -56,11 +59,20 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     this._userId = options.userId;
     this._username = options.username;
     
+    // 初始化日志管理器
+    this.logger = Logger.getInstance();
+    this.logger.setComponentName('PlayerCore');
+    
+    // 确保初始化日志只打印一次
+    if (!this.isInitialized) {
+      this.logger.initSuccess();
+      this.isInitialized = true;
+    }
+    
     // 初始化插件管理器
     this._pluginManager = new PluginManager(this);
     
     this._initWebSocket();
-    this._initBarrageCleanup();
   }
 
   private _initWebSocket() {
@@ -71,11 +83,13 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     
     // 处理新弹幕
     this._wsManager.onBarrage((newBarrage: Barrage) => {
+      this.logger.debug('收到新弹幕', newBarrage);
       this.addBarrage(newBarrage);
     });
     
     // 获取历史弹幕
     this._wsManager.onHistory((historyBarrages: Barrage[]) => {
+      this.logger.debug('收到历史弹幕', historyBarrages);
       this._barrages = historyBarrages;
       this.emit('barragesUpdate', this._barrages);
     });
@@ -84,21 +98,24 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   private _initBarrageCleanup() {
     // 不再定期清理过期弹幕，避免视频暂停时弹幕消失
     // 如果需要清理过期弹幕，应该在合适的时机手动调用
-    console.log('[PlayerCore] 弹幕清理功能已禁用，避免视频暂停时弹幕消失');
+    this.logger.debug('弹幕清理功能已禁用，避免视频暂停时弹幕消失');
   }
 
   // 播放控制方法
   play() {
+    this.logger.debug('播放视频');
     this._isPlaying = true;
     this.emit('play');
   }
 
   pause() {
+    this.logger.debug('暂停视频');
     this._isPlaying = false;
     this.emit('pause');
   }
 
   togglePlay() {
+    this.logger.debug('切换播放状态');
     if (this._isPlaying) {
       this.pause();
     } else {
@@ -108,22 +125,26 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
 
   // 音量控制方法
   setMuted(muted: boolean) {
+    this.logger.debug('设置静音状态', { muted });
     this._isMuted = muted;
     this.emit('volumeChange', { isMuted: this._isMuted, volume: this._volume });
   }
 
   setVolume(volume: number) {
+    this.logger.debug('设置音量', { volume });
     this._volume = volume;
     this._isMuted = volume === 0;
     this.emit('volumeChange', { isMuted: this._isMuted, volume: this._volume });
   }
 
   toggleMute() {
+    this.logger.debug('切换静音状态');
     this.setMuted(!this._isMuted);
   }
 
   // 进度控制方法
   seek(time: number) {
+    this.logger.debug('跳转到指定时间', { time });
     this._currentTime = time;
     this._progress = (time / (this._duration || 1)) * 100;
     this.emit('seek', { time, progress: this._progress });
@@ -136,44 +157,52 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   }
 
   setProgress(progress: number) {
+    this.logger.debug('设置进度', { progress });
     this._progress = progress;
     this.emit('progressChange', progress);
   }
 
   // 全屏控制方法
   toggleFullscreen() {
+    this.logger.debug('切换全屏状态');
     this._isFullscreen = !this._isFullscreen;
     this.emit('fullscreenChange', this._isFullscreen);
   }
 
   // 弹幕控制方法
   toggleBarrageInput() {
+    this.logger.debug('切换弹幕输入框显示');
     this._showBarrageInput = !this._showBarrageInput;
     this.emit('barrageInputChange', this._showBarrageInput);
   }
 
   toggleBarrageEnabled() {
+    this.logger.debug('切换弹幕启用状态');
     this._isBarrageEnabled = !this._isBarrageEnabled;
     this.emit('barrageEnabledChange', this._isBarrageEnabled);
   }
 
   setShowBarrageInput(show: boolean) {
+    this.logger.debug('设置弹幕输入框显示状态', { show });
     this._showBarrageInput = show;
     this.emit('barrageInputChange', this._showBarrageInput);
   }
 
   setBarrageEnabled(enabled: boolean) {
+    this.logger.debug('设置弹幕启用状态', { enabled });
     this._isBarrageEnabled = enabled;
     this.emit('barrageEnabledChange', this._isBarrageEnabled);
   }
 
   // 字幕控制方法
   toggleSubtitles() {
+    this.logger.debug('切换字幕显示');
     this._showSubtitles = !this._showSubtitles;
     this.emit('subtitlesVisibilityChange', this._showSubtitles);
   }
 
   setSubtitleTrack(index: number) {
+    this.logger.debug('设置字幕轨道', { index });
     this._currentTrackIndex = index;
     this.emit('subtitleTrackChange', {
       trackIndex: this._currentTrackIndex,
@@ -182,13 +211,14 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   }
 
   setShowSubtitles(show: boolean) {
+    this.logger.debug('设置字幕显示状态', { show });
     this._showSubtitles = show;
     this.emit('subtitlesVisibilityChange', this._showSubtitles);
   }
 
   // 弹幕相关方法
   addBarrage(barrage: Barrage) {
-    console.log('[PlayerCore] 添加弹幕:', barrage);
+    this.logger.debug('添加弹幕', barrage);
     // 确保弹幕有位置、颜色、大小和动画持续时间属性
     const normalizedBarrage: Barrage = {
       ...barrage,
@@ -199,28 +229,28 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
       videoTime: barrage.videoTime ?? this._currentTime // 默认为当前视频时间
     };
     
-    console.log('[PlayerCore] 标准化后的弹幕:', normalizedBarrage);
+    this.logger.debug('标准化后的弹幕', normalizedBarrage);
     this._barrages.push(normalizedBarrage);
-    console.log('[PlayerCore] 当前弹幕总数:', this._barrages.length);
+    this.logger.debug('当前弹幕总数', this._barrages.length);
     this.emit('barragesUpdate', this._barrages);
-    console.log('[PlayerCore] 已发送barragesUpdate事件');
+    this.logger.debug('已发送barragesUpdate事件');
   }
 
   sendBarrage(text: string, userId: string, username: string) {
-    console.log('[PlayerCore] 发送弹幕请求:', { text, userId, username });
+    this.logger.debug('发送弹幕请求', { text, userId, username });
     
     // 检查是否与上一条弹幕重复且时间间隔很短
     const lastBarrage = this._barrages[this._barrages.length - 1];
     if (lastBarrage && lastBarrage.text === text && 
         Date.now() - lastBarrage.timestamp < 100) {
-      console.log('[PlayerCore] 检测到重复弹幕，取消发送');
+      this.logger.debug('检测到重复弹幕，取消发送');
       return;
     }
     
     // 检查是否正在发送相同的弹幕（防止短时间内重复调用）
     const now = Date.now();
     if (this._lastBarrageSendTime && (now - this._lastBarrageSendTime) < 50) {
-      console.log('[PlayerCore] 发送弹幕调用过于频繁，取消发送');
+      this.logger.debug('发送弹幕调用过于频繁，取消发送');
       return;
     }
     
@@ -240,25 +270,82 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
       videoTime: this._currentTime // 记录发送时的视频时间
     };
     
-    console.log('[PlayerCore] 创建新弹幕:', newBarrage);
+    this.logger.debug('创建新弹幕', newBarrage);
     
     // 发送至服务器
     if (this._wsManager) {
-      console.log('[PlayerCore] 通过WebSocket发送弹幕');
+      this.logger.debug('通过WebSocket发送弹幕');
       this._wsManager.sendBarrage(text, userId, username, this._currentTime);
     }
     
     // 本地立即显示（通过WebSocketManager回调）
-    console.log('[PlayerCore] 本地添加弹幕（通过WebSocketManager回调）');
+    this.logger.debug('本地添加弹幕（通过WebSocketManager回调）');
+  }
+
+  // 时间相关方法
+  setTimeUpdate(currentTime: number) {
+    const oldTime = this._currentTime;
+    this._currentTime = currentTime;
+    if (this._duration) {
+      this._progress = (currentTime / this._duration) * 100;
+    }
+    this.emit('timeUpdate', { currentTime: this._currentTime, progress: this._progress });
+    
+    // 当视频时间更新时，过滤并显示相关弹幕
+    // 只有当时间变化较大时才更新弹幕（避免过于频繁的更新）
+    const timeDiff = Math.abs(this._currentTime - oldTime);
+    if (timeDiff > 0.5) {
+      this.filterBarragesByVideoTime();
+    }
+  }
+
+  setDuration(duration: number) {
+    this.logger.debug('设置视频时长', { duration });
+    this._duration = duration;
+    this.emit('durationChange', duration);
+  }
+
+  // 控制栏显示方法
+  showControls() {
+    this.logger.debug('显示控制栏');
+    this.emit('controlsVisibilityChange', true);
+  }
+
+  hideControls() {
+    this.logger.debug('隐藏控制栏');
+    this.emit('controlsVisibilityChange', false);
+  }
+
+  // 插件系统
+  use(plugin: IPlayerPlugin, options?: any) {
+    this.logger.debug('使用插件', { plugin: plugin.name, options });
+    this._pluginManager.use(plugin, options);
+  }
+
+  // 清理方法
+  destroy() {
+    this.logger.debug('销毁播放器核心');
+    if (this._controlsTimeout) {
+      clearTimeout(this._controlsTimeout);
+    }
+    
+    if (this._barrageCleanupInterval) {
+      clearInterval(this._barrageCleanupInterval);
+    }
+    
+    // 销毁插件
+    this._pluginManager.destroy();
+    
+    this.removeAllListeners();
   }
 
   // 根据视频时间过滤弹幕
   filterBarragesByVideoTime() {
-    console.log('[PlayerCore] 根据视频时间过滤弹幕，当前时间:', this._currentTime);
+    this.logger.debug('根据视频时间过滤弹幕，当前时间', this._currentTime);
     
     // 获取当前应该显示的弹幕
     const relevantBarrages = this.getCurrentBarrages();
-    console.log('[PlayerCore] 过滤后的弹幕数量:', relevantBarrages.length);
+    this.logger.debug('过滤后的弹幕数量', relevantBarrages.length);
     
     // 发送过滤后的弹幕到UI层
     this.emit('barragesUpdate', relevantBarrages);
@@ -284,56 +371,26 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     return relevantBarrages;
   }
 
-  // 时间相关方法
-  setTimeUpdate(currentTime: number) {
-    const oldTime = this._currentTime;
-    this._currentTime = currentTime;
-    if (this._duration) {
-      this._progress = (currentTime / this._duration) * 100;
-    }
-    this.emit('timeUpdate', { currentTime: this._currentTime, progress: this._progress });
+  // 手动清理过期弹幕的方法
+  cleanupExpiredBarrages() {
+    this.logger.debug('手动清理过期弹幕');
+    const now = Date.now();
+    const videoTime = this._currentTime;
+    const oldLength = this._barrages.length;
     
-    // 当视频时间更新时，过滤并显示相关弹幕
-    // 只有当时间变化较大时才更新弹幕（避免过于频繁的更新）
-    const timeDiff = Math.abs(this._currentTime - oldTime);
-    if (timeDiff > 0.5) {
-      this.filterBarragesByVideoTime();
-    }
-  }
-
-  setDuration(duration: number) {
-    this._duration = duration;
-    this.emit('durationChange', duration);
-  }
-
-  // 控制栏显示方法
-  showControls() {
-    this.emit('controlsVisibilityChange', true);
-  }
-
-  hideControls() {
-    this.emit('controlsVisibilityChange', false);
-  }
-
-  // 插件系统
-  use(plugin: IPlayerPlugin, options?: any) {
-    this._pluginManager.use(plugin, options);
-  }
-
-  // 清理方法
-  destroy() {
-    if (this._controlsTimeout) {
-      clearTimeout(this._controlsTimeout);
-    }
+    // 保留最近10秒内的弹幕或者与当前视频时间相关的弹幕
+    this._barrages = this._barrages.filter(barrage => {
+      // 保留最近10秒内创建的弹幕
+      if (now - barrage.timestamp < 10000) return true;
+      
+      // 也可以根据其他逻辑判断是否保留弹幕
+      return false;
+    });
     
-    if (this._barrageCleanupInterval) {
-      clearInterval(this._barrageCleanupInterval);
+    if (oldLength !== this._barrages.length) {
+      this.logger.debug('清理了过期弹幕', oldLength - this._barrages.length);
+      this.emit('barragesUpdate', this._barrages);
     }
-    
-    // 销毁插件
-    this._pluginManager.destroy();
-    
-    this.removeAllListeners();
   }
 
   // Getter方法
@@ -399,27 +456,5 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
 
   get username() {
     return this._username;
-  }
-
-  // 手动清理过期弹幕的方法
-  cleanupExpiredBarrages() {
-    console.log('[PlayerCore] 手动清理过期弹幕');
-    const now = Date.now();
-    const videoTime = this._currentTime;
-    const oldLength = this._barrages.length;
-    
-    // 保留最近10秒内的弹幕或者与当前视频时间相关的弹幕
-    this._barrages = this._barrages.filter(barrage => {
-      // 保留最近10秒内创建的弹幕
-      if (now - barrage.timestamp < 10000) return true;
-      
-      // 也可以根据其他逻辑判断是否保留弹幕
-      return false;
-    });
-    
-    if (oldLength !== this._barrages.length) {
-      console.log('[PlayerCore] 清理了', oldLength - this._barrages.length, '条过期弹幕');
-      this.emit('barragesUpdate', this._barrages);
-    }
   }
 }

@@ -117,6 +117,8 @@ export interface VideoProps {
   tracks?: Track[];
   /** 是否启用快捷键（默认为true） */
   enableShortcuts?: boolean;
+  /** 是否启用调试模式（默认为false） */
+  debug?: boolean;
 }
 
 /**

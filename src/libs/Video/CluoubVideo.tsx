@@ -15,6 +15,7 @@ import {useVideoEvents} from "./hooks/useVideoEvents";
 import {useSubtitles} from "./hooks/useSubtitles";
 import {useKeyboardShortcuts} from "./hooks/useKeyboardShortcuts";
 import {useControlsVisibility} from "./hooks/useControlsVisibility";
+import Logger from "./utils/Logger";
 
 const CluoubVideo: React.FC<VideoProps> = ({
   videoSrc,
@@ -39,8 +40,21 @@ const CluoubVideo: React.FC<VideoProps> = ({
   thumbnailWidth = 120,
   thumbnailHeight = 80,
   tracks = [],
-  enableShortcuts = true
+  enableShortcuts = true,
+  debug = false
 }) => {
+  const logger = Logger.getInstance();
+  logger.setComponentName('CluoubVideo');
+  logger.setDebugMode(debug);
+  
+  // 使用useRef确保初始化日志只打印一次
+  const isInitialized = useRef(false);
+  
+  if (!isInitialized.current) {
+    logger.initSuccess();
+    isInitialized.current = true;
+  }
+  
   // 使用播放器核心
   const playerCore = usePlayerCore({ videoSrc, videoId, userId, username });
   
@@ -82,7 +96,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
       setProgress(data.progress);
       
       // 当视频跳转时，清理过期弹幕
-      console.log('[CluoubVideo] 视频跳转到:', data.time);
+      logger.debug('Video seeked to:', data.time);
     };
     const handleProgressChange = (progress: number) => {
       setProgress(progress);
@@ -93,8 +107,8 @@ const CluoubVideo: React.FC<VideoProps> = ({
       handleFullscreenToggle(fullscreen);
     };
     const handleBarragesUpdate = (barrages: Barrage[]) => {
-      console.log('[CluoubVideo] 弹幕更新，当前弹幕数量:', barrages.length);
-      console.log('[CluoubVideo] 弹幕列表:', barrages);
+      logger.debug('Barrages updated, current barrage count:', barrages.length);
+      logger.debug('Barrage list:', barrages);
       setBarrages(barrages);
     };
     const handleTimeUpdate = (data: { currentTime: number; progress: number }) => {
@@ -102,7 +116,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
       setProgress(data.progress);
       
       // 当时间更新时，也更新弹幕
-      console.log('[CluoubVideo] 视频时间更新到:', data.currentTime);
+      logger.debug('Video time updated to:', data.currentTime);
     };
     const handleDurationChange = (duration: number) => {
       setDuration(duration);
@@ -113,7 +127,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
       const video = videoRef.current;
       if (!video || !video.textTracks) return;
       
-      console.log('PlayerCore字幕轨道变化:', { trackIndex, showSubtitles }, '轨道数量:', video.textTracks.length);
+      logger.debug('PlayerCore subtitle track changed:', { trackIndex, showSubtitles }, 'Track count:', video.textTracks.length);
       
       if (showSubtitles && video.textTracks.length > 0) {
         const validIndex = Math.min(trackIndex, video.textTracks.length - 1);
@@ -131,7 +145,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
       const video = videoRef.current;
       if (!video || !video.textTracks) return;
       
-      console.log('PlayerCore字幕可见性变化:', { show });
+      logger.debug('PlayerCore subtitle visibility changed:', { show });
       
       const trackIndex = playerCore.currentTrackIndex;
       if (show && video.textTracks.length > 0) {
@@ -281,14 +295,14 @@ const CluoubVideo: React.FC<VideoProps> = ({
       // 进入全屏
       if (container.requestFullscreen) {
         container.requestFullscreen().catch(err => {
-          console.error("无法进入全屏模式:", err);
+          logger.error("无法进入全屏模式:", err);
         });
       }
     } else {
       // 退出全屏
       if (document.exitFullscreen) {
         document.exitFullscreen().catch(err => {
-          console.error("无法退出全屏模式:", err);
+          logger.error("无法退出全屏模式:", err);
         });
       }
     }
@@ -325,10 +339,10 @@ const CluoubVideo: React.FC<VideoProps> = ({
 
   // 发送弹幕
   const sendBarrage = useCallback((text: string) => {
-    console.log('[CluoubVideo] 准备发送弹幕:', text);
+    logger.debug('Preparing to send barrage:', text);
     const filteredText = filter.current.filter(text);
     if (!filteredText) {
-      console.log('[CluoubVideo] 弹幕文本被过滤器过滤');
+      logger.debug('Barrage text filtered out');
       return; // 过滤后为空
     }
 
@@ -336,12 +350,12 @@ const CluoubVideo: React.FC<VideoProps> = ({
     const lastBarrage = barrages[barrages.length - 1];
     if (lastBarrage && lastBarrage.text === filteredText && 
         Date.now() - lastBarrage.timestamp < 100) {
-      console.log('[CluoubVideo] 检测到重复弹幕，取消发送');
+      logger.debug('Detected duplicate barrage, canceling send');
       return;
     }
 
     // 发送弹幕到播放器核心
-    console.log('[CluoubVideo] 发送弹幕到PlayerCore:', { filteredText, userId, username });
+    logger.debug('Sending barrage to PlayerCore:', { filteredText, userId, username });
     playerCore.sendBarrage(filteredText, userId, username);
   }, [barrages, playerCore, userId, username]);
 
