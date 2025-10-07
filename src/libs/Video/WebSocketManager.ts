@@ -6,13 +6,17 @@ export class WebSocketManager {
   private callbacks: { [key: string]: Function } = {};
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
+  private userId: string = ''; // 添加用户ID以识别自己发送的消息
 
   constructor(videoId: string) {
     this.videoId = videoId;
   }
 
-  connect(): void {
+  connect(userId: string): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) return;
+    
+    // 保存用户ID
+    this.userId = userId;
     
     // 在实际项目中，这里应该连接到真实的WebSocket服务器
     // 由于这是一个演示组件，我们暂时使用模拟方式
@@ -61,7 +65,7 @@ export class WebSocketManager {
     console.log(`Reconnecting... attempt ${this.reconnectAttempts}`);
     
     setTimeout(() => {
-      this.connect();
+      this.connect(this.userId);
     }, 2000 * this.reconnectAttempts);
   }
 
@@ -69,19 +73,25 @@ export class WebSocketManager {
     // 在实际项目中，这里会通过WebSocket发送弹幕
     console.log(`Sending barrage: ${text} from ${username}`);
     
-    // 模拟发送成功
-    const barrage = {
-      id: uuidv4(),
-      text,
-      userId,
-      username,
-      timestamp: Date.now()
-    };
+    // 保存用户ID
+    this.userId = userId;
     
-    // 如果有回调函数，调用它
-    if (this.callbacks.barrage) {
-      this.callbacks.barrage(barrage);
-    }
+    // 模拟发送过程
+    setTimeout(() => {
+      // 模拟服务器响应，将弹幕广播给所有用户（包括发送者）
+      const barrage = {
+        id: uuidv4(),
+        text,
+        userId,
+        username,
+        timestamp: Date.now()
+      };
+      
+      // 如果有回调函数，调用它
+      if (this.callbacks.barrage) {
+        this.callbacks.barrage(barrage);
+      }
+    }, 100);
   }
 
   onBarrage(callback: Function): void {
@@ -89,6 +99,12 @@ export class WebSocketManager {
   }
 
   handleBarrage(barrage: any): void {
+    // 防止处理自己发送的消息
+    if (barrage.userId === this.userId) {
+      console.log('Ignoring own barrage message');
+      return;
+    }
+    
     if (this.callbacks.barrage) {
       this.callbacks.barrage(barrage);
     }

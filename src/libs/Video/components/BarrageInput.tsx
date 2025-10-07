@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {Send} from 'lucide-react';
 import './BarrageInput.css';
 
@@ -23,7 +23,7 @@ const BarrageInput: React.FC<BarrageInputProps> = ({
   };
 
   // 发送弹幕
-  const sendBarrage = () => {
+  const sendBarrage = useCallback(() => {
     console.log('[BarrageInput] 准备发送弹幕:', input);
     if (!input.trim() || !isPlaying) {
       console.log('[BarrageInput] 弹幕为空或视频未播放，取消发送');
@@ -35,7 +35,21 @@ const BarrageInput: React.FC<BarrageInputProps> = ({
     setInput('');
     console.log('[BarrageInput] 发送弹幕:', textToSend);
     onSend(textToSend);
-  };
+  }, [input, isPlaying, onSend]);
+
+  // 处理回车键发送
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendBarrage();
+    }
+  }, [sendBarrage]);
+
+  // 处理按钮点击发送
+  const handleButtonClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    sendBarrage();
+  }, [sendBarrage]);
 
   return (
     <div className="barrage-input-container">
@@ -44,12 +58,12 @@ const BarrageInput: React.FC<BarrageInputProps> = ({
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && sendBarrage()}
+          onKeyPress={handleKeyPress}
           placeholder="发送弹幕 (按Enter发送)"
           className="barrage-input"
         />
         <button 
-          onClick={sendBarrage}
+          onClick={handleButtonClick}
           className="barrage-send-btn"
         >
           {getIcon('sendIcon', <Send size={16} />)}

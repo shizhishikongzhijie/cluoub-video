@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import {Barrage, VideoProps} from "./Video.types";
 import {BarrageFilter} from "./BarrageFilter";
 import PlayButton from "./components/PlayButton";
@@ -278,7 +278,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
   };
 
   // 发送弹幕
-  const sendBarrage = (text: string) => {
+  const sendBarrage = useCallback((text: string) => {
     console.log('[CluoubVideo] 准备发送弹幕:', text);
     const filteredText = filter.current.filter(text);
     if (!filteredText) {
@@ -297,7 +297,7 @@ const CluoubVideo: React.FC<VideoProps> = ({
     // 发送弹幕到播放器核心
     console.log('[CluoubVideo] 发送弹幕到PlayerCore:', { filteredText, userId, username });
     playerCore.sendBarrage(filteredText, userId, username);
-  };
+  }, [barrages, playerCore, userId, username]);
 
   // 计算容器样式
   const getContainerStyle = () => {

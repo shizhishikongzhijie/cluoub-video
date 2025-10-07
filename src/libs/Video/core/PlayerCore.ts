@@ -19,6 +19,7 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   private _currentTime: number = 0;
   private _progress: number = 0;
   private _isFullscreen: boolean = false;
+  private _lastBarrageSendTime: number = 0; // 添加这一行用于跟踪最后一次弹幕发送时间
 
   // 弹幕相关
   private _barrages: Barrage[] = [];
@@ -66,7 +67,7 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     this._wsManager = new WebSocketManager(this._videoId);
     
     // 连接WebSocket
-    this._wsManager.connect();
+    this._wsManager.connect(this._userId);
     
     // 处理新弹幕
     this._wsManager.onBarrage((newBarrage: Barrage) => {
@@ -209,12 +210,22 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
       return;
     }
     
+    // 检查是否正在发送相同的弹幕（防止短时间内重复调用）
+    const now = Date.now();
+    if (this._lastBarrageSendTime && (now - this._lastBarrageSendTime) < 50) {
+      console.log('[PlayerCore] 发送弹幕调用过于频繁，取消发送');
+      return;
+    }
+    
+    // 记录发送时间
+    this._lastBarrageSendTime = now;
+    
     const newBarrage: Barrage = {
       id: uuidv4(),
       text,
       userId,
       username,
-      timestamp: Date.now(),
+      timestamp: now,
       position: Math.random() * 80 + 10, // 10% to 90% 垂直位置
       color: '#ffffff',
       size: 16,
@@ -229,9 +240,9 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
       this._wsManager.sendBarrage(text, userId, username);
     }
     
-    // 本地立即显示
-    console.log('[PlayerCore] 本地添加弹幕');
-    this.addBarrage(newBarrage);
+    // 本地立即显示（仅在WebSocketManager没有立即回调时才需要）
+    // 在WebSocketManager中已经处理了本地显示，这里不需要重复添加
+    console.log('[PlayerCore] 本地添加弹幕（通过WebSocketManager回调）');
   }
 
   // 时间相关方法
