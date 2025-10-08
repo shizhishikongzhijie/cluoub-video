@@ -37,6 +37,9 @@ export type {
     PlayerComponentConfig,
     IPlayerCore
 } from './core/IPlayerCore';
+export {
+    PlayerComponentConfigType
+} from './core/IPlayerCore';
 // 导出自定义Hooks
 export {
     usePlayerCore,

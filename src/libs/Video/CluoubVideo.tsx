@@ -13,7 +13,8 @@ import {useSubtitles} from "./hooks/useSubtitles";
 import {useKeyboardShortcuts} from "./hooks/useKeyboardShortcuts";
 import {useControlsVisibility} from "./hooks/useControlsVisibility";
 import Logger from "./utils/Logger";
-import {ControlButtonConfig, PlayerComponentConfig, VideoProps, VideoRef} from "./Video.types";
+import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig, VideoProps, VideoRef} from "./Video.types";
+import {CoverPlugin} from "./plugins/CoverPlugin";
 
 const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props, ref) => {
     const {
@@ -42,6 +43,8 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
         enableShortcuts = true,
         debug = false,
         plugins = [],
+        coverImage,
+        showCover = true,
     } = props
     const logger = Logger.getInstance();
     logger.setComponentName('CluoubVideo');
@@ -239,26 +242,35 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
         };
     }, [playerCore]);
 
-// 第二个useEffect：在事件监听器注册后再注册插件
+    // 第二个useEffect：在事件监听器注册后再注册插件
     useEffect(() => {
         const video = videoRef.current;
         if (!video) return;
 
+        // 注册默认插件
+        if (showCover && coverImage) {
+            const coverPlugin = new CoverPlugin({
+                coverImage,
+                showCover
+            });
+            playerCore.use(coverPlugin);
+        }
+        
         // 注册用户提供的插件
         if (plugins && Array.isArray(plugins)) {
-            plugins.forEach(plugin => {
-                if (plugin) {
+            plugins.forEach(pluginConfig => {
+                if (pluginConfig) {
                     // 处理插件配置对象 {plugin: IPlayerPlugin, options?: any}
-                    if (typeof plugin === 'object' && 'plugin' in plugin) {
-                        playerCore.use(plugin.plugin, plugin.options);
-                    } else if (typeof plugin === 'object' && plugin.name && typeof plugin.install === 'function') {
+                    if (typeof pluginConfig === 'object' && 'plugin' in pluginConfig) {
+                        playerCore.use(pluginConfig.plugin, pluginConfig.options);
+                    } else if (typeof pluginConfig === 'object' && pluginConfig.name && typeof pluginConfig.install === 'function') {
                         // 直接传入的插件实例
-                        playerCore.use(plugin);
+                        playerCore.use(pluginConfig as IPlayerPlugin);
                     }
                 }
             });
         }
-    }, [playerCore, plugins]); // 依赖playerCore和plugins
+    }, [playerCore, plugins]);
 
     // 监听缩略图状态变化
     useEffect(() => {
@@ -452,7 +464,7 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
 
                 {/* 渲染插件注册的组件 */}
                 {pluginComponents.map(component => (
-                        <div key={component.id} className="plugin-component-center">
+                        <div key={component.id} id={component.id} className={`plugin-component ${component.type}`}>
                             {component.component}
                         </div>
                     ))}

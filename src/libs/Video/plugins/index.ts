@@ -1,17 +1,20 @@
 import {PluginManager} from './PluginManager';
 import DemoPlugin from './DemoPlugin';
+import {CoverPlugin} from './CoverPlugin';
 import {IPlayerPlugin} from "../core";
 
 // 直接导出所有需要的内容
 export {
   PluginManager,
-  DemoPlugin
+  DemoPlugin,
+  CoverPlugin
 };
 
 
 // 默认插件列表
 export const DefaultPlugins = {
-  demo: DemoPlugin
+  demo: DemoPlugin,
+  cover: CoverPlugin
 };
 
 // 插件注册辅助函数

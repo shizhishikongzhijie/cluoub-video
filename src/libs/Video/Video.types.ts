@@ -194,7 +194,7 @@ export interface VideoProps {
     plugin: IPlayerPlugin;
     /** 插件配置选项 */
     options?: any;
-  }>;
+  }|IPlayerPlugin>;
 
   /** 主题颜色 */
   themeColor?: string;
@@ -204,6 +204,12 @@ export interface VideoProps {
 
   /** 是否显示控制栏 */
   showControls?: boolean;
+
+  /** 封面图片URL */
+  coverImage?: string;
+
+  /** 是否显示封面 */
+  showCover?: boolean;
 }
 
 

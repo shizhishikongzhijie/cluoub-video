@@ -14,6 +14,7 @@ function App() {
                 username="用户名"
                 width="800px"
                 aspectRatio="16:9"
+                coverImage="https://image.e-esine.cn/img/%E6%97%B6%E4%B9%8B%E4%B8%96-img2-1731421919537.webp"
                 customIcons={{
                     // playIcon: <Heart size={20} />,
                     progressThumbIcon: <Circle size={16} fill="white"/>
@@ -35,9 +36,7 @@ function App() {
                         src: '/video_原始.vtt'
                     }
                 ]}
-                plugins={[{
-                    plugin: new DanmuPlugin()
-                }]}
+                plugins={[ new DanmuPlugin()]}
             />
         </>
     )

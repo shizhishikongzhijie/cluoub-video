@@ -17,7 +17,10 @@ export interface ControlButtonConfig {
     /** 点击事件处理函数 */
     onClick?: () => void;
 }
-
+export enum PlayerComponentConfigType {
+    COVER = 'cover',
+    NO_CONTROL_BOTTOM = 'no_control_bottom',
+}
 /**
  * 播放器组件配置接口定义
  */
@@ -26,6 +29,8 @@ export interface PlayerComponentConfig {
     id: string;
     /** 组件内容 */
     component: React.ReactNode;
+    /** 组件类型 */
+    type: PlayerComponentConfigType;
     /** 组件顺序 */
     order?: number;
     /** 是否绝对定位 */

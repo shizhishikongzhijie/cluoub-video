@@ -1,4 +1,5 @@
-import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig, PlayerCore} from '../core';
+import {ControlButtonConfig, IPlayerPlugin, IPlayerPluginApi, PlayerComponentConfig, PlayerCore} from '../core';
+import {Logger} from "../utils";
 
 /**
  * 插件管理器
@@ -6,6 +7,7 @@ import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig, PlayerCore} f
 export class PluginManager {
   private plugins: Map<string, IPlayerPlugin> = new Map();
   private player: PlayerCore;
+  private logger: Logger;
   // 存储所有注册的控制按钮配置
   private controlButtons: ControlButtonConfig[] = [];
   // 存储所有注册的组件配置
@@ -13,6 +15,7 @@ export class PluginManager {
 
   constructor(player: PlayerCore) {
     this.player = player;
+    this.logger = Logger.getInstance();
   }
 
   /**
@@ -22,14 +25,14 @@ export class PluginManager {
    */
   use(plugin: IPlayerPlugin, options?: any): void {
     if (this.plugins.has(plugin.name)) {
-      console.warn(`Plugin ${plugin.name} is already registered.`);
+      this.logger.debug(`Plugin ${plugin.name} is already registered.`);
       return;
     }
 
     this.plugins.set(plugin.name, plugin);
     
     // 提供插件API
-    const pluginAPI = {
+    const pluginAPI: IPlayerPluginApi = {
       player: this.player,
       registerControlButton: this.player.registerControlButton.bind(this.player),
       unregisterControlButton: this.player.unregisterControlButton.bind(this.player),
@@ -42,7 +45,14 @@ export class PluginManager {
         duration: this.player?.duration,
         volume: this.player?.volume,
         isMuted: this.player?.isMuted,
-        isFullscreen: this.player?.isFullscreen
+        isFullscreen: this.player?.isFullscreen,
+        showSubtitles: this.player?.showSubtitles,
+        currentTrackIndex: this.player?.currentTrackIndex,
+        progress: this.player?.progress,
+        videoSrc: this.player?.videoSrc,
+        videoId: this.player?.videoId,
+        userId: this.player?.userId,
+        username: this.player?.username,
       })
     };
     

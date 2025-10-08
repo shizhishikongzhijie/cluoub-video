@@ -4,6 +4,7 @@ import {
     type IPlayerPlugin,
     type IPlayerPluginApi,
     type PlayerComponentConfig,
+    PlayerComponentConfigType,
 } from "../libs/Video";
 import {MessageSquare} from "lucide-react";
 
@@ -37,6 +38,7 @@ export class DanmuPlugin implements IPlayerPlugin{
             id: 'demo-overlay',
             order: 10,
             absolute: true,
+            type: PlayerComponentConfigType.NO_CONTROL_BOTTOM,
             component: (
                 <div
                     style={{
