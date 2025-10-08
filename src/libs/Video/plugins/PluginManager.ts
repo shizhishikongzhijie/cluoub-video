@@ -35,8 +35,10 @@ export class PluginManager {
     const pluginAPI: IPlayerPluginApi = {
       player: this.player,
       registerControlButton: this.player.registerControlButton.bind(this.player),
+      updateControlButton: this.player.updateControlButton.bind(this.player),
       unregisterControlButton: this.player.unregisterControlButton.bind(this.player),
       registerComponent: this.player.registerComponent.bind(this.player),
+      updateComponent: this.player.updateComponent.bind(this.player),
       unregisterComponent: this.player.unregisterComponent.bind(this.player),
       // 提供播放器状态信息
       getPlayerState: () => ({

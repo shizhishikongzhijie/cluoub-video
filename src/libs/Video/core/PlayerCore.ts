@@ -158,7 +158,21 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   getControlButtons(): ControlButtonConfig[] {
     return [...this._controlButtons];
   }
-  
+
+  /**
+   * 更新控制按钮
+   * @param buttonId 要更新的按钮ID
+   * @param newButton 新的按钮配置
+   */
+  updateControlButton(buttonId: string, newButton: Partial<ControlButtonConfig>): void {
+    this.logger.debug('更新控制按钮', { buttonId, newButton });
+    const index = this._controlButtons.findIndex(button => button.id === buttonId);
+    if (index !== -1) {
+      this._controlButtons[index] = { ...this._controlButtons[index], ...newButton };
+      this.emit('controlButtonsUpdate', this._controlButtons);
+    }
+  }
+
   // 组件注册方法
   registerComponent(component: PlayerComponentConfig): void {
     this.logger.debug('注册播放器组件', { componentId: component.id });
@@ -183,6 +197,20 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   
   getComponents(): PlayerComponentConfig[] {
     return [...this._components];
+  }
+
+  /**
+   * 更新播放器组件
+   * @param componentId 要更新的组件ID
+   * @param newComponent 新的组件配置
+   */
+  updateComponent(componentId: string, newComponent: Partial<PlayerComponentConfig>): void {
+    this.logger.debug('更新播放器组件', { componentId, newComponent });
+    const index = this._components.findIndex(component => component.id === componentId);
+    if (index !== -1) {
+      this._components[index] = { ...this._components[index], ...newComponent };
+      this.emit('componentsUpdate', this._components);
+    }
   }
 
   // 字幕控制方法

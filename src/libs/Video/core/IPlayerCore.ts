@@ -52,6 +52,13 @@ export interface IPlayerPluginApi {
     registerControlButton: IPlayerCore['registerControlButton'],
 
     /**
+     * 更新控制按钮
+     * @param buttonId 要更新的按钮ID
+     * @param newButton 新的按钮配置对象
+     */
+    updateControlButton: (buttonId: string, newButton: Partial<ControlButtonConfig>) => void,
+
+    /**
      * 注销控制按钮
      * @param buttonId 要注销的按钮ID
      */
@@ -62,6 +69,13 @@ export interface IPlayerPluginApi {
      * @param component 组件配置对象
      */
     registerComponent: IPlayerCore['registerComponent'],
+
+    /**
+     * 更新播放器组件
+     * @param componentId 要更新的组件ID
+     * @param newComponent 新的组件配置对象
+     */
+    updateComponent: (componentId: string, newComponent: Partial<PlayerComponentConfig>) => void,
 
     /**
      * 注销播放器组件
