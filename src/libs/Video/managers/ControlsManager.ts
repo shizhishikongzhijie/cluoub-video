@@ -7,7 +7,9 @@ export class ControlsManager {
   private _isPlaying: boolean = false;
   private readonly _hideDelay: number = 3000; // 3秒后隐藏控制栏
 
-  constructor() {}
+  constructor(isPlaying?: boolean) {
+    this.init(isPlaying||true)
+  }
 
   /**
    * 初始化控制栏管理器
