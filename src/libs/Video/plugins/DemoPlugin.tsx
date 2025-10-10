@@ -1,4 +1,4 @@
-import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig} from '../core';
+import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig, PlayerComponentConfigType} from '../core';
 
 // 示例插件
 class DemoPlugin implements IPlayerPlugin {
@@ -56,6 +56,7 @@ class DemoPlugin implements IPlayerPlugin {
       id: 'demo-overlay',
       order: 10,
       absolute: true,
+      type: PlayerComponentConfigType.COVER,
       component: (
         <div 
           style={{

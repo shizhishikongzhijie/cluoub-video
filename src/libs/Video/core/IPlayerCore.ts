@@ -254,4 +254,13 @@ export interface IPlayerCore {
   readonly userId: string;
   /** 用户名 */
   readonly username: string;
+
+  /** 视频类型 */
+  readonly videoType: any;
+
+  /** DASH视频数据前缀 */
+  readonly dataPrefix: string;
+
+  /** 初始化DASH播放器 */
+  initDashPlayer(videoElement: HTMLVideoElement): void;
 }

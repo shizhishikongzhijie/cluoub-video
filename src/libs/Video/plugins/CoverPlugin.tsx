@@ -51,7 +51,7 @@ export class CoverPlugin implements IPlayerPlugin {
     };
   }
 
-  install(player: IPlayerCore, options?: CoverPluginOptions) {
+  install(player: IPlayerCore, _options?: CoverPluginOptions) {
     this.player = player;
   }
 

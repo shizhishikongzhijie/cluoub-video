@@ -13,7 +13,8 @@ import {useSubtitles} from "./hooks/useSubtitles";
 import {useKeyboardShortcuts} from "./hooks/useKeyboardShortcuts";
 import {useControlsVisibility} from "./hooks/useControlsVisibility";
 import Logger from "./utils/Logger";
-import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig, VideoProps, VideoRef} from "./Video.types";
+import {VideoProps, VideoRef, VideoType} from "./Video.types";
+import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig} from "./core/IPlayerCore";
 import {CoverPlugin} from "./plugins/CoverPlugin";
 
 const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props, ref) => {
@@ -63,7 +64,9 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
         videoSrc: videoSrc || '',
         videoId: videoId || '',
         userId: userId || '',
-        username: username || ''
+        username: username || '',
+        videoType: VideoType.DASH,
+        dataPrefix: ''
     });
 
     // 组件ref，用于暴露方法给外部
@@ -281,6 +284,21 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
     // 使用视频事件Hook
     useVideoEvents(videoRef as React.RefObject<HTMLVideoElement>, playerCore, isMuted, volume, currentTime);
 
+    // 初始化DASH播放器（如果需要）
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video || playerCore.videoType !== VideoType.DASH) return;
+
+        // 初始化DASH播放器
+        playerCore.initDashPlayer(video);
+
+        // 清理函数
+        return () => {
+            // PlayerCore的destroy方法会处理DASH播放器的清理
+            playerCore.destroy()
+        };
+    }, [playerCore.videoType]);
+
     // 使用字幕Hook
     // 转换tracks为符合Track类型的数组
     const processedTracks = (tracks || []).map((track, index) => ({
@@ -456,7 +474,7 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
             <div className="video-wrapper">
                 <video
                     ref={videoRef}
-                    src={videoSrc}
+                    src={playerCore.videoType !== VideoType.DASH ? videoSrc : undefined}
                     playsInline
                     muted={isMuted}
                     className="video-element"

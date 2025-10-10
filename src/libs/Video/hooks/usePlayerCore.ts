@@ -11,6 +11,8 @@ export const usePlayerCore = (options: {
   videoId: string;
   userId: string;
   username: string;
+  videoType?: any;
+  dataPrefix?: string;
 }) => {
   const playerCoreRef = useRef<PlayerCore | null>(null);
   

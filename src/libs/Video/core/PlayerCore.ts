@@ -2,6 +2,7 @@ import {EventEmitter} from './EventEmitter';
 import {ControlButtonConfig, IPlayerCore, IPlayerPlugin, PlayerComponentConfig} from './IPlayerCore';
 import {PluginManager} from '../plugins';
 import Logger from '../utils/Logger';
+import {VideoType} from '../Video.types';
 
 /**
  * 播放器核心类，负责管理播放器状态和逻辑
@@ -27,6 +28,40 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   private _videoId: string;
   private _userId: string;
   private _username: string;
+  // DASH播放器实例
+  private _dashPlayer: any = null;
+
+  constructor(options: {
+    videoSrc: string;
+    videoId: string;
+    userId: string;
+    username: string;
+    videoType?: VideoType;
+    dataPrefix?: string;
+  }) {
+    super();
+    this._videoSrc = options.videoSrc;
+    this._videoId = options.videoId;
+    this._userId = options.userId;
+    this._username = options.username;
+    this._videoType = options.videoType || VideoType.NORMAL;
+    this._dataPrefix = options.dataPrefix || '';
+
+    // 初始化日志管理器
+    this.logger = Logger.getInstance();
+    this.logger.setComponentName('PlayerCore');
+
+    // 确保初始化日志只打印一次
+    if (!this.isInitialized) {
+      this.logger.initSuccess();
+      this.isInitialized = true;
+    }
+
+    // 初始化插件管理器
+    this._pluginManager = new PluginManager(this);
+  }
+  
+  private _videoType: VideoType;
   
   // 管理器
   private _pluginManager: PluginManager;
@@ -40,43 +75,79 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   // 定时器
   private _controlsTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(options: {
-    videoSrc: string;
-    videoId: string;
-    userId: string;
-    username: string;
-  }) {
-    super();
-    this._videoSrc = options.videoSrc;
-    this._videoId = options.videoId;
-    this._userId = options.userId;
-    this._username = options.username;
-    
-    // 初始化日志管理器
-    this.logger = Logger.getInstance();
-    this.logger.setComponentName('PlayerCore');
-    
-    // 确保初始化日志只打印一次
-    if (!this.isInitialized) {
-      this.logger.initSuccess();
-      this.isInitialized = true;
+  get videoType() {
+    return this._videoType;
+  }
+
+  private _dataPrefix: string;
+
+  get dataPrefix() {
+    return this._dataPrefix;
+  }
+
+  // 初始化DASH播放器
+  initDashPlayer(videoElement: HTMLVideoElement): void {
+    if (this._videoType !== VideoType.DASH || !this._videoSrc.includes('.mpd')) {
+      return;
     }
-    
-    // 初始化插件管理器
-    this._pluginManager = new PluginManager(this);
-  }
 
-  // 播放控制方法
-  play() {
-    this.logger.debug('播放视频');
-    this._isPlaying = true;
-    this.emit('play');
-  }
+    try {
+      // 动态导入dashjs库以避免在非DASH模式下加载
+      import('dashjs').then((dashjs) => {
+        this._dashPlayer = dashjs.MediaPlayer().create();
 
-  pause() {
-    this.logger.debug('暂停视频');
-    this._isPlaying = false;
-    this.emit('pause');
+        // 设置数据前缀（如果提供）
+        if (this._dataPrefix) {
+          // 保存PlayerCore上下文引用
+          console.log('数据前缀设置为:', this._dataPrefix);
+          const self = this;
+          // 确保前缀末尾有斜杠
+          const dataPrefix = self._dataPrefix.endsWith('/') ? self._dataPrefix : self._dataPrefix + '/';
+
+          // 配置URL替换规则以添加前缀
+          this._dashPlayer.extend('Stream', (MediaPlayer: any) => {
+            MediaPlayer.prototype.getFragmentRequestURL = function(url: string): string {
+              // 检查URL是否为相对路径
+              console.log('处理URL:', url);
+              if (url && typeof url === 'string' &&
+                  !url.startsWith('http://') &&
+                  !url.startsWith('https://') &&
+                  !url.startsWith('blob:') &&
+                  !url.startsWith('/')) {
+                const newUrl = dataPrefix + url;
+                console.log('转换为:', newUrl);
+                return newUrl;
+              }
+              return url;
+            };
+            return MediaPlayer;
+          });
+        }
+
+        // 配置DASH播放器
+        this._dashPlayer.updateSettings({
+          streaming: {
+            buffer: {
+              stableBufferTime: 20,
+              bufferTimeAtTopQuality: 30
+            },
+            abr: {
+              useDefaultABRRules: true,
+              ABRStrategy: 'abrDynamic'
+            }
+          }
+        });
+
+        // 附加视频元素
+        this._dashPlayer.initialize(videoElement, this._videoSrc, false);
+
+        this.logger.debug('DASH播放器初始化成功');
+      }).catch((error) => {
+        this.logger.error('DASH播放器初始化失败:', error);
+      });
+    } catch (error) {
+      this.logger.error('加载DASH播放器失败:', error);
+    }
   }
 
   togglePlay() {
@@ -107,15 +178,16 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     this.setMuted(!this._isMuted);
   }
 
-  // 进度控制方法
-  seek(time: number) {
-    this.logger.debug('跳转到指定时间', { time });
-    this._currentTime = time;
-    this._progress = (time / (this._duration || 1)) * 100;
-    this.emit('seek', { time, progress: this._progress });
-    
-    // 强制更新所有监听器
-    this.emit('timeUpdate', { currentTime: this._currentTime, progress: this._progress });
+  // 播放控制方法
+  play() {
+    this.logger.debug('播放视频');
+    this._isPlaying = true;
+    this.emit('play');
+
+    // 如果是DASH播放器且已初始化，则直接控制DASH播放器
+    if (this._dashPlayer) {
+      this._dashPlayer.play();
+    }
   }
 
   setProgress(progress: number) {
@@ -272,17 +344,15 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     return this._pluginManager.get(pluginName);
   }
 
-  // 清理方法
-  destroy() {
-    this.logger.debug('销毁播放器核心');
-    if (this._controlsTimeout) {
-      clearTimeout(this._controlsTimeout);
+  pause() {
+    this.logger.debug('暂停视频');
+    this._isPlaying = false;
+    this.emit('pause');
+
+    // 如果是DASH播放器且已初始化，则直接控制DASH播放器
+    if (this._dashPlayer) {
+      this._dashPlayer.pause();
     }
-    
-    // 销毁插件
-    this._pluginManager.destroy();
-    
-    this.removeAllListeners();
   }
 
   // Getter方法
@@ -338,5 +408,45 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
 
   get username() {
     return this._username;
+  }
+
+  // 进度控制方法
+  seek(time: number) {
+    this.logger.debug('跳转到指定时间', { time });
+    this._currentTime = time;
+    this._progress = (time / (this._duration || 1)) * 100;
+    this.emit('seek', { time, progress: this._progress });
+
+    // 如果是DASH播放器且已初始化，则直接控制DASH播放器
+    if (this._dashPlayer) {
+      this._dashPlayer.seek(time);
+    }
+
+    // 强制更新所有监听器
+    this.emit('timeUpdate', { currentTime: this._currentTime, progress: this._progress });
+  }
+
+  // 清理方法
+  destroy() {
+    this.logger.debug('销毁播放器核心');
+    if (this._controlsTimeout) {
+      clearTimeout(this._controlsTimeout);
+    }
+
+    // 清理DASH播放器
+    if (this._dashPlayer) {
+      try {
+        this._dashPlayer.reset();
+        this._dashPlayer = null;
+        this.logger.debug('DASH播放器已销毁');
+      } catch (error) {
+        this.logger.error('销毁DASH播放器失败:', error);
+      }
+    }
+
+    // 销毁插件
+    this._pluginManager.destroy();
+
+    this.removeAllListeners();
   }
 }

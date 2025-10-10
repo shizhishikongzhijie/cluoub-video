@@ -4,17 +4,8 @@
  */
 
 import React from 'react';
-import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig} from './core';
+import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig} from "./core/IPlayerCore";
 
-/**
- * 重新导出核心接口以保持模块一致性
- * 允许直接从Video.types导入这些接口
- */
-export { 
-  ControlButtonConfig, 
-  PlayerComponentConfig, 
-  IPlayerPlugin
-};
 
 /**
  * 向后兼容的类型别名
@@ -114,6 +105,16 @@ export interface ControlConfig {
 }
 
 /**
+ * 视频类型枚举
+ */
+export enum VideoType {
+  /** 普通视频类型（MP4、WebM等） */
+  NORMAL = 'normal',
+  /** DASH视频类型 */
+  DASH = 'dash'
+}
+
+/**
  * 视频组件属性接口定义
  * 配置视频播放器组件的所有属性和行为
  * @interface VideoProps
@@ -130,6 +131,12 @@ export interface VideoProps {
 
   /** 当前用户名 */
   username: string;
+
+  /** 视频类型，默认为普通视频 */
+  videoType?: VideoType;
+
+  /** DASH视频数据前缀，用于拼接MPD文件中定义的片段URL */
+  dataPrefix?: string;
 
   /** 视频宽度（可选，像素值或CSS单位） */
   width?: string | number;
