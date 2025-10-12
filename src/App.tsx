@@ -1,5 +1,5 @@
 import './App.css'
-import {CluoubVideo} from "./libs/Video";
+import {CluoubVideo, VideoType} from "./libs/Video";
 import {Circle} from "lucide-react";
 import {DanmuPlugin} from "./plugins/DanmuPlugin";
 
@@ -9,7 +9,7 @@ function App() {
         <>
             <CluoubVideo
                 videoSrc="/format.mpd"
-                videoType="dash"
+                videoType={VideoType.DASH}
                 videoId="视频ID"
                 userId="用户ID"
                 username="用户名"

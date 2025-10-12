@@ -17,7 +17,9 @@ export type {
     Track,
     Barrage
 } from './Video.types';
-
+export {
+    VideoType
+} from './Video.types';
 // 导出核心类
 export {PlayerCore} from './core/PlayerCore';
 

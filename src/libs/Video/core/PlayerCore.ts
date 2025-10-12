@@ -3,6 +3,7 @@ import {ControlButtonConfig, IPlayerCore, IPlayerPlugin, PlayerComponentConfig} 
 import {PluginManager} from '../plugins';
 import Logger from '../utils/Logger';
 import {VideoType} from '../Video.types';
+import dashjs from "dashjs";
 
 /**
  * 播放器核心类，负责管理播放器状态和逻辑
@@ -29,7 +30,7 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   private _userId: string;
   private _username: string;
   // DASH播放器实例
-  private _dashPlayer: any = null;
+  private _dashPlayer: dashjs.MediaPlayerClass | null= null;
 
   constructor(options: {
     videoSrc: string;
@@ -93,7 +94,7 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
 
     try {
       // 动态导入dashjs库以避免在非DASH模式下加载
-      import('dashjs').then((dashjs) => {
+      try{
         this._dashPlayer = dashjs.MediaPlayer().create();
 
         // 设置数据前缀（如果提供）
@@ -105,11 +106,11 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
           const dataPrefix = self._dataPrefix.endsWith('/') ? self._dataPrefix : self._dataPrefix + '/';
 
           // 配置URL替换规则以添加前缀
-          this._dashPlayer.extend('Stream', (MediaPlayer: any) => {
+          this._dashPlayer?.extend('Stream', (MediaPlayer: any) => {
             MediaPlayer.prototype.getFragmentRequestURL = function(url: string): string {
               // 检查URL是否为相对路径
               console.log('处理URL:', url);
-              if (url && typeof url === 'string' &&
+              if (url &&
                   !url.startsWith('http://') &&
                   !url.startsWith('https://') &&
                   !url.startsWith('blob:') &&
@@ -121,7 +122,7 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
               return url;
             };
             return MediaPlayer;
-          });
+          },true);
         }
 
         // 配置DASH播放器
@@ -142,9 +143,9 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
         this._dashPlayer.initialize(videoElement, this._videoSrc, false);
 
         this.logger.debug('DASH播放器初始化成功');
-      }).catch((error) => {
+      } catch(error) {
         this.logger.error('DASH播放器初始化失败:', error);
-      });
+      }
     } catch (error) {
       this.logger.error('加载DASH播放器失败:', error);
     }
