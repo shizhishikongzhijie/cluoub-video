@@ -1,6 +1,7 @@
-import React, {useCallback, useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Volume2, VolumeX} from 'lucide-react';
 import './VolumeControl.css';
+import Popover from "../common/popover";
 
 interface VolumeControlProps {
   isMuted: boolean;
@@ -23,6 +24,7 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
   const volumeContainerRef = useRef<HTMLDivElement>(null);
   const volumeBufferRef = useRef<HTMLDivElement>(null);
   const isVolumeChanging = useRef(false);
+  const [isPopoverVisible, setIsPopoverVisible] = useState(false);
 
   // 获取图标，优先使用自定义图标，否则使用默认图标
   const getIcon = (iconType: keyof NonNullable<VolumeControlProps['customIcons']>, defaultIcon: React.ReactNode) => {
@@ -32,7 +34,7 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
   // 更新音量条显示
   const updateVolumeBuffer = useCallback(() => {
     if (volumeBufferRef.current) {
-      volumeBufferRef.current.style.transform = `scaleX(${volume})`;
+      volumeBufferRef.current.style.transform = `scaleY(${volume})`;
     }
   }, [volume]);
 
@@ -45,16 +47,19 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
   const handleVolumeMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isVolumeChanging.current || !volumeContainerRef.current) return;
     
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     const rect = volumeContainerRef.current.getBoundingClientRect();
-    const position = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    
+    const position = Math.max(0, Math.min(1, 1- ( clientY -rect.top ) / rect.height));
     onVolumeChange(position);
   }, [onVolumeChange]);
 
   // 音量控制结束
   const handleVolumeEnd = useCallback(() => {
     isVolumeChanging.current = false;
+    setTimeout(() => {
+      setIsPopoverVisible(false);
+    }, 500)
+
   }, []);
 
   // 添加事件监听器处理音量拖拽
@@ -88,42 +93,43 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
   // 音量控制开始
   const handleVolumeStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     isVolumeChanging.current = true;
+    setIsPopoverVisible(true);
     handleVolumeMove(e as any);
   };
 
   // 处理音量条点击直接设置音量
   const handleVolumeClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!volumeContainerRef.current) return;
-    
+
     const rect = volumeContainerRef.current.getBoundingClientRect();
-    const position = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    
+    const position = Math.max(0, Math.min(1, 1- (e.clientY -rect.top ) / rect.height));
     onVolumeChange(position);
   };
 
   return (
     <>
-      <button 
-        className="control-button"
-        onClick={onToggleMute}
-      >
-        {isMuted || volume === 0 ? 
-          getIcon('muteIcon', <VolumeX size={20} />) : 
-          getIcon('volumeIcon', <Volume2 size={20} />)}
-      </button>
-      
-      <div 
-        className="volume-container"
-        ref={volumeContainerRef}
-        onClick={handleVolumeClick}
-        onMouseDown={handleVolumeStart}
-        onTouchStart={handleVolumeStart}
+      <Popover visible={isPopoverVisible} content={<div
+          className="volume-container"
+          ref={volumeContainerRef}
+          onClick={handleVolumeClick}
+          onMouseDown={handleVolumeStart}
+          onTouchStart={handleVolumeStart}
       >
         <div
-          className="volume-buffer"
-          ref={volumeBufferRef}
+            className="volume-buffer"
+            ref={volumeBufferRef}
         />
-      </div>
+      </div>} trigger="custom" >
+        <button
+          className="control-button"
+          onClick={onToggleMute}
+          onMouseEnter={() => setIsPopoverVisible(true)}
+      >
+        {isMuted || volume === 0 ?
+            getIcon('muteIcon', <VolumeX size={20} />) :
+            getIcon('volumeIcon', <Volume2 size={20} />)}
+      </button>
+      </Popover>
     </>
   );
 };

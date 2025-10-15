@@ -164,36 +164,6 @@
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-.volume-container {
-  position: relative;
-  width: 80px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 2px;
-  cursor: pointer;
-  transition: height 0.2s; /* 添加过渡效果 */
-  transform: translateZ(0); /* 启用硬件加速 */
-}
-
-.volume-container:hover {
-  height: 6px; /* 鼠标悬停时稍微加高音量条 */
-}
-
-.volume-buffer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: white;
-  border-radius: 2px;
-  z-index: 1;
-  pointer-events: none;
-  transform-origin: left center;
-  transform: scaleX(1);
-  transition: transform 0.1s;
-}
-
 .progress-container {
   position: relative;
   flex: 1;
