@@ -20,21 +20,16 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   private _progress: number = 0;
   private _isFullscreen: boolean = false;
   // 配置
-  private _videoSrc: string = '';
+  private _videoSrc: string | { [key: string]: string } = '';
+  private _videoType: VideoType = VideoType.NORMAL;
+  private _dataPrefix: string = '';
 
   // 字幕相关
   private _showSubtitles: boolean = true;
   private _currentTrackIndex: number = 0;
-  private _videoId: string = '';
-  private _userId: string = '';
-  private _username: string = '';
-  private _videoType: VideoType = VideoType.NORMAL;
-  // DASH播放器实例
-  private _dashPlayer: dashjs.MediaPlayerClass | null= null;
-  private _dataPrefix: string = '';
   
   constructor(options?: {
-    videoSrc?: string;
+    videoSrc?: string | { [key: string]: string };
     videoId?: string;
     userId?: string;
     username?: string;
@@ -61,6 +56,20 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
 
     // 初始化插件管理器
     this._pluginManager = new PluginManager(this);
+
+    // 初始化可用画质选项
+    this.initAvailableQualities();
+  }
+  private _videoId: string = '';
+  private _userId: string = '';
+  private _username: string = '';
+  // DASH播放器实例
+  private _dashPlayer: dashjs.MediaPlayerClass | null= null;
+
+  private _quality: string = 'auto';
+  
+  get quality() {
+    return this._quality;
   }
   
   // 管理器
@@ -75,79 +84,28 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   // 定时器
   private _controlsTimeout: ReturnType<typeof setTimeout> | null = null;
 
+  private _speed: number = 1.0;
+
   get videoType() {
     return this._videoType;
   }
 
-  private _quality: string = 'auto';
+  get speed() {
+    return this._speed;
+  }
 
   get dataPrefix() {
     return this._dataPrefix;
   }
 
-  // 初始化DASH播放器
-  initDashPlayer(videoElement: HTMLVideoElement): void {
-    if (this._videoType !== VideoType.DASH || !this._videoSrc.includes('.mpd')) {
-      return;
-    }
+  private _availableQualities: { key: string; label: string }[] = [{ key: 'auto', label: '自动' }];
 
-    try {
-      // 动态导入dashjs库以避免在非DASH模式下加载
-      try{
-        this._dashPlayer = dashjs.MediaPlayer().create();
+  get availableQualities() {
+    return this._availableQualities;
+  }
 
-        // 设置数据前缀（如果提供）
-        if (this._dataPrefix) {
-          // 保存PlayerCore上下文引用
-          console.log('数据前缀设置为:', this._dataPrefix);
-          const self = this;
-          // 确保前缀末尾有斜杠
-          const dataPrefix = self._dataPrefix.endsWith('/') ? self._dataPrefix : self._dataPrefix + '/';
-
-          // 配置URL替换规则以添加前缀
-          this._dashPlayer?.extend('Stream', (MediaPlayer: any) => {
-            MediaPlayer.prototype.getFragmentRequestURL = function(url: string): string {
-              // 检查URL是否为相对路径
-              console.log('处理URL:', url);
-              if (url &&
-                  !url.startsWith('http://') &&
-                  !url.startsWith('https://') &&
-                  !url.startsWith('blob:') &&
-                  !url.startsWith('/')) {
-                const newUrl = dataPrefix + url;
-                console.log('转换为:', newUrl);
-                return newUrl;
-              }
-              return url;
-            };
-            return MediaPlayer;
-          },true);
-        }
-
-        // 配置DASH播放器
-        this._dashPlayer.updateSettings({
-          streaming: {
-            buffer: {
-              stableBufferTime: 20,
-              bufferTimeAtTopQuality: 30
-            },
-            abr: {
-              useDefaultABRRules: true,
-              ABRStrategy: 'abrDynamic'
-            }
-          }
-        });
-
-        // 附加视频元素
-        this._dashPlayer.initialize(videoElement, this._videoSrc, false);
-
-        this.logger.debug('DASH播放器初始化成功');
-      } catch(error) {
-        this.logger.error('DASH播放器初始化失败:', error);
-      }
-    } catch (error) {
-      this.logger.error('加载DASH播放器失败:', error);
-    }
+  get isFullscreen() {
+    return this._isFullscreen;
   }
 
   togglePlay() {
@@ -203,12 +161,133 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     this.emit('fullscreenChange', this._isFullscreen);
   }
 
-  get quality() {
-    return this._quality;
+  // 初始化DASH播放器
+  initDashPlayer(videoElement: HTMLVideoElement): void {
+    if (this._videoType !== VideoType.DASH || typeof this._videoSrc !== 'string' || !this._videoSrc.includes('.mpd')) {
+      return;
+    }
+
+    try {
+      // 动态导入dashjs库以避免在非DASH模式下加载
+      try{
+        this._dashPlayer = dashjs.MediaPlayer().create();
+
+        // 设置数据前缀（如果提供）
+        if (this._dataPrefix) {
+          // 保存PlayerCore上下文引用
+          console.log('数据前缀设置为:', this._dataPrefix);
+          const self = this;
+          // 确保前缀末尾有斜杠
+          const dataPrefix = self._dataPrefix.endsWith('/') ? self._dataPrefix : self._dataPrefix + '/';
+
+          // 配置URL替换规则以添加前缀
+          this._dashPlayer?.extend('Stream', (MediaPlayer: any) => {
+            MediaPlayer.prototype.getFragmentRequestURL = function(url: string): string {
+              // 检查URL是否为相对路径
+              console.log('处理URL:', url);
+              if (url &&
+                  !url.startsWith('http://') &&
+                  !url.startsWith('https://') &&
+                  !url.startsWith('blob:') &&
+                  !url.startsWith('/')) {
+                const newUrl = dataPrefix + url;
+                console.log('转换为:', newUrl);
+                return newUrl;
+              }
+              return url;
+            };
+            return MediaPlayer;
+          },true);
+        }
+
+        // 配置DASH播放器
+        this._dashPlayer.updateSettings({
+          streaming: {
+            buffer: {
+              stableBufferTime: 20,
+              bufferTimeAtTopQuality: 30
+            },
+            abr: {
+              useDefaultABRRules: true,
+              ABRStrategy: 'abrDynamic'
+            }
+          }
+        });
+
+        // 附加视频元素
+        this._dashPlayer.initialize(videoElement, this._videoSrc as string, false);
+
+        this.logger.debug('DASH播放器初始化成功');
+
+        // 监听DASH播放器的画质变化
+        this._dashPlayer.on('qualityChange', (e: any) => {
+          if (e.mediaType === 'video') {
+            // 更新当前画质状态
+            this.logger.debug('DASH画质变更:', e.newQuality);
+          }
+        });
+      } catch(error) {
+        this.logger.error('DASH播放器初始化失败:', error);
+      }
+    } catch (error) {
+      this.logger.error('加载DASH播放器失败:', error);
+    }
   }
 
-  get isFullscreen() {
-    return this._isFullscreen;
+  // 画质控制方法
+  setQuality(quality: string) {
+    this.logger.debug('设置画质', { quality });
+    this._quality = quality;
+
+    // 如果是普通播放器且src是对象
+    if (typeof this._videoSrc === 'object' && quality !== 'auto') {
+      const videoElement = document.querySelector('video');
+      if (videoElement && this._videoSrc[quality]) {
+        const currentTime = videoElement.currentTime;
+        videoElement.src = this._videoSrc[quality];
+        videoElement.currentTime = currentTime;
+        videoElement.play().catch(e => this.logger.error('播放失败:', e));
+      }
+    }
+    // 如果是DASH播放器且已初始化，则设置画质
+    else if (this._dashPlayer) {
+      try {
+        const dashQuality = this.mapQualityToDash(quality);
+        if (dashQuality !== null) {
+          this._dashPlayer.setQualityFor('video', dashQuality);
+        } else {
+          // 设置为自动模式
+          this._dashPlayer.setAutoSwitchQualityFor('video', true);
+        }
+      } catch (error) {
+        this.logger.error('设置DASH画质失败:', error);
+      }
+    }
+
+    this.emit('qualityChange', quality);
+  }
+
+  // 倍速控制方法
+  setSpeed(speed: number) {
+    this.logger.debug('设置播放速度', { speed });
+    this._speed = speed;
+
+    // 获取视频元素并设置播放速度
+    const videoElement = document.querySelector('video');
+    if (videoElement) {
+      videoElement.playbackRate = speed;
+    }
+
+    // 如果是DASH播放器且已初始化，则设置播放速度
+    if (this._dashPlayer) {
+      try {
+        this._dashPlayer.setPlaybackRate(speed);
+      } catch (error) {
+        this.logger.error('设置DASH播放速度失败:', error);
+      }
+    }
+
+    this.emit('speedChange', speed);
   }
 
   // 弹幕相关方法已移除
@@ -388,27 +467,35 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     return this._progress;
   }
 
-  // 画质控制方法
-  setQuality(quality: string) {
-    this.logger.debug('设置画质', { quality });
-    this._quality = quality;
-
-    // 如果是DASH播放器且已初始化，则设置画质
-    if (this._dashPlayer) {
-      try {
-        const dashQuality = this.mapQualityToDash(quality);
-        if (dashQuality !== null) {
-          this._dashPlayer.setQualityFor('video', dashQuality);
-        } else {
-          // 设置为自动模式
-          this._dashPlayer.setAutoSwitchQualityFor('video', true);
-        }
-      } catch (error) {
-        this.logger.error('设置DASH画质失败:', error);
-      }
+  // 初始化可用画质选项
+  private initAvailableQualities() {
+    if (typeof this._videoSrc === 'object') {
+      // 普通播放器模式，src是画质-key链接-value的对象
+      this._availableQualities = [
+        { key: 'auto', label: '自动' },
+        ...Object.keys(this._videoSrc).map(key => ({
+          key,
+          label: key
+        }))
+      ];
+    } else if (this._videoType === VideoType.DASH && typeof this._videoSrc === 'string' && this._videoSrc.includes('.mpd')) {
+      // DASH模式，需要解析mpd文件获取画质信息
+      // 这里暂时使用默认选项，实际应该解析MPD文件
+      this._availableQualities = [
+        { key: 'auto', label: '自动' },
+        { key: '2160p', label: '2160p' },
+        { key: '1440p', label: '1440p' },
+        { key: '1080p', label: '1080p' },
+        { key: '720p', label: '720p' },
+        { key: '480p', label: '480p' },
+        { key: '360p', label: '360p' },
+      ];
+    } else {
+      // 默认选项
+      this._availableQualities = [{ key: 'auto', label: '自动' }];
     }
 
-    this.emit('qualityChange', quality);
+    this.emit('availableQualitiesChange', this._availableQualities);
   }
 
   // 将画质映射到DASH的表示索引

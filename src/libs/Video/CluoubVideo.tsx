@@ -8,6 +8,7 @@ import SettingsButton from "./components/SettingsButton";
 import FullscreenButton from "./components/FullscreenButton";
 import SubtitlesMenu from "./components/SubtitlesMenu";
 import QualityButton from "./components/QualityButton";
+import SpeedButton from "./components/SpeedButton";
 import {useControlsManager, usePlayerCore, useThumbnailManager} from "./hooks";
 import {useVideoEvents} from "./hooks/useVideoEvents";
 import {useSubtitles} from "./hooks/useSubtitles";
@@ -36,7 +37,8 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
             fullscreen: true,
             barrage: true,
             subtitles: true,
-            quality: true
+            quality: true,
+            speed: true
         },
         customIcons,
         thumbnailUrl,
@@ -566,6 +568,15 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
                                 <QualityButton
                                     customIcons={customIcons ? {
                                         qualityIcon: customIcons.qualityIcon
+                                    } : undefined}
+                                />
+                            )}
+                            
+                            {/* 倍速控制 */}
+                            {controls.speed && (
+                                <SpeedButton
+                                    customIcons={customIcons ? {
+                                        speedIcon: customIcons.speedIcon
                                     } : undefined}
                                 />
                             )}

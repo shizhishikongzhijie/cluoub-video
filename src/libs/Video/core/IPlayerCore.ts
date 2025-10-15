@@ -157,7 +157,8 @@ export interface IPlayerCore {
   
   // 全屏控制
   toggleFullscreen(): void;
-  readonly videoType: string;
+  readonly speed: number;
+  readonly availableQualities: { key: string; label: string }[];
   
   // 字幕控制
   toggleSubtitles(): void;
@@ -167,9 +168,7 @@ export interface IPlayerCore {
   // 时间相关
   setTimeUpdate(currentTime: number): void;
   setDuration(duration: number): void;
-
-  // 基本播放控制
-  play(): void;
+  readonly videoSrc: string | { [key: string]: string };
   
   // 控制栏显示
   showControls(): void;
@@ -183,40 +182,44 @@ export interface IPlayerCore {
   registerControlButton(button: ControlButtonConfig): void;
   unregisterControlButton(buttonId: string): void;
   getControlButtons(): ControlButtonConfig[];
-
-  seek(time: number): void;
+  readonly videoType: string;
   
   // 组件注册
   registerComponent(component: PlayerComponentConfig): void;
   unregisterComponent(componentId: string): void;
-
-  setMuted(muted: boolean): void;
-
-  // 画质控制
-  setQuality(quality: string): void;
-  
-  setProgress(progress: number): void;
-
-  updateControlButton(buttonId: string, newButton: Partial<ControlButtonConfig>): void;
-
   getComponents(): PlayerComponentConfig[];
-
   updateComponent(componentId: string, newComponent: Partial<PlayerComponentConfig>): void;
   
   // 事件监听
   on(event: string, listener: (...args: any[]) => void): void;
+
+  // 基本播放控制
+  play(): void;
+
+  seek(time: number): void;
+
+  setMuted(muted: boolean): void;
+  
+  // 画质控制
+  setQuality(quality: string): void;
   readonly isMuted: boolean;
   readonly volume: number;
   readonly currentTime: number;
 
-  removeListener(event: string, listener: (...args: any[]) => void): void;
+  // 倍速控制
+  setSpeed(speed: number): void;
   readonly progress: number;
   readonly isFullscreen: boolean;
 
-  removeAllListeners(): void;
+  setProgress(progress: number): void;
+
+  updateControlButton(buttonId: string, newButton: Partial<ControlButtonConfig>): void;
+
+  removeListener(event: string, listener: (...args: any[]) => void): void;
   readonly showSubtitles: boolean;
   readonly currentTrackIndex: number;
-  readonly videoSrc: string;
+
+  removeAllListeners(): void;
   readonly videoId: string;
   readonly userId: string;
   readonly username: string;

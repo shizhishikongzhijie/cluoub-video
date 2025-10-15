@@ -105,6 +105,9 @@ export interface ControlConfig {
   
   /** 是否显示画质控制 */
   quality?: boolean;
+  
+  /** 是否显示倍速控制 */
+  speed?: boolean;
 }
 
 /**
@@ -123,8 +126,8 @@ export enum VideoType {
  * @interface VideoProps
  */
 export interface VideoProps {
-  /** 视频源URL */
-  videoSrc: string;
+  /** 视频源URL，可以是字符串或画质对象 */
+  videoSrc: string | { [quality: string]: string };
 
   /** 视频唯一标识符 */
   videoId: string;
@@ -161,6 +164,7 @@ export interface VideoProps {
     barrage?: boolean;
     subtitles?: boolean;
     quality?: boolean;
+    speed?: boolean;
   };
 
   /** 自定义图标配置，用于替换默认图标 */

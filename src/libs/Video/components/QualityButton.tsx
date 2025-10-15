@@ -15,22 +15,14 @@ const QualityButton: React.FC<QualityButtonProps> = ({ customIcons }) => {
   const playerCore = usePlayerCore({} as any);
   const [isPopoverVisible, setIsPopoverVisible] = useState(false);
   const [currentQuality, setCurrentQuality] = useState('auto');
+  const [menuItems, setMenuItems] = useState<MenuItemType[]>([
+    { key: 'auto', label: '自动' }
+  ]);
   
   // 获取图标，优先使用自定义图标，否则使用默认图标
   const getIcon = (iconType: keyof NonNullable<QualityButtonProps['customIcons']>, defaultIcon: React.ReactNode) => {
     return customIcons && customIcons[iconType] ? customIcons[iconType] : defaultIcon;
   };
-
-  // 构造菜单项
-  const menuItems: MenuItemType[] = [
-    { key: 'auto', label: '自动' },
-    { key: '2160p', label: '2160p' },
-    { key: '1440p', label: '1440p' },
-    { key: '1080p', label: '1080p' },
-    { key: '720p', label: '720p' },
-    { key: '480p', label: '480p' },
-    { key: '360p', label: '360p' },
-  ];
 
   // 处理画质选择
   const handleQualitySelect = useCallback((key: string) => {
@@ -46,10 +38,20 @@ const QualityButton: React.FC<QualityButtonProps> = ({ customIcons }) => {
       setCurrentQuality(quality);
     };
     
+    const handleAvailableQualitiesChange = (qualities: { key: string; label: string }[]) => {
+      setMenuItems(qualities);
+    };
+    
     playerCore.on('qualityChange', handleQualityChange);
+    playerCore.on('availableQualitiesChange', handleAvailableQualitiesChange);
+    
+    // 初始化时获取当前可用的画质选项
+    setMenuItems(playerCore.availableQualities || [{ key: 'auto', label: '自动' }]);
+    setCurrentQuality(playerCore.quality || 'auto');
     
     return () => {
       playerCore.removeListener('qualityChange', handleQualityChange);
+      playerCore.removeListener('availableQualitiesChange', handleAvailableQualitiesChange);
     };
   }, [playerCore]);
 
@@ -67,7 +69,7 @@ const QualityButton: React.FC<QualityButtonProps> = ({ customIcons }) => {
       trigger="custom"
       position="top"
       style={{
-        '--popover-padding': 0
+        '--popover-padding':0
       }}
     >
       <button 

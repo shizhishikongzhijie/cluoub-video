@@ -91,7 +91,9 @@ export interface PopoverProps {
   /**
    * 自定义样式
    */
-  style?: React.CSSProperties;
+  style?: React.CSSProperties & {
+    '--popover-padding': number|string;
+  };
 }
 
 /**
