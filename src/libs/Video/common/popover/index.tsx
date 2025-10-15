@@ -222,13 +222,13 @@ const Popover: React.FC<PopoverProps> = (props) => {
   // 计算弹出层位置
   const updatePosition = () => {
     if (!popoverRef.current || !triggerRef.current || isVisible) return;
-    
+    console.log('updatePosition',triggerRef.current, popoverRef.current);
     const triggerRect = triggerRef.current.getBoundingClientRect();
     const popoverRect = popoverRef.current.getBoundingClientRect();
-    
+
     let top = 0;
     let left = 0;
-
+    console.log('triggerRect', triggerRect.left)
     switch (position) {
       case 'top':
         console.log('top', popoverRect.height, popoverRect.width)
@@ -292,7 +292,7 @@ const Popover: React.FC<PopoverProps> = (props) => {
 
   // 更新位置
   useEffect(() => {
-    if (!isVisible) {
+    if (isVisible) {
       // 使用 requestAnimationFrame 确保 DOM 已更新
       requestAnimationFrame(updatePosition);
     }
@@ -361,10 +361,10 @@ const Popover: React.FC<PopoverProps> = (props) => {
   const renderPopover = () => {
     // 如果不挂载内容直到进入，并且当前不可见，则不渲染
     if (mountContentOnEnter && animationState === 'exited') return null;
-    
+
     // 如果处于退出完成状态，则不渲染
     //if (animationState === 'exited') return null;
-    
+
     return ReactDOM.createPortal(
       <div
         ref={popoverRef}

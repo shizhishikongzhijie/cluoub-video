@@ -489,146 +489,154 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
 
                 {/* 视频控制栏 */}
                 <div className={`video-controls ${showControls ? 'visible' : 'hidden'}`}>
-                    {/* 左侧控制按钮 */}
-                    <div className="video-controls-left">
-                        {/* 播放按钮 */}
-                        {controls.play && (
-                            <PlayButton
-                                isPlaying={isPlaying}
-                                onToggle={togglePlay}
+
+                    <div className={'video-controls-process'}>
+                        {/* 进度条 */}
+                        {controls.progress && (
+                            <ProgressControl
+                                progress={progress}
+                                duration={duration}
+                                showThumbnail={showThumbnail}
+                                thumbnailPosition={thumbnailPosition}
+                                thumbnailUrl={thumbnailUrl}
+                                thumbnailWidth={thumbnailWidth}
+                                thumbnailHeight={thumbnailHeight}
                                 customIcons={customIcons ? {
-                                    playIcon: customIcons.playIcon,
-                                    pauseIcon: customIcons.pauseIcon
+                                    progressThumbIcon: customIcons.progressThumbIcon
                                 } : undefined}
+                                onProgressChange={handleProgressChange}
+                                onSeek={handleSeek}
+                                onShowThumbnail={handleShowThumbnail}
                             />
                         )}
+                    </div>
+                    <div className="video-controls-center">
+                        {/* 左侧控制按钮 */}
+                        <div className="video-controls-left">
+                            {/* 播放按钮 */}
+                            {controls.play && (
+                                <PlayButton
+                                    isPlaying={isPlaying}
+                                    onToggle={togglePlay}
+                                    customIcons={customIcons ? {
+                                        playIcon: customIcons.playIcon,
+                                        pauseIcon: customIcons.pauseIcon
+                                    } : undefined}
+                                />
+                            )}
 
-                        {controlButtons
-                            .filter(button => button.position === 'left')
-                            .sort((a, b) => (a.order || 0) - (b.order || 0))
-                            .map(button => (
-                                <React.Fragment key={button.id}>
-                                    {button.customComponent ? (
-                                        button.customComponent
-                                    ) : (
-                                        <button
-                                            className="control-button plugin-control-button"
-                                            title={button.title}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (button.onClick) button.onClick();
-                                            }}
-                                            aria-label={button.title}
-                                        >
-                                            {button.icon}
-                                        </button>
-                                    )}
-                                </React.Fragment>
-                            ))
-                        }
+                            {controlButtons
+                                .filter(button => button.position === 'left')
+                                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                                .map(button => (
+                                    <React.Fragment key={button.id}>
+                                        {button.customComponent ? (
+                                            button.customComponent
+                                        ) : (
+                                            <button
+                                                className="control-button plugin-control-button"
+                                                title={button.title}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (button.onClick) button.onClick();
+                                                }}
+                                                aria-label={button.title}
+                                            >
+                                                {button.icon}
+                                            </button>
+                                        )}
+                                    </React.Fragment>
+                                ))
+                            }
+                            {/* 时间显示 */}
+                            {controls.time && (
+                                <TimeDisplay
+                                    currentTime={currentTime}
+                                    duration={duration}
+                                />
+                            )}
+                        </div>
+
+                        {/*右侧控制按钮*/}
+                        <div className="video-controls-right">
+                            {/* 音量控制 */}
+                            {controls.volume && (
+                                <VolumeControl
+                                    isMuted={isMuted}
+                                    volume={volume}
+                                    onToggleMute={toggleMute}
+                                    onVolumeChange={handleVolumeChange}
+                                    customIcons={customIcons ? {
+                                        volumeIcon: customIcons.volumeIcon,
+                                        muteIcon: customIcons.muteIcon
+                                    } : undefined}
+                                />
+                            )}
+
+                            {controlButtons
+                                .filter(button => button.position === 'right')
+                                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                                .map(button => (
+                                    <React.Fragment key={button.id}>
+                                        {button.customComponent ? (
+                                            button.customComponent
+                                        ) : (
+                                            <button
+                                                className="control-button plugin-control-button"
+                                                title={button.title}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (button.onClick) button.onClick();
+                                                }}
+                                                aria-label={button.title}
+                                            >
+                                                {button.icon}
+                                            </button>
+                                        )}
+                                    </React.Fragment>
+                                ))
+                            }
+
+                            {/* 字幕控制按钮 - 使用SubtitlesMenu组件 */}
+                            {controls.subtitles && tracks.length > 0 && (
+                                <SubtitlesMenu
+                                    options={tracks.map((track, index) => ({
+                                        id: track.id || `track-${index}`,
+                                        kind: track.kind || 'subtitles',
+                                        label: track.label,
+                                        language: track.srclang || 'auto',
+                                        isActive: playerCore.showSubtitles && index === playerCore.currentTrackIndex
+                                    }))}
+                                    isOpen={isSubtitlesMenuOpen}
+                                    onToggle={toggleSubtitlesMenu}
+                                    onSelect={selectSubtitleTrack}
+                                    onCloseSubtitles={closeSubtitles}
+                                />
+                            )}
+
+                            {/* 设置按钮 */}
+                            {controls.settings && (
+                                <SettingsButton
+                                    customIcons={customIcons ? {
+                                        settingsIcon: customIcons.settingsIcon
+                                    } : undefined}
+                                />
+                            )}
+
+                            {/* 全屏按钮 */}
+                            {controls.fullscreen && (
+                                <FullscreenButton
+                                    isFullscreen={isFullscreen}
+                                    onToggle={toggleFullscreen}
+                                    customIcons={customIcons ? {
+                                        fullscreenIcon: customIcons.fullscreenIcon
+                                    } : undefined}
+                                />
+                            )}
+                        </div>
+
                     </div>
 
-                    {/* 音量控制 */}
-                    {controls.volume && (
-                        <VolumeControl
-                            isMuted={isMuted}
-                            volume={volume}
-                            onToggleMute={toggleMute}
-                            onVolumeChange={handleVolumeChange}
-                            customIcons={customIcons ? {
-                                volumeIcon: customIcons.volumeIcon,
-                                muteIcon: customIcons.muteIcon
-                            } : undefined}
-                        />
-                    )}
-
-                    {/* 时间显示 */}
-                    {controls.time && (
-                        <TimeDisplay
-                            currentTime={currentTime}
-                            duration={duration}
-                        />
-                    )}
-
-                    {/* 进度条 */}
-                    {controls.progress && (
-                        <ProgressControl
-                            progress={progress}
-                            duration={duration}
-                            showThumbnail={showThumbnail}
-                            thumbnailPosition={thumbnailPosition}
-                            thumbnailUrl={thumbnailUrl}
-                            thumbnailWidth={thumbnailWidth}
-                            thumbnailHeight={thumbnailHeight}
-                            customIcons={customIcons ? {
-                                progressThumbIcon: customIcons.progressThumbIcon
-                            } : undefined}
-                            onProgressChange={handleProgressChange}
-                            onSeek={handleSeek}
-                            onShowThumbnail={handleShowThumbnail}
-                        />
-                    )}
-
-                    {controlButtons
-                        .filter(button => button.position === 'right')
-                        .sort((a, b) => (a.order || 0) - (b.order || 0))
-                        .map(button => (
-                            <React.Fragment key={button.id}>
-                                {button.customComponent ? (
-                                    button.customComponent
-                                ) : (
-                                    <button
-                                        className="control-button plugin-control-button"
-                                        title={button.title}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (button.onClick) button.onClick();
-                                        }}
-                                        aria-label={button.title}
-                                    >
-                                        {button.icon}
-                                    </button>
-                                )}
-                            </React.Fragment>
-                        ))
-                    }
-
-                    {/* 字幕控制按钮 - 使用SubtitlesMenu组件 */}
-                    {controls.subtitles && tracks.length > 0 && (
-                        <SubtitlesMenu
-                            options={tracks.map((track, index) => ({
-                                id: track.id || `track-${index}`,
-                                kind: track.kind || 'subtitles',
-                                label: track.label,
-                                language: track.srclang || 'auto',
-                                isActive: playerCore.showSubtitles && index === playerCore.currentTrackIndex
-                            }))}
-                            isOpen={isSubtitlesMenuOpen}
-                            onToggle={toggleSubtitlesMenu}
-                            onSelect={selectSubtitleTrack}
-                            onCloseSubtitles={closeSubtitles}
-                        />
-                    )}
-
-                    {/* 设置按钮 */}
-                    {controls.settings && (
-                        <SettingsButton
-                            customIcons={customIcons ? {
-                                settingsIcon: customIcons.settingsIcon
-                            } : undefined}
-                        />
-                    )}
-
-                    {/* 全屏按钮 */}
-                    {controls.fullscreen && (
-                        <FullscreenButton
-                            isFullscreen={isFullscreen}
-                            onToggle={toggleFullscreen}
-                            customIcons={customIcons ? {
-                                fullscreenIcon: customIcons.fullscreenIcon
-                            } : undefined}
-                        />
-                    )}
                 </div>
             </div>
         </div>

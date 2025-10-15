@@ -1,7 +1,7 @@
 import type {SVGProps} from 'react'
 import {forwardRef, useEffect, useState} from 'react'
 
-import 'index.css'
+import './index.css'
 import type {SvgIconProps} from './types'
 
 const SvgIcon = forwardRef<SVGSVGElement, SvgIconProps & SVGProps<SVGSVGElement>>((props, ref) => {
