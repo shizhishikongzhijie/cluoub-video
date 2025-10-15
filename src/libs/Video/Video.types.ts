@@ -102,6 +102,9 @@ export interface ControlConfig {
   
   /** 是否显示字幕控制 */
   subtitles?: boolean;
+  
+  /** 是否显示画质控制 */
+  quality?: boolean;
 }
 
 /**
@@ -157,6 +160,7 @@ export interface VideoProps {
     fullscreen?: boolean;
     barrage?: boolean;
     subtitles?: boolean;
+    quality?: boolean;
   };
 
   /** 自定义图标配置，用于替换默认图标 */

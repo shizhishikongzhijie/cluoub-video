@@ -7,6 +7,7 @@ import ProgressControl from "./components/ProgressControl";
 import SettingsButton from "./components/SettingsButton";
 import FullscreenButton from "./components/FullscreenButton";
 import SubtitlesMenu from "./components/SubtitlesMenu";
+import QualityButton from "./components/QualityButton";
 import {useControlsManager, usePlayerCore, useThumbnailManager} from "./hooks";
 import {useVideoEvents} from "./hooks/useVideoEvents";
 import {useSubtitles} from "./hooks/useSubtitles";
@@ -34,7 +35,8 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
             settings: true,
             fullscreen: true,
             barrage: true,
-            subtitles: true
+            subtitles: true,
+            quality: true
         },
         customIcons,
         thumbnailUrl,
@@ -559,6 +561,15 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
 
                         {/*右侧控制按钮*/}
                         <div className="video-controls-right">
+                            {/* 画质按钮 */}
+                            {controls.quality && (
+                                <QualityButton
+                                    customIcons={customIcons ? {
+                                        qualityIcon: customIcons.qualityIcon
+                                    } : undefined}
+                                />
+                            )}
+                            
                             {/* 音量控制 */}
                             {controls.volume && (
                                 <VolumeControl

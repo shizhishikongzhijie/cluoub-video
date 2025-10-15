@@ -151,7 +151,6 @@ const Popover: React.FC<PopoverProps> = (props) => {
 
   // 计算弹出层位置
   const updatePosition = () => {
-    console.log('updatePosition',triggerRef.current, popoverRef.current, isVisible);
     if (!popoverRef.current || !triggerRef.current || !isVisible) return;
 
     const triggerRect = triggerRef.current.getBoundingClientRect();
@@ -159,10 +158,8 @@ const Popover: React.FC<PopoverProps> = (props) => {
 
     let top = 0;
     let left = 0;
-    console.log('triggerRect', triggerRect.left)
     switch (position) {
       case 'top':
-        console.log('top', popoverRect.height, popoverRect.width)
         top = triggerRect.top - popoverRect.height - offset;
         left = triggerRect.left + (triggerRect.width - popoverRect.width) / 2;
         break;

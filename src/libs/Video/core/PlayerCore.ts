@@ -19,34 +19,35 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
   private _currentTime: number = 0;
   private _progress: number = 0;
   private _isFullscreen: boolean = false;
+  // 配置
+  private _videoSrc: string = '';
 
   // 字幕相关
   private _showSubtitles: boolean = true;
   private _currentTrackIndex: number = 0;
-  
-  // 配置
-  private _videoSrc: string;
-  private _videoId: string;
-  private _userId: string;
-  private _username: string;
+  private _videoId: string = '';
+  private _userId: string = '';
+  private _username: string = '';
+  private _videoType: VideoType = VideoType.NORMAL;
   // DASH播放器实例
   private _dashPlayer: dashjs.MediaPlayerClass | null= null;
-
-  constructor(options: {
-    videoSrc: string;
-    videoId: string;
-    userId: string;
-    username: string;
+  private _dataPrefix: string = '';
+  
+  constructor(options?: {
+    videoSrc?: string;
+    videoId?: string;
+    userId?: string;
+    username?: string;
     videoType?: VideoType;
     dataPrefix?: string;
   }) {
     super();
-    this._videoSrc = options.videoSrc;
-    this._videoId = options.videoId;
-    this._userId = options.userId;
-    this._username = options.username;
-    this._videoType = options.videoType || VideoType.NORMAL;
-    this._dataPrefix = options.dataPrefix || '';
+    this._videoSrc = options?.videoSrc || '';
+    this._videoId = options?.videoId || '';
+    this._userId = options?.userId || '';
+    this._username = options?.username || '';
+    this._videoType = options?.videoType || VideoType.NORMAL;
+    this._dataPrefix = options?.dataPrefix || '';
 
     // 初始化日志管理器
     this.logger = Logger.getInstance();
@@ -61,8 +62,6 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     // 初始化插件管理器
     this._pluginManager = new PluginManager(this);
   }
-  
-  private _videoType: VideoType;
   
   // 管理器
   private _pluginManager: PluginManager;
@@ -80,7 +79,7 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     return this._videoType;
   }
 
-  private _dataPrefix: string;
+  private _quality: string = 'auto';
 
   get dataPrefix() {
     return this._dataPrefix;
@@ -202,6 +201,14 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     this.logger.debug('切换全屏状态');
     this._isFullscreen = !this._isFullscreen;
     this.emit('fullscreenChange', this._isFullscreen);
+  }
+
+  get quality() {
+    return this._quality;
+  }
+
+  get isFullscreen() {
+    return this._isFullscreen;
   }
 
   // 弹幕相关方法已移除
@@ -381,8 +388,42 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     return this._progress;
   }
 
-  get isFullscreen() {
-    return this._isFullscreen;
+  // 画质控制方法
+  setQuality(quality: string) {
+    this.logger.debug('设置画质', { quality });
+    this._quality = quality;
+
+    // 如果是DASH播放器且已初始化，则设置画质
+    if (this._dashPlayer) {
+      try {
+        const dashQuality = this.mapQualityToDash(quality);
+        if (dashQuality !== null) {
+          this._dashPlayer.setQualityFor('video', dashQuality);
+        } else {
+          // 设置为自动模式
+          this._dashPlayer.setAutoSwitchQualityFor('video', true);
+        }
+      } catch (error) {
+        this.logger.error('设置DASH画质失败:', error);
+      }
+    }
+
+    this.emit('qualityChange', quality);
+  }
+
+  // 将画质映射到DASH的表示索引
+  private mapQualityToDash(quality: string): number | null {
+    // 在实际应用中，这里需要根据DASH的表示信息来映射
+    // 这里只是一个示例映射
+    switch (quality) {
+      case '2160p': return 0;
+      case '1440p': return 1;
+      case '1080p': return 2;
+      case '720p': return 3;
+      case '480p': return 4;
+      case '360p': return 5;
+      default: return null; // 自动模式
+    }
   }
 
   // 弹幕相关getter已移除

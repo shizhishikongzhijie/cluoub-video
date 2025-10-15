@@ -6,7 +6,7 @@ import {ControlsManager, ThumbnailManager} from '../managers';
  * 自定义Hook，用于创建和管理播放器核心实例
  * @param options 播放器配置选项
  */
-export const usePlayerCore = (options: {
+export const usePlayerCore = (options?: {
   videoSrc: string;
   videoId: string;
   userId: string;
@@ -16,11 +16,11 @@ export const usePlayerCore = (options: {
 }) => {
   const playerCoreRef = useRef<PlayerCore | null>(null);
   
-  if (!playerCoreRef.current) {
+  if (!playerCoreRef.current && options) {
     playerCoreRef.current = new PlayerCore(options);
   }
   
-  return playerCoreRef.current;
+  return playerCoreRef.current as PlayerCore;
 };
 
 /**

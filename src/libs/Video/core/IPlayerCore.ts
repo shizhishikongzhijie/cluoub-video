@@ -139,128 +139,148 @@ export interface IPlayerPlugin {
 }
 
 /**
- * PlayerCore接口定义，提供标准化的API接口
+ * PlayerCore接口定义
+ * 定义播放器核心需要实现的方法和属性
  */
+
 export interface IPlayerCore {
-  // 播放控制
-  /** 开始播放视频 */
-  play(): void;
-  /** 暂停视频播放 */
+  // 状态属性
+  readonly isPlaying: boolean;
   pause(): void;
-  /** 切换播放/暂停状态 */
   togglePlay(): void;
-
+  readonly duration: number;
+  
   // 音量控制
-  /** 设置静音状态 */
-  setMuted(muted: boolean): void;
-  /** 设置音量大小 */
   setVolume(volume: number): void;
-  /** 切换静音状态 */
+  readonly quality: string;
   toggleMute(): void;
-
-  // 进度控制
-  /** 跳转到指定时间 */
-  seek(time: number): void;
-  /** 设置播放进度 */
-  setProgress(progress: number): void;
-
+  
   // 全屏控制
-  /** 切换全屏状态 */
   toggleFullscreen(): void;
-
+  readonly videoType: string;
+  
   // 字幕控制
-  /** 切换字幕显示状态 */
   toggleSubtitles(): void;
-  /** 设置字幕轨道 */
   setSubtitleTrack(index: number): void;
-  /** 设置字幕显示开关 */
   setShowSubtitles(show: boolean): void;
-
+  
   // 时间相关
-  /** 更新当前播放时间 */
   setTimeUpdate(currentTime: number): void;
-  /** 设置视频总时长 */
   setDuration(duration: number): void;
 
+  // 基本播放控制
+  play(): void;
+  
   // 控制栏显示
-  /** 显示控制栏 */
   showControls(): void;
-  /** 隐藏控制栏 */
   hideControls(): void;
-
-  // 事件监听
-  /** 监听事件 */
-  on(event: string, callback: Function): void;
-  /** 移除事件监听器 */
-  removeListener(event: string, callback: Function): void;
-  /** 移除所有事件监听器 */
-  removeAllListeners(): void;
-  /** 触发事件 */
-  emit(event: string, data?: any): void;
-
+  
   // 插件系统
-  /** 使用插件 */
   use(plugin: IPlayerPlugin, options?: any): void;
-  /** 获取插件实例 */
   getPlugin(pluginName: string): IPlayerPlugin | undefined;
-
+  
   // 控制按钮注册
-  /** 注册控制按钮 */
   registerControlButton(button: ControlButtonConfig): void;
-  /** 注销控制按钮 */
   unregisterControlButton(buttonId: string): void;
-  /** 获取所有控制按钮 */
   getControlButtons(): ControlButtonConfig[];
 
+  seek(time: number): void;
+  
   // 组件注册
-  // 获取播放器状态 (使用下面的readonly属性)
-
-  // 组件注册
-  /** 注册播放器组件 */
   registerComponent(component: PlayerComponentConfig): void;
-  /** 注销播放器组件 */
   unregisterComponent(componentId: string): void;
-  /** 获取注册的组件 */
-  getComponents(position?: string): PlayerComponentConfig[];
 
-  // 清理
-  /** 销毁播放器 */
-  destroy(): void;
+  setMuted(muted: boolean): void;
 
-  // 状态获取
-  /** 是否正在播放 */
-  readonly isPlaying: boolean;
-  /** 是否静音 */
+  // 画质控制
+  setQuality(quality: string): void;
+  
+  setProgress(progress: number): void;
+
+  updateControlButton(buttonId: string, newButton: Partial<ControlButtonConfig>): void;
+
+  getComponents(): PlayerComponentConfig[];
+
+  updateComponent(componentId: string, newComponent: Partial<PlayerComponentConfig>): void;
+  
+  // 事件监听
+  on(event: string, listener: (...args: any[]) => void): void;
   readonly isMuted: boolean;
-  /** 当前音量 */
   readonly volume: number;
-  /** 视频总时长 */
-  readonly duration: number;
-  /** 当前播放时间 */
   readonly currentTime: number;
-  /** 播放进度百分比 */
+
+  removeListener(event: string, listener: (...args: any[]) => void): void;
   readonly progress: number;
-  /** 是否全屏 */
   readonly isFullscreen: boolean;
-  /** 是否显示字幕 */
+
+  removeAllListeners(): void;
   readonly showSubtitles: boolean;
-  /** 当前字幕轨道索引 */
   readonly currentTrackIndex: number;
-  /** 视频源地址 */
   readonly videoSrc: string;
-  /** 视频ID */
   readonly videoId: string;
-  /** 用户ID */
   readonly userId: string;
-  /** 用户名 */
   readonly username: string;
 
-  /** 视频类型 */
-  readonly videoType: any;
-
-  /** DASH视频数据前缀 */
+  emit(event: string, ...args: any[]): void;
   readonly dataPrefix: string;
+  
+  // 生命周期
+  destroy(): void;
+}
 
-  /** 初始化DASH播放器 */
-  initDashPlayer(videoElement: HTMLVideoElement): void;
+/**
+ * 控制按钮配置接口
+ */
+export interface ControlButtonConfig {
+  /** 按钮唯一标识符 */
+  id: string;
+  
+  /** 按钮图标 */
+  icon?: React.ReactNode;
+  
+  /** 按钮标题/提示文字 */
+  title?: string;
+  
+  /** 按钮点击事件处理函数 */
+  onClick?: () => void;
+  
+  /** 按钮位置 */
+  position: 'left' | 'right';
+  
+  /** 按钮排序 */
+  order?: number;
+  
+  /** 自定义组件（可选，如果提供将替代默认按钮） */
+  customComponent?: React.ReactNode;
+}
+
+/**
+ * 播放器组件配置接口
+ */
+export interface PlayerComponentConfig {
+  /** 组件唯一标识符 */
+  id: string;
+  
+  /** 组件类型 */
+  type: string;
+  
+  /** 组件内容 */
+  component: React.ReactNode;
+  
+  /** 组件排序 */
+  order?: number;
+}
+
+/**
+ * 插件接口定义
+ */
+export interface IPlayerPlugin {
+  /** 插件名称 */
+  name: string;
+  
+  /** 插件安装方法 */
+  install(core: IPlayerCore, options?: any): void;
+  
+  /** 插件卸载方法 */
+  uninstall?(): void;
 }
