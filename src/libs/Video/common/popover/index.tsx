@@ -149,9 +149,81 @@ const Popover: React.FC<PopoverProps> = (props) => {
     }
   }, [visible]);
 
+  // 计算弹出层位置
+  const updatePosition = () => {
+    console.log('updatePosition',triggerRef.current, popoverRef.current, isVisible);
+    if (!popoverRef.current || !triggerRef.current || !isVisible) return;
+
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const popoverRect = popoverRef.current.getBoundingClientRect();
+
+    let top = 0;
+    let left = 0;
+    console.log('triggerRect', triggerRect.left)
+    switch (position) {
+      case 'top':
+        console.log('top', popoverRect.height, popoverRect.width)
+        top = triggerRect.top - popoverRect.height - offset;
+        left = triggerRect.left + (triggerRect.width - popoverRect.width) / 2;
+        break;
+      case 'topLeft':
+        top = triggerRect.top - popoverRect.height;
+        left = triggerRect.left;
+        break;
+      case 'topRight':
+        top = triggerRect.top - popoverRect.height;
+        left = triggerRect.right - popoverRect.width;
+        break;
+      case 'bottom':
+        top = triggerRect.bottom + offset;
+        left = triggerRect.left + (triggerRect.width - popoverRect.width) / 2;
+        break;
+      case 'bottomLeft':
+        top = triggerRect.bottom;
+        left = triggerRect.left;
+        break;
+      case 'bottomRight':
+        top = triggerRect.bottom;
+        left = triggerRect.right - popoverRect.width;
+        break;
+      case 'left':
+        top = triggerRect.top + (triggerRect.height - popoverRect.height) / 2;
+        left = triggerRect.left - popoverRect.width - offset;
+        break;
+      case 'leftTop':
+        top = triggerRect.top;
+        left = triggerRect.left - popoverRect.width;
+        break;
+      case 'leftBottom':
+        top = triggerRect.bottom - popoverRect.height;
+        left = triggerRect.left - popoverRect.width;
+        break;
+      case 'right':
+        top = triggerRect.top + (triggerRect.height - popoverRect.height) / 2;
+        left = triggerRect.right + offset;
+        break;
+      case 'rightTop':
+        top = triggerRect.top;
+        left = triggerRect.right;
+        break;
+      case 'rightBottom':
+        top = triggerRect.bottom - popoverRect.height;
+        left = triggerRect.right;
+        break;
+    }
+
+    // 防止超出视窗
+    const padding = 8;
+    top = Math.max(padding, Math.min(top, window.innerHeight - popoverRect.height - padding));
+    left = Math.max(padding, Math.min(left, window.innerWidth - popoverRect.width - padding));
+
+    popoverRef.current.style.top = `${top}px`;
+    popoverRef.current.style.left = `${left}px`;
+  };
   // 处理动画状态转换
   useEffect(() => {
     if (isVisible) {
+      requestAnimationFrame(updatePosition)
       setAnimationState('entering');
       // 延迟一帧设置entered状态，确保动画能正常触发
       requestAnimationFrame(() => {
@@ -219,84 +291,6 @@ const Popover: React.FC<PopoverProps> = (props) => {
     onVisibleChange?.(newVisible);
   };
 
-  // 计算弹出层位置
-  const updatePosition = () => {
-    if (!popoverRef.current || !triggerRef.current || isVisible) return;
-    console.log('updatePosition',triggerRef.current, popoverRef.current);
-    const triggerRect = triggerRef.current.getBoundingClientRect();
-    const popoverRect = popoverRef.current.getBoundingClientRect();
-
-    let top = 0;
-    let left = 0;
-    console.log('triggerRect', triggerRect.left)
-    switch (position) {
-      case 'top':
-        console.log('top', popoverRect.height, popoverRect.width)
-        top = triggerRect.top - popoverRect.height - offset;
-        left = triggerRect.left + (triggerRect.width - popoverRect.width) / 2;
-        break;
-      case 'topLeft':
-        top = triggerRect.top - popoverRect.height;
-        left = triggerRect.left;
-        break;
-      case 'topRight':
-        top = triggerRect.top - popoverRect.height;
-        left = triggerRect.right - popoverRect.width;
-        break;
-      case 'bottom':
-        top = triggerRect.bottom + offset;
-        left = triggerRect.left + (triggerRect.width - popoverRect.width) / 2;
-        break;
-      case 'bottomLeft':
-        top = triggerRect.bottom;
-        left = triggerRect.left;
-        break;
-      case 'bottomRight':
-        top = triggerRect.bottom;
-        left = triggerRect.right - popoverRect.width;
-        break;
-      case 'left':
-        top = triggerRect.top + (triggerRect.height - popoverRect.height) / 2;
-        left = triggerRect.left - popoverRect.width - offset;
-        break;
-      case 'leftTop':
-        top = triggerRect.top;
-        left = triggerRect.left - popoverRect.width;
-        break;
-      case 'leftBottom':
-        top = triggerRect.bottom - popoverRect.height;
-        left = triggerRect.left - popoverRect.width;
-        break;
-      case 'right':
-        top = triggerRect.top + (triggerRect.height - popoverRect.height) / 2;
-        left = triggerRect.right + offset;
-        break;
-      case 'rightTop':
-        top = triggerRect.top;
-        left = triggerRect.right;
-        break;
-      case 'rightBottom':
-        top = triggerRect.bottom - popoverRect.height;
-        left = triggerRect.right;
-        break;
-    }
-    
-    // 防止超出视窗
-    const padding = 8;
-    top = Math.max(padding, Math.min(top, window.innerHeight - popoverRect.height - padding));
-    left = Math.max(padding, Math.min(left, window.innerWidth - popoverRect.width - padding));
-    
-    popoverRef.current.style.top = `${top}px`;
-    popoverRef.current.style.left = `${left}px`;
-  };
-
-  // 更新位置
-  useEffect(() => {
-    if (isVisible) {
-      // 使用 requestAnimationFrame 确保 DOM 已更新
-      requestAnimationFrame(updatePosition);
-    }
-  }, [isVisible, position]);
 
   // 监听窗口大小变化
   useEffect(() => {
@@ -347,6 +341,9 @@ const Popover: React.FC<PopoverProps> = (props) => {
           (children.props as any).onBlur?.();
         };
         break;
+      case 'custom':
+        // 对于custom模式，不添加任何事件处理，只保留ref引用
+        break;
     }
     
     return triggerProps;
@@ -357,21 +354,22 @@ const Popover: React.FC<PopoverProps> = (props) => {
     ...children.props,
     ...getTriggerProps()
   });
+
   // 渲染弹出层内容
   const renderPopover = () => {
     // 如果不挂载内容直到进入，并且当前不可见，则不渲染
-    if (mountContentOnEnter && animationState === 'exited') return null;
+    if (mountContentOnEnter && animationState === 'exited' && !isVisible) return null;
 
     // 如果处于退出完成状态，则不渲染
-    //if (animationState === 'exited') return null;
+    //if (animationState === 'exited' && !isVisible) return null;
 
     return ReactDOM.createPortal(
       <div
         ref={popoverRef}
         className={`popover ${position} ${animationState} ${className}`.trim()}
         style={style}
-        onMouseEnter={trigger === 'hover' ? showPopover : undefined}
-        onMouseLeave={trigger === 'hover' ? hidePopover : undefined}
+        onMouseEnter={trigger === 'hover' || trigger === 'custom' ? showPopover : undefined}
+        onMouseLeave={trigger === 'hover' || trigger === 'custom' ? hidePopover : undefined}
       >
         {showArrow && <div ref={arrowRef} className="popover-arrow" />}
         <div className="popover-content">{content}</div>
@@ -387,5 +385,6 @@ const Popover: React.FC<PopoverProps> = (props) => {
     </>
   );
 };
+
 Popover.displayName = 'Popover';
 export default Popover;

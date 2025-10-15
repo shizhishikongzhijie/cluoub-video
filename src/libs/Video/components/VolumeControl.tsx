@@ -1,8 +1,7 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import './VolumeControl.css';
 import Popover from "../common/popover";
 import SvgIcon from "../common/svgIcon";
-import {useControlsManager} from "../hooks";
 
 interface VolumeControlProps {
     isMuted: boolean;
@@ -25,19 +24,12 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
     const volumeContainerRef = useRef<HTMLDivElement>(null);
     const volumeBufferRef = useRef<HTMLDivElement>(null);
     const isVolumeChanging = useRef(false);
-    const [isPopoverVisible, setIsPopoverVisible] = useState(false);
-    // 使用控制栏可见性Hook
-    const  controlsManager  = useControlsManager()
+
     // 获取图标，优先使用自定义图标，否则使用默认图标
     const getIcon = (iconType: keyof NonNullable<VolumeControlProps['customIcons']>, defaultIcon: React.ReactNode) => {
         return customIcons && customIcons[iconType] ? customIcons[iconType] : defaultIcon;
     };
 
-    useEffect(() => {
-        if(!controlsManager.showControls){
-            setIsPopoverVisible(false)
-        }
-    }, [controlsManager.showControls]);
     // 更新音量条显示
     const updateVolumeBuffer = useCallback(() => {
         if (volumeBufferRef.current) {
@@ -63,10 +55,7 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
     // 音量控制结束
     const handleVolumeEnd = useCallback(() => {
         isVolumeChanging.current = false;
-        setTimeout(() => {
-            setIsPopoverVisible(false);
-        }, 500)
-
+        // 不再使用setTimeout自动隐藏Popover，让Popover自己管理显示/隐藏逻辑
     }, []);
 
     // 添加事件监听器处理音量拖拽
@@ -100,7 +89,6 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
     // 音量控制开始
     const handleVolumeStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
         isVolumeChanging.current = true;
-        setIsPopoverVisible(true);
         handleVolumeMove(e as any);
     };
 
@@ -115,7 +103,7 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
 
     return (
         <>
-            <Popover visible={isPopoverVisible}
+            <Popover
                      content={<div
                          className="volume-container"
                          ref={volumeContainerRef}
@@ -128,12 +116,11 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
                              ref={volumeBufferRef}
                          />
                      </div>}
-                     trigger="custom"
+                     trigger="hover"
             >
                 <button
                     className="control-button volume-button"
                     onClick={onToggleMute}
-                    onMouseEnter={() => setIsPopoverVisible(true)}
                 >
                     {isMuted || volume === 0 ?
                         getIcon('muteIcon', <SvgIcon src={'/svg/静音.svg'} noBackground size={20}/>) :
