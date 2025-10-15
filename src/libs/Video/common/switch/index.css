@@ -6,7 +6,7 @@
   height: 24px;
   line-height: 22px;
   vertical-align: middle;
-  background: var(--switch-background-unchecked, #cccccc);
+  background: var(--switch-background-unchecked, rgba(0, 0, 0, 0.5));
   border: 1px solid transparent;
   border-radius: 12px;
   cursor: pointer;
@@ -54,11 +54,11 @@
 }
 
 .switch-checked {
-  background: var(--switch-background-checked, #1890ff);
+  background: var(--switch-background-checked, #18f2d9);
 }
 
 .switch-checked:hover {
-  background: var(--switch-background-checked-hover, #40a9ff);
+  background: var(--switch-background-checked-hover, #23c8c2);
 }
 
 .switch-disabled,
