@@ -187,47 +187,6 @@
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-.progress-container {
-  position: relative;
-  flex: 1;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 2px;
-  cursor: pointer;
-  transition: height 0.2s; /* 添加过渡效果 */
-  transform: translateZ(0); /* 启用硬件加速 */
-}
-
-.progress-container:hover {
-  height: 6px; /* 鼠标悬停时稍微加高进度条 */
-}
-
-.progress-buffer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  background: #35ddd8;
-  border-radius: 2px;
-  z-index: 1;
-  pointer-events: none;
-  /* 移除了默认的过渡效果，由JavaScript动态控制 */
-}
-
-.progress-thumb {
-  position: absolute;
-  display: flex;
-  top: 50%;
-  left: 0;
-  transform: translate(-50%, -50%); /* 保持原有的居中定位 */
-  z-index: 3;
-  pointer-events: none;
-  /* 移除了默认的过渡效果，由JavaScript动态控制 */
-  opacity: 0; /* 默认隐藏进度点 */
-  transition: opacity 0.3s; /* 添加透明度过渡效果 */
-  will-change: transform; /* 启用硬件加速 */
-}
-
 .thumbnail-preview {
   position: absolute;
   background: rgba(0, 0, 0, 0.8);

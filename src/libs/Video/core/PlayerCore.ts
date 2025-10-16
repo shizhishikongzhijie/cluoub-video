@@ -1,5 +1,3 @@
-import dashjs from 'dashjs'
-
 import {PluginManager} from '../plugins'
 import Logger from '../utils/Logger'
 import {VideoType} from '../Video.types'
@@ -236,72 +234,69 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
 
         try {
             // 动态导入dashjs库以避免在非DASH模式下加载
-            try {
-                this._dashPlayer = dashjs.MediaPlayer().create()
+            import('dashjs').then((dashjs) => {
+                try {
+                    this._dashPlayer = dashjs.MediaPlayer().create()
+                    this.logger.info('数据前缀设置为:', this._dataPrefix)
+                    // 设置数据前缀（如果提供）
+                    if (this._dataPrefix) {
+                        // 保存PlayerCore上下文引用
 
-                // 设置数据前缀（如果提供）
-                if (this._dataPrefix) {
-                    // 保存PlayerCore上下文引用
-                    console.log('数据前缀设置为:', this._dataPrefix)
-                    const self = this
-                    // 确保前缀末尾有斜杠
-                    const dataPrefix = self._dataPrefix.endsWith('/') ? self._dataPrefix : self._dataPrefix + '/'
+                        const self = this
+                        // 确保前缀末尾有斜杠
+                        const dataPrefix = self._dataPrefix.endsWith('/') ? self._dataPrefix : self._dataPrefix + '/'
 
-                    // 配置URL替换规则以添加前缀
-                    this._dashPlayer?.extend(
-                        'Stream',
-                        (MediaPlayer: any) => {
-                            MediaPlayer.prototype.getFragmentRequestURL = function (url: string): string {
-                                // 检查URL是否为相对路径
-                                console.log('处理URL:', url)
-                                if (
-                                    url &&
-                                    !url.startsWith('http://') &&
-                                    !url.startsWith('https://') &&
-                                    !url.startsWith('blob:') &&
-                                    !url.startsWith('/')
-                                ) {
-                                    const newUrl = dataPrefix + url
-                                    console.log('转换为:', newUrl)
-                                    return newUrl
+                        // 正确的方式：使用 extend 方法扩展 RequestModifier
+                        this._dashPlayer.extend(
+                            'RequestModifier',
+                            () => {
+                                return {
+                                    modifyRequestHeader: function (xhr: XMLHttpRequest) {
+                                        return xhr
+                                    },
+                                    modifyRequestURL: function (url: string) {
+                                        // 只对相对路径添加前缀
+                                        if (url && !/^https?:\/\//.test(url) && !url.startsWith('/')) {
+                                            return dataPrefix + url
+                                        }
+                                        return url
+                                    }
                                 }
-                                return url
+                            },
+                            true
+                        )
+                    }
+
+                    // 配置DASH播放器
+                    this._dashPlayer.updateSettings({
+                        streaming: {
+                            buffer: {
+                                stableBufferTime: 20,
+                                bufferTimeAtTopQuality: 30
+                            },
+                            abr: {
+                                useDefaultABRRules: true,
+                                ABRStrategy: 'abrDynamic'
                             }
-                            return MediaPlayer
-                        },
-                        true
-                    )
-                }
-
-                // 配置DASH播放器
-                this._dashPlayer.updateSettings({
-                    streaming: {
-                        buffer: {
-                            stableBufferTime: 20,
-                            bufferTimeAtTopQuality: 30
-                        },
-                        abr: {
-                            useDefaultABRRules: true,
-                            ABRStrategy: 'abrDynamic'
                         }
-                    }
-                })
+                    })
 
-                // 附加视频元素
-                this._dashPlayer.initialize(videoElement, this._videoSrc as string, false)
+                    // 附加视频元素
+                    this._dashPlayer.initialize(videoElement, this._videoSrc as string, false)
 
-                this.logger.debug('DASH播放器初始化成功')
+                    this.logger.debug('DASH播放器初始化成功')
 
-                // 监听DASH播放器的画质变化
-                this._dashPlayer.on('qualityChange', (e: any) => {
-                    if (e.mediaType === 'video') {
-                        // 更新当前画质状态
-                        this.logger.debug('DASH画质变更:', e.newQuality)
-                    }
-                })
-            } catch (error) {
-                this.logger.error('DASH播放器初始化失败:', error)
-            }
+                    // 监听DASH播放器的画质变化
+                    this._dashPlayer.on('qualityChange', (e: any) => {
+                        if (e.mediaType === 'video') {
+                            // 更新当前画质状态
+                            this.logger.debug('DASH画质变更:', e.newQuality)
+                        }
+                    })
+                } catch (error) {
+                    this.logger.error('DASH播放器初始化失败:', error)
+                }
+            })
         } catch (error) {
             this.logger.error('加载DASH播放器失败:', error)
         }

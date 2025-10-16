@@ -86,7 +86,6 @@ export class DanmuPlugin implements IPlayerPlugin {
                 // 定期获取和显示播放器状态
                 setInterval(() => {
                     const state = this.player?.isPlaying
-                    console.log('Player state:', state)
                 }, 5000)
             }
         }

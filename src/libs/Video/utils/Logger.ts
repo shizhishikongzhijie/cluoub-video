@@ -60,6 +60,7 @@ class Logger {
      * @param optionalParams 可选参数
      */
     debug(message: string, ...optionalParams: any[]): void {
+        //console.log(this.logLevel, LogLevel.DEBUG)
         if (this.logLevel >= LogLevel.DEBUG) {
             console.debug(`[${this.componentName}] DEBUG: ${message}`, ...optionalParams)
         }
@@ -71,6 +72,7 @@ class Logger {
      * @param optionalParams 可选参数
      */
     info(message: string, ...optionalParams: any[]): void {
+        //console.log(this.logLevel, LogLevel.INFO)
         if (this.logLevel >= LogLevel.INFO) {
             console.info(`[${this.componentName}] INFO: ${message}`, ...optionalParams)
         }

@@ -23,6 +23,7 @@ import {VideoProps, VideoRef, VideoType} from './Video.types'
 const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props, ref) => {
     const {
         videoSrc,
+        dataPrefix,
         videoId,
         userId,
         username,
@@ -72,7 +73,7 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
         userId: userId || '',
         username: username || '',
         videoType: VideoType.DASH,
-        dataPrefix: ''
+        dataPrefix: dataPrefix || ''
     })
 
     // 组件ref，用于暴露方法给外部
@@ -428,6 +429,12 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
     const togglePip = async () => {
         const video = videoRef.current
         if (!video) return
+
+        // 检查视频元数据是否已加载
+        if (video.readyState < 1) {
+            logger.warn('视频元数据尚未加载完成，无法进入画中画模式')
+            return
+        }
 
         // 检查是否支持画中画功能
         if ('pictureInPictureEnabled' in document) {

@@ -30,9 +30,9 @@ const FullscreenButton: React.FC<FullscreenButtonProps> = ({ isFullscreen, onTog
             {getIcon(
                 'fullscreenIcon',
                 isFullscreen ? (
-                    <SvgIcon src={'/svg/全屏.svg'} noBackground size={20} />
-                ) : (
                     <SvgIcon src={'/svg/退出全屏.svg'} noBackground size={20} />
+                ) : (
+                    <SvgIcon src={'/svg/全屏.svg'} noBackground size={20} />
                 )
             )}
         </button>
