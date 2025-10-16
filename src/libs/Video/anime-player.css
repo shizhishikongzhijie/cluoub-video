@@ -14,6 +14,14 @@
   }
 }
 
+:root {
+  --subtitle-font-size: 100%;
+  --subtitle-color: #FFFFFF;
+  --subtitle-outline: 1px;
+  --subtitle-font-weight: normal;
+  --subtitle-opacity: 100%;
+}
+
 .anime-player-container {
   position: relative;
   width: 100%;
@@ -37,6 +45,18 @@
   object-fit: contain;
   outline: none;
 }
+
+.video-element::cue {
+  font-size: calc(16px * var(--subtitle-font-size) / 100);
+  color: var(--subtitle-color);
+  font-weight: var(--subtitle-font-weight);
+  text-shadow: 
+    -1px -1px 0 rgba(0, 0, 0, calc(var(--subtitle-opacity) / 100)),
+    1px -1px 0 rgba(0, 0, 0, calc(var(--subtitle-opacity) / 100)),
+    -1px 1px 0 rgba(0, 0, 0, calc(var(--subtitle-opacity) / 100)),
+    1px 1px 0 rgba(0, 0, 0, calc(var(--subtitle-opacity) / 100));
+}
+
 .plugin-component{
   position: absolute;
   left: 0;
@@ -62,14 +82,6 @@
   text-align: center;
   z-index: 15;
   pointer-events: none;
-}
-
-.subtitle-container::cue {
-  color: white;
-  background-color: rgba(0, 0, 0, 0.7);
-  font-size: 18px;
-  font-family: 'Comic Sans MS', 'Microsoft YaHei', sans-serif;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .barrage-container {

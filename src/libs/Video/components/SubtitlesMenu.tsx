@@ -1,38 +1,119 @@
 import './SubtitlesMenu.css'
 
-import React, {useState} from 'react'
+import React, {useEffect, useState} from 'react'
 
 import type {ColorPickerProps, NumberInputProps, SelectProps, SwitchProps} from '../common'
 import {ColorPicker, NumberInput, Popover, Select, Switch} from '../common'
+import type {Track} from '../Video.types'
 
+/**
+ * 字幕选项接口
+ * @interface SubtitleOption
+ */
 interface SubtitleOption {
+    /** 字幕选项唯一标识符 */
     id: string
+    /** 字幕选项显示标签 */
     label: string
+    /** 字幕语言代码 */
     language: string
+    /** 是否为当前激活选项 */
     isActive: boolean
 }
 
+/**
+ * 字幕菜单组件属性接口
+ * @interface SubtitlesMenuProps
+ */
 interface SubtitlesMenuProps {
+    /** 字幕选项列表 */
     options: SubtitleOption[]
+    /** 菜单是否打开 */
     isOpen: boolean
+    /** 菜单开关切换回调 */
     onToggle: () => void
+    /** 选择字幕选项回调 */
     onSelect: (optionId: string) => void
+    /** 关闭字幕回调 */
     onCloseSubtitles: () => void
+    /** 字幕轨道列表 */
+    tracks: Track[]
+    /** 字幕显示状态 */
+    showSubtitles: boolean
+    /** 字幕显示状态变更回调 */
+    onShowSubtitlesChange: (show: boolean) => void
+    /** 字幕类型变更回调 */
+    onSubtitleTypeChange: (type: string) => void
+    /** 字体大小变更回调 */
+    onFontSizeChange: (size: number) => void
+    /** 字体颜色变更回调 */
+    onFontColorChange: (color: string) => void
+    /** 描边开关变更回调 */
+    onOutlineChange: (outline: boolean) => void
+    /** 加粗开关变更回调 */
+    onBoldChange: (bold: boolean) => void
+    /** 不透明度变更回调 */
+    onOpacityChange: (opacity: number) => void
+    /** 字体大小 */
+    fontSize: number
+    /** 字体颜色 */
+    fontColor: string
+    /** 描边开关状态 */
+    outline: boolean
+    /** 加粗开关状态 */
+    bold: boolean
+    /** 不透明度 */
+    opacity: number
+    /** 字幕类型 */
+    subtitleType: string
 }
 
-const SubtitlesMenu: React.FC<SubtitlesMenuProps> = ({ options, isOpen, onToggle, onSelect, onCloseSubtitles }) => {
-    // 字幕设置状态
-    const [showSubtitles, setShowSubtitles] = useState(true)
-    const [subtitleType, setSubtitleType] = useState('vtt')
-    const [fontSize, setFontSize] = useState(100) // 百分比
-    const [fontColor, setFontColor] = useState('#FFFFFF')
-    const [outline, setOutline] = useState(true)
-    const [bold, setBold] = useState(false)
-    const [opacity, setOpacity] = useState(100) // 百分比
+const SubtitlesMenu: React.FC<SubtitlesMenuProps> = ({
+    options,
+    isOpen,
+    onToggle,
+    onSelect,
+    onCloseSubtitles,
+    tracks,
+    showSubtitles,
+    onShowSubtitlesChange,
+    onSubtitleTypeChange,
+    onFontSizeChange,
+    onFontColorChange,
+    onOutlineChange,
+    onBoldChange,
+    onOpacityChange,
+    fontSize,
+    fontColor,
+    outline,
+    bold,
+    opacity,
+    subtitleType
+}) => {
+    // 字幕设置状态（从props获取初始值）
+    const [localShowSubtitles, setLocalShowSubtitles] = useState(showSubtitles)
+    const [localSubtitleType, setLocalSubtitleType] = useState(subtitleType)
+    const [localFontSize, setLocalFontSize] = useState(fontSize)
+    const [localFontColor, setLocalFontColor] = useState(fontColor)
+    const [localOutline, setLocalOutline] = useState(outline)
+    const [localBold, setLocalBold] = useState(bold)
+    const [localOpacity, setLocalOpacity] = useState(opacity)
+
+    // 当props变化时更新本地状态
+    useEffect(() => {
+        setLocalShowSubtitles(showSubtitles)
+        setLocalSubtitleType(subtitleType)
+        setLocalFontSize(fontSize)
+        setLocalFontColor(fontColor)
+        setLocalOutline(outline)
+        setLocalBold(bold)
+        setLocalOpacity(opacity)
+    }, [showSubtitles, subtitleType, fontSize, fontColor, outline, bold, opacity])
 
     // 字幕开关处理
     const handleSubtitleToggle: SwitchProps['onChange'] = (checked) => {
-        setShowSubtitles(checked)
+        setLocalShowSubtitles(checked)
+        onShowSubtitlesChange(checked)
         if (!checked) {
             onCloseSubtitles()
         }
@@ -40,33 +121,61 @@ const SubtitlesMenu: React.FC<SubtitlesMenuProps> = ({ options, isOpen, onToggle
 
     // 字幕类型处理
     const handleSubtitleTypeChange: SelectProps['onChange'] = (value) => {
-        setSubtitleType(value)
+        setLocalSubtitleType(value)
+        onSubtitleTypeChange(value)
     }
 
     // 字体大小处理
     const handleFontSizeChange: NumberInputProps['onChange'] = (value) => {
-        console.log('fontSize', value)
-        setFontSize(value)
+        setLocalFontSize(value)
+        onFontSizeChange(value)
     }
 
     // 字体颜色处理
     const handleFontColorChange: ColorPickerProps['onChange'] = (color) => {
-        setFontColor(color)
+        setLocalFontColor(color)
+        onFontColorChange(color)
     }
 
     // 描边开关处理
     const handleOutlineToggle: SwitchProps['onChange'] = (checked) => {
-        setOutline(checked)
+        setLocalOutline(checked)
+        onOutlineChange(checked)
     }
 
     // 加粗开关处理
     const handleBoldToggle: SwitchProps['onChange'] = (checked) => {
-        setBold(checked)
+        setLocalBold(checked)
+        onBoldChange(checked)
     }
 
     // 不透明度处理
     const handleOpacityChange: NumberInputProps['onChange'] = (value) => {
-        setOpacity(value)
+        setLocalOpacity(value)
+        onOpacityChange(value)
+    }
+
+    // 根据实际可用的字幕类型生成选项
+    const getSubtitleTypeOptions = () => {
+        const types = new Set<string>()
+        tracks.forEach((track) => {
+            const extension = track.src.split('.').pop()?.toLowerCase()
+            if (extension) {
+                types.add(extension)
+            }
+        })
+
+        const options = []
+        if (types.has('vtt')) options.push({ value: 'vtt', label: 'WebVTT (.vtt)' })
+        if (types.has('srt')) options.push({ value: 'srt', label: 'SubRip (.srt)' })
+        if (types.has('ass')) options.push({ value: 'ass', label: 'Advanced SubStation Alpha (.ass)' })
+
+        // 如果没有识别到类型，默认添加vtt
+        if (options.length === 0) {
+            options.push({ value: 'vtt', label: 'WebVTT (.vtt)' })
+        }
+
+        return options
     }
 
     return (
@@ -80,19 +189,15 @@ const SubtitlesMenu: React.FC<SubtitlesMenuProps> = ({ options, isOpen, onToggle
                     {/* 字幕开关 */}
                     <div className="subtitle-setting-item">
                         <span className="subtitle-setting-label">字幕</span>
-                        <Switch checked={showSubtitles} onChange={handleSubtitleToggle} />
+                        <Switch checked={localShowSubtitles} onChange={handleSubtitleToggle} />
                     </div>
 
                     {/* 字幕类型 */}
                     <div className="subtitle-setting-item">
                         <span className="subtitle-setting-label">字幕类型</span>
                         <Select
-                            value={subtitleType}
-                            options={[
-                                { value: 'vtt', label: 'WebVTT (.vtt)' },
-                                { value: 'srt', label: 'SubRip (.srt)' },
-                                { value: 'ass', label: 'Advanced SubStation Alpha (.ass)' }
-                            ]}
+                            value={localSubtitleType}
+                            options={getSubtitleTypeOptions()}
                             onChange={handleSubtitleTypeChange}
                         />
                     </div>
@@ -101,7 +206,7 @@ const SubtitlesMenu: React.FC<SubtitlesMenuProps> = ({ options, isOpen, onToggle
                     <div className="subtitle-setting-item">
                         <span className="subtitle-setting-label">字体大小</span>
                         <NumberInput
-                            defaultValue={fontSize}
+                            defaultValue={localFontSize}
                             min={50}
                             max={200}
                             step={10}
@@ -112,25 +217,31 @@ const SubtitlesMenu: React.FC<SubtitlesMenuProps> = ({ options, isOpen, onToggle
                     {/* 字体颜色 */}
                     <div className="subtitle-setting-item">
                         <span className="subtitle-setting-label">字体颜色</span>
-                        <ColorPicker defaultValue={fontColor} onChange={handleFontColorChange} />
+                        <ColorPicker defaultValue={localFontColor} onChange={handleFontColorChange} />
                     </div>
 
                     {/* 描边和加粗开关并列 */}
                     <div className="subtitle-setting-row">
                         <div className="subtitle-setting-item">
                             <span className="subtitle-setting-label">描边</span>
-                            <Switch checked={outline} size={'small'} onChange={handleOutlineToggle} />
+                            <Switch checked={localOutline} size={'small'} onChange={handleOutlineToggle} />
                         </div>
                         <div className="subtitle-setting-item">
                             <span className="subtitle-setting-label">加粗</span>
-                            <Switch checked={bold} size={'small'} onChange={handleBoldToggle} />
+                            <Switch checked={localBold} size={'small'} onChange={handleBoldToggle} />
                         </div>
                     </div>
 
                     {/* 不透明度 */}
                     <div className="subtitle-setting-item">
                         <span className="subtitle-setting-label">不透明度</span>
-                        <NumberInput defaultValue={opacity} min={0} max={100} step={5} onChange={handleOpacityChange} />
+                        <NumberInput
+                            defaultValue={localOpacity}
+                            min={0}
+                            max={100}
+                            step={5}
+                            onChange={handleOpacityChange}
+                        />
                     </div>
 
                     {/* 字幕轨道选择 */}

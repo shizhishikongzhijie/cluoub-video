@@ -477,6 +477,15 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
     // 字幕菜单是否打开
     const [isSubtitlesMenuOpen, setIsSubtitlesMenuOpen] = useState(false)
 
+    // 字幕设置状态
+    const [showSubtitles, setShowSubtitles] = useState(true)
+    const [subtitleType, setSubtitleType] = useState('vtt')
+    const [fontSize, setFontSize] = useState(100) // 百分比
+    const [fontColor, setFontColor] = useState('#FFFFFF')
+    const [outline, setOutline] = useState(true)
+    const [bold, setBold] = useState(false)
+    const [opacity, setOpacity] = useState(100) // 百分比
+
     // 切换字幕菜单显示状态
     const toggleSubtitlesMenu = () => {
         setIsSubtitlesMenuOpen(!isSubtitlesMenuOpen)
@@ -488,6 +497,7 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
         if (trackIndex !== -1) {
             playerCore.setSubtitleTrack(trackIndex)
             playerCore.setShowSubtitles(true)
+            setShowSubtitles(true) // 同步更新本地状态
         }
         setIsSubtitlesMenuOpen(false)
     }
@@ -495,7 +505,68 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
     // 关闭字幕
     const closeSubtitles = () => {
         playerCore.setShowSubtitles(false)
+        setShowSubtitles(false) // 同步更新本地状态
         setIsSubtitlesMenuOpen(false)
+    }
+
+    // 字幕设置变更处理函数
+    const handleShowSubtitlesChange = (show: boolean) => {
+        playerCore.setShowSubtitles(show)
+        setShowSubtitles(show)
+    }
+
+    const handleSubtitleTypeChange = (type: string) => {
+        setSubtitleType(type)
+        // 应用字幕类型变更到视频元素
+        const video = videoRef.current
+        if (video && video.textTracks) {
+            // 这里可以添加特定于字幕类型的处理逻辑
+        }
+    }
+
+    const handleFontSizeChange = (size: number) => {
+        setFontSize(size)
+        // 更新CSS变量以改变字幕字体大小
+        const videoElement = videoRef.current
+        if (videoElement) {
+            videoElement.style.setProperty('--subtitle-font-size', `${size}%`)
+        }
+    }
+
+    const handleFontColorChange = (color: string) => {
+        setFontColor(color)
+        // 更新CSS变量以改变字幕颜色
+        const videoElement = videoRef.current
+        if (videoElement) {
+            videoElement.style.setProperty('--subtitle-color', color)
+        }
+    }
+
+    const handleOutlineChange = (outline: boolean) => {
+        setOutline(outline)
+        // 更新CSS变量以控制字幕描边
+        const videoElement = videoRef.current
+        if (videoElement) {
+            videoElement.style.setProperty('--subtitle-outline', outline ? '1px' : '0px')
+        }
+    }
+
+    const handleBoldChange = (bold: boolean) => {
+        setBold(bold)
+        // 更新CSS变量以控制字幕加粗
+        const videoElement = videoRef.current
+        if (videoElement) {
+            videoElement.style.setProperty('--subtitle-font-weight', bold ? 'bold' : 'normal')
+        }
+    }
+
+    const handleOpacityChange = (opacity: number) => {
+        setOpacity(opacity)
+        // 更新CSS变量以改变字幕不透明度
+        const videoElement = videoRef.current
+        if (videoElement) {
+            videoElement.style.setProperty('--subtitle-opacity', `${opacity}%`)
+        }
     }
 
     // 计算容器样式
@@ -646,7 +717,22 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
                                     onToggle={toggleSubtitlesMenu}
                                     onSelect={selectSubtitleTrack}
                                     onCloseSubtitles={closeSubtitles}
-                                    //字幕类型，更改字体颜色，toggle字体描边，toggle字体加粗，更改字体大小，更改不透明度，
+                                    // 新增props用于与播放器核心联动
+                                    tracks={tracks}
+                                    showSubtitles={showSubtitles}
+                                    onShowSubtitlesChange={handleShowSubtitlesChange}
+                                    onSubtitleTypeChange={handleSubtitleTypeChange}
+                                    onFontSizeChange={handleFontSizeChange}
+                                    onFontColorChange={handleFontColorChange}
+                                    onOutlineChange={handleOutlineChange}
+                                    onBoldChange={handleBoldChange}
+                                    onOpacityChange={handleOpacityChange}
+                                    fontSize={fontSize}
+                                    fontColor={fontColor}
+                                    outline={outline}
+                                    bold={bold}
+                                    opacity={opacity}
+                                    subtitleType={subtitleType}
                                 />
                             )}
                             {/* 音量控制 */}
