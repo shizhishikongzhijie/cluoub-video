@@ -9,7 +9,7 @@ function App() {
     return (
         <>
             <CluoubVideo
-                videoSrc="https://cluoub-video.oss-cn-hangzhou.aliyuncs.com/format.mpd"
+                videoSrc="./format.mpd"
                 videoType={VideoType.DASH}
                 videoId="视频ID"
                 userId="用户ID"

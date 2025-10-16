@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react'
 
 import FullscreenButton from './components/FullscreenButton'
+import PipButton from './components/PipButton'
 import PlayButton from './components/PlayButton'
 import ProgressControl from './components/ProgressControl'
 import QualityButton from './components/QualityButton'
@@ -9,13 +10,13 @@ import SpeedButton from './components/SpeedButton'
 import SubtitlesMenu from './components/SubtitlesMenu'
 import TimeDisplay from './components/TimeDisplay'
 import VolumeControl from './components/VolumeControl'
-import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig} from './core/IPlayerCore'
+import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig} from './core'
 import {useControlsManager, usePlayerCore, useThumbnailManager} from './hooks'
 import {useControlsVisibility} from './hooks/useControlsVisibility'
 import {useKeyboardShortcuts} from './hooks/useKeyboardShortcuts'
 import {useSubtitles} from './hooks/useSubtitles'
 import {useVideoEvents} from './hooks/useVideoEvents'
-import {CoverPlugin} from './plugins/CoverPlugin'
+import {CoverPlugin} from './plugins'
 import Logger from './utils/Logger'
 import {VideoProps, VideoRef, VideoType} from './Video.types'
 
@@ -38,7 +39,8 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
             barrage: true,
             subtitles: true,
             quality: true,
-            speed: true
+            speed: true,
+            pip: true
         },
         customIcons,
         thumbnailUrl,
@@ -422,6 +424,27 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
         playerCore.toggleFullscreen()
     }
 
+    // 画中画切换
+    const togglePip = async () => {
+        const video = videoRef.current
+        if (!video) return
+
+        // 检查是否支持画中画功能
+        if ('pictureInPictureEnabled' in document) {
+            try {
+                if (document.pictureInPictureElement) {
+                    await document.exitPictureInPicture()
+                } else if (video.requestPictureInPicture) {
+                    await video.requestPictureInPicture()
+                }
+            } catch (error) {
+                logger.error('画中画模式切换失败:', error)
+            }
+        } else {
+            logger.warn('当前浏览器不支持画中画功能')
+        }
+    }
+
     // 实际执行全屏操作
     const handleFullscreenToggle = (fullscreen: boolean) => {
         const container = containerRef.current
@@ -668,6 +691,20 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
                                         customIcons
                                             ? {
                                                   settingsIcon: customIcons.settingsIcon
+                                              }
+                                            : undefined
+                                    }
+                                />
+                            )}
+
+                            {/* 画中画按钮 */}
+                            {controls.pip && (
+                                <PipButton
+                                    onToggle={togglePip}
+                                    customIcons={
+                                        customIcons
+                                            ? {
+                                                  pipIcon: customIcons.pipIcon
                                               }
                                             : undefined
                                     }

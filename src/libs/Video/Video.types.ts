@@ -161,6 +161,7 @@ export interface VideoProps {
         progress?: boolean
         settings?: boolean
         fullscreen?: boolean
+        pip?: boolean
         barrage?: boolean
         subtitles?: boolean
         quality?: boolean

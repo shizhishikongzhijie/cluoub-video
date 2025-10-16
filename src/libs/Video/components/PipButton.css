@@ -1,0 +1,26 @@
+/* 画中画按钮样式，与全屏按钮保持一致 */
+.control-button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+}
+
+.control-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.control-button:active {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.control-button:focus {
+    outline: 2px solid #00a1ff;
+    outline-offset: 2px;
+}
