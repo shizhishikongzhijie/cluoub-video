@@ -293,6 +293,13 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
                             this.logger.debug('DASH画质变更:', e.newQuality)
                         }
                     })
+
+                    // 监听DASH播放器的表示信息加载完成事件
+                    this._dashPlayer.on('manifestLoaded', () => {
+                        // 更新可用画质选项
+                        this.updateAvailableQualitiesFromDash()
+                    })
+
                 } catch (error) {
                     this.logger.error('DASH播放器初始化失败:', error)
                 }
@@ -325,7 +332,16 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
                     this._dashPlayer.setQualityFor('video', dashQuality)
                 } else {
                     // 设置为自动模式
-                    this._dashPlayer.setAutoSwitchQualityFor('video', true)
+                    this._dashPlayer.updateSettings({
+                        streaming: {
+                            abr: {
+                                autoSwitchBitrate: {
+                                    video: true,
+                                    audio: true
+                                }
+                            }
+                        }
+                    })
                 }
             } catch (error) {
                 this.logger.error('设置DASH画质失败:', error)
@@ -567,16 +583,8 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
             this._videoSrc.includes('.mpd')
         ) {
             // DASH模式，需要解析mpd文件获取画质信息
-            // 这里暂时使用默认选项，实际应该解析MPD文件
-            this._availableQualities = [
-                { key: 'auto', label: '自动' },
-                { key: '2160p', label: '2160p' },
-                { key: '1440p', label: '1440p' },
-                { key: '1080p', label: '1080p' },
-                { key: '720p', label: '720p' },
-                { key: '480p', label: '480p' },
-                { key: '360p', label: '360p' }
-            ]
+            // 初始时只添加自动选项，等DASH播放器加载完成后再更新
+            this._availableQualities = [{ key: 'auto', label: '自动' }]
         } else {
             // 默认选项
             this._availableQualities = [{ key: 'auto', label: '自动' }]
@@ -587,8 +595,28 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
 
     // 将画质映射到DASH的表示索引
     private mapQualityToDash(quality: string): number | null {
-        // 在实际应用中，这里需要根据DASH的表示信息来映射
-        // 这里只是一个示例映射
+        // 当_dashPlayer存在时，应该从_dashPlayer获取实际的表示信息
+        this.logger.debug('映射画质到DASH的表示索引', { quality })
+        if (this._dashPlayer) {
+            try {
+                const representations = (this._dashPlayer as any).getBitrateInfoListFor('video')
+                if (representations) {
+                    const rep = representations.find(
+                        (r: any) =>
+                            r.qualityIndex?.toString() === quality ||
+                            r.height?.toString() + 'p' === quality ||
+                            r.bitrate?.toString() === quality
+                    )
+                    if (rep) {
+                        return rep.qualityIndex
+                    }
+                }
+            } catch (error) {
+                this.logger.error('获取DASH表示信息失败:', error)
+            }
+        }
+
+        // 默认映射（向后兼容）
         switch (quality) {
             case '2160p':
                 return 0
@@ -604,6 +632,39 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
                 return 5
             default:
                 return null // 自动模式
+        }
+    }
+
+    // 从DASH播放器更新可用画质选项
+    private updateAvailableQualitiesFromDash(): void {
+        if (this._dashPlayer && this._videoType === VideoType.DASH) {
+            try {
+                const representations = this._dashPlayer.getBitrateInfoListFor('video')
+                this.logger.debug('从DASH播放器更新可用画质选项', representations)
+                if (representations && representations.length > 0) {
+                    // 构建画质选项列表
+                    const qualities = representations.map((rep: any) => {
+                        // 使用高度作为标签，如果有的话
+                        let label = rep.height ? `${rep.height}p` : `${rep.bitrate}`
+                        // 如果有多个相同高度的表示，添加比特率信息
+                        if (representations.filter((r: any) => r.height === rep.height).length > 1) {
+                            label += ` (${Math.round(rep.bitrate / 1000)}k)`
+                        }
+                        return {
+                            key:
+                                rep.qualityIndex?.toString() || rep.height?.toString() || rep.bitrate?.toString() || '',
+                            label
+                        }
+                    })
+
+                    // 添加自动选项并更新状态
+                    this._availableQualities = [{ key: 'auto', label: '自动' }, ...qualities]
+
+                    this.emit('availableQualitiesChange', this._availableQualities)
+                }
+            } catch (error) {
+                this.logger.error('从DASH播放器更新画质选项失败:', error)
+            }
         }
     }
 }

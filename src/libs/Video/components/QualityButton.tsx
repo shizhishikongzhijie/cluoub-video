@@ -42,8 +42,13 @@ const QualityButton: React.FC<QualityButtonProps> = ({ customIcons }) => {
         }
 
         const handleAvailableQualitiesChange = (qualities: { key: string; label: string }[]) => {
-            setMenuItems(qualities)
+            // 确保始终包含"自动"选项
+            const itemsWithAuto = qualities.some((item) => item.key === 'auto')
+                ? qualities
+                : [{ key: 'auto', label: '自动' }, ...qualities]
+            setMenuItems(itemsWithAuto)
         }
+        console.log('QualitiesChange', playerCore.availableQualities)
 
         playerCore.on('qualityChange', handleQualityChange)
         playerCore.on('availableQualitiesChange', handleAvailableQualitiesChange)
