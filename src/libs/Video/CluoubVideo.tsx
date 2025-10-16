@@ -632,7 +632,23 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
                                     }
                                 />
                             )}
-
+                            {/* 字幕控制按钮 - 使用SubtitlesMenu组件 */}
+                            {controls.subtitles && tracks.length > 0 && (
+                                <SubtitlesMenu
+                                    options={tracks.map((track, index) => ({
+                                        id: track.id || `track-${index}`,
+                                        kind: track.kind || 'subtitles',
+                                        label: track.label,
+                                        language: track.srclang || 'auto',
+                                        isActive: playerCore.showSubtitles && index === playerCore.currentTrackIndex
+                                    }))}
+                                    isOpen={isSubtitlesMenuOpen}
+                                    onToggle={toggleSubtitlesMenu}
+                                    onSelect={selectSubtitleTrack}
+                                    onCloseSubtitles={closeSubtitles}
+                                    //字幕类型，更改字体颜色，toggle字体描边，toggle字体加粗，更改字体大小，更改不透明度，
+                                />
+                            )}
                             {/* 音量控制 */}
                             {controls.volume && (
                                 <VolumeControl
@@ -673,23 +689,6 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
                                         )}
                                     </React.Fragment>
                                 ))}
-
-                            {/* 字幕控制按钮 - 使用SubtitlesMenu组件 */}
-                            {controls.subtitles && tracks.length > 0 && (
-                                <SubtitlesMenu
-                                    options={tracks.map((track, index) => ({
-                                        id: track.id || `track-${index}`,
-                                        kind: track.kind || 'subtitles',
-                                        label: track.label,
-                                        language: track.srclang || 'auto',
-                                        isActive: playerCore.showSubtitles && index === playerCore.currentTrackIndex
-                                    }))}
-                                    isOpen={isSubtitlesMenuOpen}
-                                    onToggle={toggleSubtitlesMenu}
-                                    onSelect={selectSubtitleTrack}
-                                    onCloseSubtitles={closeSubtitles}
-                                />
-                            )}
 
                             {/* 设置按钮 */}
                             {controls.settings && (

@@ -16,6 +16,10 @@ export type { NumberInputProps, NumberInputRef } from './numberInput'
 export { default as Popover } from './popover'
 export type { PopoverPosition, PopoverProps } from './popover'
 
+// Select组件
+export { default as Select } from './select'
+export type { SelectOption, SelectProps } from './select'
+
 // SvgIcon组件
 export { default as SvgIcon } from './svgIcon'
 export type { SvgIconProps, SvgIconRef } from './svgIcon/types'

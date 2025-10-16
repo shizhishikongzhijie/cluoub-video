@@ -105,6 +105,10 @@ const ColorPicker: React.FC<ColorPickerProps> = (props) => {
                         </div>
                     </div>
                 }
+                style={{
+                    '--popover-padding': 0,
+                    '--z-index': 1001
+                }}
             >
                 <button className="color-picker-dropdown-button" onClick={() => setIsPopoverVisible(!isPopoverVisible)}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
