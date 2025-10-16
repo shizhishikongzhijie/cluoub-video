@@ -1,25 +1,26 @@
+import {MessageSquare} from 'lucide-react'
+
 import {
     type ControlButtonConfig,
     type IPlayerCore,
     type IPlayerPlugin,
     type IPlayerPluginApi,
     type PlayerComponentConfig,
-    PlayerComponentConfigType,
-} from "../libs/Video";
-import {MessageSquare} from "lucide-react";
+    PlayerComponentConfigType
+} from '../libs/Video'
 
-export class DanmuPlugin implements IPlayerPlugin{
-    name = 'danmu';
-    private player: IPlayerCore| null= null;
-    private api: IPlayerPluginApi | null = null;
+export class DanmuPlugin implements IPlayerPlugin {
+    name = 'danmu'
+    private player: IPlayerCore | null = null
+    private api: IPlayerPluginApi | null = null
     install(player: IPlayerCore, options?: any): void {
-        this.player = player;
-        console.log('DemoPlugin installed with options:', options);
+        this.player = player
+        console.log('DemoPlugin installed with options:', options)
     }
     // 接收插件API的方法
     setAPI(api: IPlayerPluginApi): void {
-        this.api = api;
-        console.log('Plugin API received');
+        this.api = api
+        console.log('Plugin API received')
 
         const danmuToggleButtonConfig: ControlButtonConfig = {
             id: 'danmu-toggle-button',
@@ -28,10 +29,10 @@ export class DanmuPlugin implements IPlayerPlugin{
             icon: <MessageSquare size={20} />,
             title: '弹幕开关',
             onClick: () => {
-                console.log('Demo button clicked!');
-                alert('示例按钮被点击了！');
+                console.log('Demo button clicked!')
+                alert('示例按钮被点击了！')
             }
-        };
+        }
 
         // 注册一个视频上层组件（类似弹幕容器）
         const overlayComponent: PlayerComponentConfig = {
@@ -58,45 +59,45 @@ export class DanmuPlugin implements IPlayerPlugin{
                     示例覆盖层
                 </div>
             )
-        };
+        }
 
         // 注册按钮和组件
         if (this.api) {
-            this.api.registerControlButton(danmuToggleButtonConfig);
-            this.api.registerComponent(overlayComponent);
+            this.api.registerControlButton(danmuToggleButtonConfig)
+            this.api.registerComponent(overlayComponent)
 
             // 监听播放器事件
             if (this.player) {
                 // 模拟监听播放事件
-                const originalPlay = this.player.play;
-                this.player.play = function() {
-                    console.log('Video is playing!');
+                const originalPlay = this.player.play
+                this.player.play = function () {
+                    console.log('Video is playing!')
                     // 显示覆盖层
-                    const overlay = document.getElementById('demo-overlay-text');
+                    const overlay = document.getElementById('demo-overlay-text')
                     if (overlay) {
-                        overlay.style.display = 'block';
+                        overlay.style.display = 'block'
                         setTimeout(() => {
-                            if (overlay) overlay.style.display = 'none';
-                        }, 2000);
+                            if (overlay) overlay.style.display = 'none'
+                        }, 2000)
                     }
-                    return originalPlay.apply(this, []);
-                };
+                    return originalPlay.apply(this, [])
+                }
 
                 // 定期获取和显示播放器状态
                 setInterval(() => {
-                    const state = this.player?.isPlaying;
-                    console.log('Player state:', state);
-                }, 5000);
+                    const state = this.player?.isPlaying
+                    console.log('Player state:', state)
+                }, 5000)
             }
         }
     }
 
     destroy(): void {
-        console.log('DemoPlugin destroyed');
+        console.log('DemoPlugin destroyed')
         // 清理资源
         if (this.api) {
-            this.api.unregisterControlButton('danmu-toggle-button');
-            this.api.unregisterComponent('demo-overlay');
+            this.api.unregisterControlButton('danmu-toggle-button')
+            this.api.unregisterComponent('demo-overlay')
         }
     }
 }

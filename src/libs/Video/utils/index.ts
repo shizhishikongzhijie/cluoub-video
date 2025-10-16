@@ -1,1 +1,1 @@
-export { default as Logger, LogLevel } from './Logger';
+export { LogLevel, default as Logger } from './Logger'

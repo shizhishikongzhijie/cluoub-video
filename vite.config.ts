@@ -29,14 +29,15 @@ export default defineConfig({
       fileName: (format) => `index.${format}.js`
     },
     rolldownOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react', 'uuid'],
+      external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react', 'uuid','dash.js'],
       output: {
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
           'react/jsx-runtime': 'reactJsxRuntime',
           'lucide-react': 'LucideReact',
-          uuid: 'uuid'
+          uuid: 'uuid',
+          'dash.js': 'dashjs'
         }
       }
     }

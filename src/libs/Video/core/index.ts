@@ -1,3 +1,3 @@
-export * from './PlayerCore';
-export * from './EventEmitter';
-export * from './IPlayerCore';
+export * from './EventEmitter'
+export * from './IPlayerCore'
+export * from './PlayerCore'

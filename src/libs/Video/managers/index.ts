@@ -1,2 +1,2 @@
-export * from './ControlsManager';
-export * from './ThumbnailManager';
+export * from './ControlsManager'
+export * from './ThumbnailManager'
