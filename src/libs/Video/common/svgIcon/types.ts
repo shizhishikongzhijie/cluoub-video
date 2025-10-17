@@ -20,6 +20,11 @@ export interface SvgIconProps {
     noBackground?: boolean
 
     /**
+     * 是否为原始SVG字符串
+     */
+    isRaw?: boolean
+
+    /**
      * 点击事件处理函数
      */
     onClick?: () => void

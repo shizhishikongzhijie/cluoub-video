@@ -5,15 +5,15 @@ import {forwardRef, useEffect, useState} from 'react'
 
 import type {SvgIconProps} from './types'
 
-const SvgIcon = forwardRef<SVGSVGElement, SvgIconProps & SVGProps<SVGSVGElement>>((props, ref) => {
-    const { src, size = 24, primary = false, noBackground = false, className = '', ...restProps } = props
+const SvgIcon = forwardRef<SVGSVGElement, SvgIconProps & SVGProps<SVGSVGElement> & { isRaw?: boolean }>((props, ref) => {
+    const { src, size = 24, primary = false, noBackground = false, className = '', isRaw = false, ...restProps } = props
 
     const [svgContent, setSvgContent] = useState<string>('')
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<boolean>(false)
 
     // 判断src是URL还是SVG字符串
-    const isUrl = src.startsWith('http') || src.startsWith('/')
+    const isUrl = !isRaw && (src.startsWith('http') || src.startsWith('/'))
 
     // 构建类名
     const iconClass = [
@@ -34,7 +34,7 @@ const SvgIcon = forwardRef<SVGSVGElement, SvgIconProps & SVGProps<SVGSVGElement>
     }
 
     useEffect(() => {
-        if (!isUrl) {
+        if (isRaw || !isUrl) {
             // 直接使用SVG字符串
             setSvgContent(src)
             return
@@ -58,7 +58,7 @@ const SvgIcon = forwardRef<SVGSVGElement, SvgIconProps & SVGProps<SVGSVGElement>
         }
 
         fetchSvg()
-    }, [src, isUrl])
+    }, [src, isUrl, isRaw])
 
     if (loading) {
         return (

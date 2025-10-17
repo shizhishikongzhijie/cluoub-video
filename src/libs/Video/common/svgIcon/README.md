@@ -1,67 +1,61 @@
-# SvgIcon 组件
+# SvgIcon 组件使用说明
 
-SvgIcon 是一个用于渲染 SVG 图标的 React 组件，支持自定义 SVG 内容和多种样式选项。
-
-## 功能特性
-
-- 支持 SVG 字符串和 URL 两种方式引入 SVG
-- 提供 primary 样式选项
-- 支持无背景样式
-- 可自定义图标大小
-- 支持所有标准 SVG 属性
-- 自动处理加载和错误状态
-
-## 使用方法
+## 基本用法
 
 ```tsx
-import SvgIcon from '@/components/SvgIcon'
+import SvgIcon from './SvgIcon'
 
-// 使用 SVG 字符串
-<SvgIcon 
-  src="<svg>...</svg>" 
-  size={32} 
-  primary 
-/>
+// 从URL加载SVG
+<SvgIcon src="/path/to/icon.svg" />
 
-// 使用 SVG URL
-<SvgIcon 
-  src="/icons/home.svg" 
-  size={24} 
-  noBackground 
-/>
-
-// 基本用法
-<SvgIcon 
-  src="<svg>...</svg>" 
-  size={20} 
-/>
-
-// 带事件处理
-<SvgIcon 
-  src="<svg>...</svg>" 
-  size={24}
-  onClick={() => console.log('Icon clicked')}
-/>
+// 使用原始SVG字符串（通过vite-plugin-raw）
+import fullscreenSvg from './assets/全屏.svg?raw'
+<SvgIcon src={fullscreenSvg} isRaw />
 ```
 
-## Props
+## 属性说明
 
 | 属性名 | 类型 | 默认值 | 描述 |
 | --- | --- | --- | --- |
-| src | string | - | SVG内容，可以是SVG字符串或URL |
-| size | number \| string | 24 | 图标大小 |
-| primary | boolean | false | 是否使用primary样式 |
-| noBackground | boolean | false | 是否无背景 |
-| ...props | SVGProps | - | 其他标准SVG属性 |
+| src | string | 必需 | SVG内容，可以是SVG字符串、原始SVG字符串或URL |
+| size | number/string | 24 | 图标大小 |
+| primary | boolean | false | primary样式 |
+| noBackground | boolean | false | 无背景样式 |
+| isRaw | boolean | false | 是否为原始SVG字符串 |
+| onClick | function | - | 点击事件处理函数 |
+| onMouseEnter | function | - | 鼠标悬停事件处理函数 |
+| onMouseLeave | function | - | 鼠标离开事件处理函数 |
 
-## 样式说明
+## 使用原始SVG字符串（推荐）
 
-- 默认样式：带灰色背景和圆角
-- primary 样式：使用主题色背景，白色图标
-- noBackground 样式：无背景，无内边距
+通过 `vite-plugin-raw` 插件，可以将SVG文件作为原始字符串导入，避免网络请求：
 
-## 注意事项
+1. 安装插件：
+```bash
+pnpm add -D vite-plugin-raw
+```
 
-1. 当使用 URL 方式加载 SVG 时，组件会自动处理加载状态和错误状态
-2. 组件会自动为 SVG 元素添加适当的类名以确保样式正确应用
-3. 所有标准的 SVG 属性都可以通过 props 传递给组件
+2. 配置 `vite.config.ts`：
+```ts
+import rawPlugin from 'vite-plugin-raw'
+
+export default defineConfig({
+  plugins: [
+    // 其他插件...
+    rawPlugin({
+      fileRegex: /\.svg$/
+    })
+  ]
+})
+```
+
+3. 在组件中使用：
+```tsx
+import fullscreenSvg from './assets/全屏.svg?raw'
+import exitFullscreenSvg from './assets/退出全屏.svg?raw'
+
+<SvgIcon src={fullscreenSvg} isRaw />
+<SvgIcon src={exitFullscreenSvg} isRaw />
+```
+
+这种方式将SVG内容直接内联到JS中，无需额外的网络请求，完全兼容所有项目环境。

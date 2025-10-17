@@ -2,6 +2,8 @@ import './VolumeControl.css'
 
 import React, {useCallback, useEffect, useRef} from 'react'
 
+import muteSvg from '@/assets/svg/静音.svg?raw'
+import volumeSvg from '@/assets/svg/音量.svg?raw'
 import Popover from '../common/popover'
 import SvgIcon from '../common/svgIcon'
 
@@ -127,8 +129,8 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
             >
                 <button className="control-button volume-button" onClick={onToggleMute}>
                     {isMuted || volume === 0
-                        ? getIcon('muteIcon', <SvgIcon src={'/svg/静音.svg'} noBackground size={20} />)
-                        : getIcon('volumeIcon', <SvgIcon src={'/svg/音量.svg'} noBackground size={20} />)}
+                        ? getIcon('muteIcon', <SvgIcon src={muteSvg} isRaw noBackground size={20} />)
+                        : getIcon('volumeIcon', <SvgIcon src={volumeSvg} isRaw noBackground size={20} />)}
                 </button>
             </Popover>
         </>

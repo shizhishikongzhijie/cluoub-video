@@ -271,8 +271,6 @@ export interface ControlButtonConfig {
     customComponent?: React.ReactNode
 }
 
-// PlayerComponentConfig interface is defined above with type: PlayerComponentConfigType
-
 /**
  * 插件接口定义
  */

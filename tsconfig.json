@@ -20,7 +20,15 @@
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@assets": [
+        "./assets"
+      ]
+    }
   },
-  "include": ["src/libs/Video/**/*"]
+  "include": ["src/libs/Video/**/*", "vite.env.d.ts"],
 }

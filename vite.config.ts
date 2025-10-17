@@ -1,6 +1,6 @@
 // vite.config.ts
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import path, {resolve} from 'path'
 import {visualizer} from 'rollup-plugin-visualizer'
 import {defineConfig} from 'vite'
 import dts from 'vite-plugin-dts'
@@ -19,7 +19,10 @@ export default defineConfig({
         }),
         visualizer({
             filename: 'dist/stats.html'
-        })
+        }),
+        // rawPlugin({
+        //     fileRegex: /\.svg$/
+        // })
     ],
     build: {
         emptyOutDir: true,
@@ -41,6 +44,12 @@ export default defineConfig({
                     dashjs: 'dashjs'
                 }
             }
+        }
+    },
+    resolve: {
+        alias: {
+            '@': resolve(__dirname, 'src'),
+            '~': resolve(__dirname, 'src')
         }
     }
 })

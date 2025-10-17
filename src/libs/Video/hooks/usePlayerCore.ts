@@ -9,12 +9,12 @@ import {VideoType} from '../Video.types'
  * @param options 播放器配置选项
  */
 export const usePlayerCore = (options?: {
-        videoSrc?: string | { [key: string]: string }
-        videoId?: string
-        userId?: string
-        username?: string
-        videoType?: VideoType,
-        dataPrefix?: string
+    videoSrc?: string | { [key: string]: string }
+    videoId?: string
+    userId?: string
+    username?: string
+    videoType?: VideoType
+    dataPrefix?: string
 }) => {
     const playerCoreRef = useRef<PlayerCore | null>(null)
 

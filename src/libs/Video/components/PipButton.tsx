@@ -4,6 +4,8 @@ import React from 'react'
 
 import SvgIcon from '../common/svgIcon'
 
+import pipSvg from '@/assets/svg/小屏.svg?raw'
+
 interface PipButtonProps {
     onToggle: () => void
     customIcons?: {
@@ -19,7 +21,7 @@ const PipButton: React.FC<PipButtonProps> = ({ onToggle, customIcons }) => {
 
     return (
         <button className="control-button" onClick={onToggle} aria-label="Toggle picture in picture">
-            {getIcon('pipIcon', <SvgIcon src={'/svg/小屏.svg'} noBackground size={20} />)}
+            {getIcon('pipIcon', <SvgIcon src={pipSvg} isRaw noBackground size={20} />)}
         </button>
     )
 }
