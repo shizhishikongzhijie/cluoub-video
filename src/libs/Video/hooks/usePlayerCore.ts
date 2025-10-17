@@ -2,18 +2,19 @@ import {useEffect, useRef} from 'react'
 
 import {PlayerCore} from '../core'
 import {ControlsManager, ThumbnailManager} from '../managers'
+import {VideoType} from '../Video.types'
 
 /**
  * 自定义Hook，用于创建和管理播放器核心实例
  * @param options 播放器配置选项
  */
 export const usePlayerCore = (options?: {
-    videoSrc: string
-    videoId: string
-    userId: string
-    username: string
-    videoType?: any
-    dataPrefix?: string
+        videoSrc?: string | { [key: string]: string }
+        videoId?: string
+        userId?: string
+        username?: string
+        videoType?: VideoType,
+        dataPrefix?: string
 }) => {
     const playerCoreRef = useRef<PlayerCore | null>(null)
 

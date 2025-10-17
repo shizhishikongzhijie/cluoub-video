@@ -68,7 +68,7 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
 
     // 使用播放器核心
     const playerCore = usePlayerCore({
-        videoSrc: videoSrc || '',
+        videoSrc: typeof videoSrc === 'string' ? videoSrc : videoSrc || '',
         videoId: videoId || '',
         userId: userId || '',
         username: username || '',
@@ -600,7 +600,7 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
             <div className="video-wrapper">
                 <video
                     ref={videoRef}
-                    src={playerCore.videoType !== VideoType.DASH ? videoSrc : undefined}
+                    src={playerCore.videoType !== VideoType.DASH && typeof videoSrc === 'string' ? videoSrc : undefined}
                     playsInline
                     muted={isMuted}
                     className="video-element"

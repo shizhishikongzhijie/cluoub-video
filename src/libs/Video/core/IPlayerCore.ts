@@ -271,22 +271,7 @@ export interface ControlButtonConfig {
     customComponent?: React.ReactNode
 }
 
-/**
- * 播放器组件配置接口
- */
-export interface PlayerComponentConfig {
-    /** 组件唯一标识符 */
-    id: string
-
-    /** 组件类型 */
-    type: string
-
-    /** 组件内容 */
-    component: React.ReactNode
-
-    /** 组件排序 */
-    order?: number
-}
+// PlayerComponentConfig interface is defined above with type: PlayerComponentConfigType
 
 /**
  * 插件接口定义

@@ -1,6 +1,6 @@
 // vite.config.ts
 import react from '@vitejs/plugin-react'
-import {resolve} from 'path'
+import path from 'path'
 import {visualizer} from 'rollup-plugin-visualizer'
 import {defineConfig} from 'vite'
 import dts from 'vite-plugin-dts'
@@ -22,21 +22,22 @@ export default defineConfig({
         })
     ],
     build: {
+        emptyOutDir: true,
+        sourcemap: true,
         lib: {
-            entry: resolve(__dirname, 'src/libs/Video/index.ts'),
+            entry: path.resolve(__dirname, 'src/libs/Video/index.ts'),
             name: 'CluoubVideo',
             formats: ['es', 'cjs'],
-            fileName: (format) => `index.${format}.js`
+            fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}.js`
         },
         rolldownOptions: {
-            external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react', 'uuid', 'dashjs'],
+            external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react', 'dashjs'],
             output: {
                 globals: {
                     react: 'React',
                     'react-dom': 'ReactDOM',
                     'react/jsx-runtime': 'reactJsxRuntime',
                     'lucide-react': 'LucideReact',
-                    uuid: 'uuid',
                     dashjs: 'dashjs'
                 }
             }

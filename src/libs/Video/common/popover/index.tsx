@@ -304,9 +304,7 @@ const Popover: React.FC<PopoverProps> = (props) => {
 
     // 处理子元素事件
     const getTriggerProps = () => {
-        const triggerProps: React.HTMLAttributes<HTMLElement> = {
-            ref: triggerRef as React.RefObject<any>
-        }
+        const triggerProps: React.HTMLAttributes<HTMLElement> = {}
 
         switch (trigger) {
             case 'hover':
@@ -350,10 +348,10 @@ const Popover: React.FC<PopoverProps> = (props) => {
     }
 
     // 克隆子元素并添加事件处理
-    const triggerElement = React.cloneElement(children, {
-        ...children.props,
-        ...getTriggerProps()
-    })
+      const triggerElement = React.cloneElement(children, {
+          ...(children.props || {}),
+          ...getTriggerProps()
+      })
 
     // 渲染弹出层内容
     const renderPopover = () => {

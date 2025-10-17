@@ -52,13 +52,3 @@ export type {
     SvgIconRef,
     SwitchProps
 } from './common'
-
-/**
- * 组件库版本信息
- */
-export const version = '1.0.0'
-
-/**
- * 组件库名称
- */
-export const libraryName = 'Cluoub Video'

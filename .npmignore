@@ -7,7 +7,6 @@ vite.config.ts
 eslint.config.js
 .git
 .npmrc
-.prettierrc
 .eslintrc.cjs
 jest.config.js
 
