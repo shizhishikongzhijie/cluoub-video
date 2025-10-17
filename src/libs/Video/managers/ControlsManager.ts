@@ -20,6 +20,15 @@ export class ControlsManager {
     }
 
     /**
+     * 检查是否有Popover处于激活状态
+     * 使用CSS类选择器来检测
+     */
+    private _hasActivePopover(): boolean {
+        // 检查是否有显示中的Popover元素（具有entered或entering类的Popover）
+        return document.querySelectorAll('.popover.entered, .popover.entering').length > 0
+    }
+
+    /**
      * 初始化控制栏管理器
      * @param isPlaying 初始播放状态
      */
@@ -41,7 +50,8 @@ export class ControlsManager {
         }
 
         this._controlsTimeout = setTimeout(() => {
-            if (this._isPlaying) {
+            // 如果有Popover激活或者没有播放，不要隐藏控制栏
+            if (this._isPlaying && !this._hasActivePopover()) {
                 this._showControls = false
                 onShowControls(false)
             }
@@ -59,9 +69,22 @@ export class ControlsManager {
         if (isPlaying && this._controlsTimeout) {
             clearTimeout(this._controlsTimeout)
             this._controlsTimeout = setTimeout(() => {
-                this._showControls = false
+                // 如果有Popover激活，不要隐藏控制栏
+                if (!this._hasActivePopover()) {
+                    this._showControls = false
+                }
             }, this._hideDelay)
         }
+    }
+
+    /**
+     * 重置隐藏计时器
+     */
+    resetHideTimeout(): void {
+        if (this._controlsTimeout) {
+            clearTimeout(this._controlsTimeout)
+        }
+        this._showControls = true
     }
 
     /**
