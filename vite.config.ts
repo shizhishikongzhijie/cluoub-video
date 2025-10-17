@@ -29,7 +29,7 @@ export default defineConfig({
             fileName: (format) => `index.${format}.js`
         },
         rolldownOptions: {
-            external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react', 'uuid', 'dash.js'],
+            external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react', 'uuid', 'dashjs'],
             output: {
                 globals: {
                     react: 'React',
@@ -37,7 +37,7 @@ export default defineConfig({
                     'react/jsx-runtime': 'reactJsxRuntime',
                     'lucide-react': 'LucideReact',
                     uuid: 'uuid',
-                    'dash.js': 'dashjs'
+                    dashjs: 'dashjs'
                 }
             }
         }
