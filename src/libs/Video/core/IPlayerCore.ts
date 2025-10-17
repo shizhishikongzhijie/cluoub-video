@@ -155,6 +155,8 @@ export interface IPlayerCore {
     readonly volume: number
     readonly currentTime: number
     readonly progress: number
+    /** 缓冲进度百分比 */
+    readonly buffered: number
     readonly isFullscreen: boolean
     readonly showSubtitles: boolean
     readonly currentTrackIndex: number

@@ -73,16 +73,6 @@
     height: 100%;
   }
 }
-/* 字幕容器 */
-.subtitle-container {
-  position: absolute;
-  bottom: 60px; /* 在控制栏上方 */
-  left: 0;
-  width: 100%;
-  text-align: center;
-  z-index: 15;
-  pointer-events: none;
-}
 
 .barrage-container {
   position: absolute;

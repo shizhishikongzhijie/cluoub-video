@@ -92,6 +92,12 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     get progress() {
         return this._progress
     }
+    
+    private _buffered: number = 0
+    
+    get buffered() {
+        return this._buffered
+    }
 
     private _isFullscreen: boolean = false
 
@@ -214,6 +220,12 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
         this._progress = progress
         this.emit('progressChange', progress)
     }
+    
+    setBuffered(buffered: number) {
+        this.logger.debug('设置缓冲进度', { buffered })
+        this._buffered = buffered
+        this.emit('bufferedChange', buffered)
+    }
 
     // 全屏控制方法
     toggleFullscreen() {
@@ -241,7 +253,6 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
                     // 设置数据前缀（如果提供）
                     if (this._dataPrefix) {
                         // 保存PlayerCore上下文引用
-
                         const self = this
                         // 确保前缀末尾有斜杠
                         const dataPrefix = self._dataPrefix.endsWith('/') ? self._dataPrefix : self._dataPrefix + '/'
@@ -298,6 +309,16 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
                     this._dashPlayer.on('manifestLoaded', () => {
                         // 更新可用画质选项
                         this.updateAvailableQualitiesFromDash()
+                    })
+                    
+                    // 监听视频元素的缓冲事件，更新缓冲进度
+                    videoElement.addEventListener('progress', () => {
+                        this.updateBufferedProgress(videoElement)
+                    })
+                    
+                    // 监听DASH播放器的缓冲变化事件
+                    this._dashPlayer.on('bufferLevelStateChange', () => {
+                        this.updateBufferedProgress(videoElement)
                     })
 
                 } catch (error) {
@@ -476,6 +497,24 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
         this.emit('subtitlesVisibilityChange', this._showSubtitles)
     }
 
+    // 更新缓冲进度
+    private updateBufferedProgress(videoElement: HTMLVideoElement): void {
+        if (!this._duration || !videoElement.buffered || videoElement.buffered.length === 0) {
+            return
+        }
+        
+        try {
+            // 获取最大的缓冲结束时间
+            const bufferedEnd = videoElement.buffered.end(videoElement.buffered.length - 1)
+            // 计算缓冲进度百分比
+            const bufferedProgress = (bufferedEnd / this._duration) * 100
+            // 更新缓冲进度
+            this.setBuffered(Math.min(bufferedProgress, 100))
+        } catch (error) {
+            this.logger.error('更新缓冲进度失败:', error)
+        }
+    }
+    
     // 时间相关方法
     setTimeUpdate(currentTime: number) {
         this._currentTime = currentTime

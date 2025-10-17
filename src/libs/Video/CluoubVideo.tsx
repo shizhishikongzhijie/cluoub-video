@@ -122,6 +122,7 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
     const [currentTime, setCurrentTime] = useState(0)
     const [showThumbnail, setShowThumbnail] = useState(false)
     const [thumbnailPosition, setThumbnailPosition] = useState({ x: 0, time: 0 })
+    const [buffered, setBuffered] = useState(0)
 
     const videoRef = useRef<HTMLVideoElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
@@ -215,6 +216,7 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
         playerCore.on('volumeChange', handleVolumeChange)
         playerCore.on('seek', handleSeek)
         playerCore.on('progressChange', handleProgressChange)
+        playerCore.on('bufferedChange', handleBufferedChange)
         playerCore.on('fullscreenChange', handleFullscreenChange)
 
         playerCore.on('timeUpdate', handleTimeUpdate)
@@ -228,6 +230,7 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
             playerCore.removeListener('volumeChange', handleVolumeChange)
             playerCore.removeListener('seek', handleSeek)
             playerCore.removeListener('progressChange', handleProgressChange)
+            playerCore.removeListener('bufferedChange', handleBufferedChange)
             playerCore.removeListener('fullscreenChange', handleFullscreenChange)
 
             playerCore.removeListener('timeUpdate', handleTimeUpdate)
@@ -404,6 +407,11 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
     // 进度条控制
     const handleProgressChange = (newProgress: number, _newTime: number) => {
         playerCore.setProgress(newProgress)
+    }
+
+    // 缓冲进度控制
+    const handleBufferedChange = (newBuffered: number) => {
+        setBuffered(newBuffered)
     }
 
     // 跳转到指定时间
@@ -612,6 +620,7 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
                         {controls.progress && (
                             <ProgressControl
                                 progress={progress}
+                                buffered={buffered}
                                 duration={duration}
                                 showThumbnail={showThumbnail}
                                 thumbnailPosition={thumbnailPosition}

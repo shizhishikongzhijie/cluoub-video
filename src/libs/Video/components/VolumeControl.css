@@ -1,4 +1,16 @@
 /* VolumeControl 组件样式 */
+.volume-wrapper {
+   display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 25px ;
+}
+.volume-text{
+  color: white;
+  cursor: pointer;
+  user-select: none;
+  pointer-events: none;
+}
 .volume-container {
   position: relative;
   width: 4px;

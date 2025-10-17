@@ -5,6 +5,7 @@ import React, {useCallback, useEffect, useRef, useState} from 'react'
 
 interface ProgressControlProps {
     progress: number
+    buffered: number
     duration: number
     showThumbnail: boolean
     thumbnailPosition: { x: number; time: number }
@@ -21,6 +22,7 @@ interface ProgressControlProps {
 
 const ProgressControl: React.FC<ProgressControlProps> = ({
     progress,
+    buffered,
     duration,
     showThumbnail,
     thumbnailPosition,
@@ -33,6 +35,7 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
     onShowThumbnail
 }) => {
     const progressContainerRef = useRef<HTMLDivElement>(null)
+    const progressBarRef = useRef<HTMLDivElement>(null)
     const progressBufferRef = useRef<HTMLDivElement>(null)
     const progressThumbRef = useRef<HTMLDivElement>(null)
     const thumbnailRef = useRef<HTMLDivElement>(null)
@@ -45,11 +48,27 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
         const seconds = Math.floor(time % 60)
         return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`
     }
+    
+    // 更新进度条宽度
+    const updateProgressBar = useCallback(() => {
+        if (progressBarRef.current) {
+            // 使用实际的缓冲进度，而不是当前播放进度
+            progressBarRef.current.style.width = `${localProgress}%`
+
+            // 在拖拽过程中移除过渡效果，使操作更流畅
+            if (isSeeking.current) {
+                progressBarRef.current.style.transition = 'none'
+            } else {
+                progressBarRef.current.style.transition = 'width 0.1s'
+            }
+        }
+    }, [localProgress])
 
     // 更新进度条buffer宽度
     const updateProgressBuffer = useCallback(() => {
         if (progressBufferRef.current) {
-            progressBufferRef.current.style.width = `${localProgress}%`
+            // 使用实际的缓冲进度，而不是当前播放进度
+            progressBufferRef.current.style.width = `${buffered}%`
 
             // 在拖拽过程中移除过渡效果，使操作更流畅
             if (isSeeking.current) {
@@ -58,7 +77,7 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
                 progressBufferRef.current.style.transition = 'width 0.1s'
             }
         }
-    }, [localProgress])
+    }, [buffered])
 
     // 更新进度条thumb位置和显示状态
     const updateThumbPosition = useCallback(() => {
@@ -94,9 +113,10 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
 
     // 当localProgress变化时更新buffer宽度和thumb位置
     useEffect(() => {
+        updateProgressBar()
         updateProgressBuffer()
         updateThumbPosition()
-    }, [updateProgressBuffer, updateThumbPosition])
+    }, [updateProgressBar, updateProgressBuffer, updateThumbPosition])
 
     // 当thumbnailPosition变化时更新缩略图位置
     useEffect(() => {
@@ -263,6 +283,7 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
             onMouseDown={handleProgressStart}
             onTouchStart={handleProgressStart}
         >
+            <div className="progress-bar" ref={progressBarRef} />
             <div className="progress-buffer" ref={progressBufferRef} />
             <div className="progress-thumb" ref={progressThumbRef}>
                 {customIcons?.progressThumbIcon || <Circle size={12} fill="white" />}

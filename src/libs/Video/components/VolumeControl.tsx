@@ -110,14 +110,17 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
         <>
             <Popover
                 content={
-                    <div
-                        className="volume-container"
-                        ref={volumeContainerRef}
-                        onClick={handleVolumeClick}
-                        onMouseDown={handleVolumeStart}
-                        onTouchStart={handleVolumeStart}
-                    >
-                        <div className="volume-buffer" ref={volumeBufferRef} />
+                    <div className={'volume-wrapper'}>
+                        <span className={'volume-text'}>{Math.floor(volume * 100)}</span>
+                        <div
+                            className="volume-container"
+                            ref={volumeContainerRef}
+                            onClick={handleVolumeClick}
+                            onMouseDown={handleVolumeStart}
+                            onTouchStart={handleVolumeStart}
+                        >
+                            <div className="volume-buffer" ref={volumeBufferRef} />
+                        </div>
                     </div>
                 }
                 trigger="hover"

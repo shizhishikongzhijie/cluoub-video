@@ -13,13 +13,22 @@
 .progress-container:hover {
   height: 6px;
 }
-
-.progress-buffer {
+.progress-bar {
   position: absolute;
   top: 0;
   left: 0;
   height: 100%;
   background: #35ddd8;
+  border-radius: 2px;
+  z-index: 2;
+  pointer-events: none;
+}
+.progress-buffer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: rgba(209, 209, 209, 0.75);
   border-radius: 2px;
   z-index: 1;
   pointer-events: none;
