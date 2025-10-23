@@ -24,17 +24,11 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
 
     constructor(options?: {
         videoSrc?: string | { [key: string]: string }
-        videoId?: string
-        userId?: string
-        username?: string
         videoType?: VideoType
         dataPrefix?: string
     }) {
         super()
         this._videoSrc = options?.videoSrc || ''
-        this._videoId = options?.videoId || ''
-        this._userId = options?.userId || ''
-        this._username = options?.username || ''
         this._videoType = options?.videoType || VideoType.NORMAL
         this._dataPrefix = options?.dataPrefix || ''
 
@@ -135,24 +129,6 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
 
     get currentTrackIndex() {
         return this._currentTrackIndex
-    }
-
-    private _videoId: string = ''
-
-    get videoId() {
-        return this._videoId
-    }
-
-    private _userId: string = ''
-
-    get userId() {
-        return this._userId
-    }
-
-    private _username: string = ''
-
-    get username() {
-        return this._username
     }
 
     private _quality: string = 'auto'

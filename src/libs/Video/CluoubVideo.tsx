@@ -24,9 +24,6 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
     const {
         videoSrc,
         dataPrefix,
-        videoId,
-        userId,
-        username,
         width = '100%',
         height = 'auto',
         aspectRatio = '16:9',
@@ -69,9 +66,6 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
     // 使用播放器核心
     const playerCore = usePlayerCore({
         videoSrc: typeof videoSrc === 'string' ? videoSrc : videoSrc || '',
-        videoId: videoId || '',
-        userId: userId || '',
-        username: username || '',
         videoType: VideoType.DASH,
         dataPrefix: dataPrefix || ''
     })

@@ -10,9 +10,6 @@ import {VideoType} from '../Video.types'
  */
 export const usePlayerCore = (options?: {
     videoSrc?: string | { [key: string]: string }
-    videoId?: string
-    userId?: string
-    username?: string
     videoType?: VideoType
     dataPrefix?: string
 }) => {

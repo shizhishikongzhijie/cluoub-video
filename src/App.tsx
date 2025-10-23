@@ -12,9 +12,6 @@ function App() {
                 debug={true}
                 videoSrc="format.mpd"
                 videoType={VideoType.DASH}
-                videoId="视频ID"
-                userId="用户ID"
-                username="用户名"
                 dataPrefix="./assets"
                 width="800px"
                 aspectRatio="16:9"

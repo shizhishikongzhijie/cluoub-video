@@ -129,15 +129,6 @@ export interface VideoProps {
     /** 视频源URL，可以是字符串或画质对象 */
     videoSrc: string | { [quality: string]: string }
 
-    /** 视频唯一标识符 */
-    videoId: string
-
-    /** 当前用户ID */
-    userId: string
-
-    /** 当前用户名 */
-    username: string
-
     /** 视频类型，默认为普通视频 */
     videoType?: VideoType
 
@@ -214,12 +205,6 @@ export interface VideoProps {
           }
         | IPlayerPlugin
     >
-
-    /** 主题颜色 */
-    themeColor?: string
-
-    /** 主题模式 */
-    theme?: 'light' | 'dark'
 
     /** 是否显示控制栏 */
     showControls?: boolean

@@ -37,9 +37,6 @@ function App() {
       <h1>Cluoub Video Player 演示</h1>
       <CluoubVideo
         videoSrc="https://example.com/video.mp4"
-        videoId="video-demo-001"
-        userId="user123"
-        username="二次元爱好者"
         width="100%"
         maxWidth="1200px"
         aspectRatio="16:9"
@@ -66,9 +63,6 @@ export default App;
 ```jsx
 <CluoubVideo
   videoSrc="https://example.com/video.mp4"
-  videoId="unique-video-id"
-  userId="user123"
-  username="用户名"
   controls={{
     barrage: true // 启用弹幕功能
   }}
@@ -90,9 +84,6 @@ export default App;
 ```jsx
 <CluoubVideo
   videoSrc="https://example.com/video.mp4"
-  videoId="video1"
-  userId="user1"
-  username="用户名"
   tracks={[
     {
       id: "subtitle-cn",
@@ -133,9 +124,6 @@ export default App;
 ```jsx
 <CluoubVideo
   videoSrc="https://example.com/video.mp4"
-  videoId="video1"
-  userId="user1"
-  username="用户名"
   enableShortcuts={true} // 启用快捷键
   customShortcuts={{
     // 自定义快捷键映射
@@ -152,9 +140,6 @@ export default App;
 ```jsx
 <CluoubVideo
   videoSrc="https://example.com/video.mp4"
-  videoId="video1"
-  userId="user1"
-  username="用户名"
   controls={{
     play: true,
     volume: true,
@@ -178,9 +163,6 @@ import { Play, Pause, Volume2, VolumeX, Maximize, Settings, MessageCircle } from
 
 <CluoubVideo
   videoSrc="https://example.com/video.mp4"
-  videoId="video1"
-  userId="user1"
-  username="用户名"
   customIcons={{
     playIcon: <Play size={20} />,
     pauseIcon: <Pause size={20} />,
@@ -200,9 +182,6 @@ import { Play, Pause, Volume2, VolumeX, Maximize, Settings, MessageCircle } from
 | 属性 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
 | videoSrc | string | 必需 | 视频源 URL |
-| videoId | string | 必需 | 视频唯一标识符 |
-| userId | string | 必需 | 当前用户 ID |
-| username | string | 必需 | 当前用户名 |
 | width | string \| number | '100%' | 视频宽度 |
 | height | string \| number | 'auto' | 视频高度 |
 | maxWidth | string \| number | undefined | 最大宽度 |

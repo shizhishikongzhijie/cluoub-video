@@ -29,9 +29,6 @@ import { BarragePlugin, SubtitlePlugin } from './plugins';
 // 创建播放器实例
 const player = new PlayerCore({
   videoSrc: 'path/to/video.mp4',
-  videoId: 'video123',
-  userId: 'user123',
-  username: '用户名'
 });
 
 // 注册弹幕插件

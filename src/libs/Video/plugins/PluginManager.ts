@@ -51,10 +51,7 @@ export class PluginManager {
                 showSubtitles: this.player?.showSubtitles,
                 currentTrackIndex: this.player?.currentTrackIndex,
                 progress: this.player?.progress,
-                videoSrc: this.player?.videoSrc,
-                videoId: this.player?.videoId,
-                userId: this.player?.userId,
-                username: this.player?.username
+                videoSrc: this.player?.videoSrc
             })
         }
 

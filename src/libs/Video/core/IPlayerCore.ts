@@ -108,12 +108,6 @@ export interface IPlayerPluginApi {
         currentTrackIndex: IPlayerCore['currentTrackIndex']
         /** 视频源地址 */
         videoSrc: IPlayerCore['videoSrc']
-        /** 视频ID */
-        videoId: IPlayerCore['videoId']
-        /** 用户ID */
-        userId: IPlayerCore['userId']
-        /** 用户名 */
-        username: IPlayerCore['username']
     }
 }
 
@@ -160,9 +154,6 @@ export interface IPlayerCore {
     readonly isFullscreen: boolean
     readonly showSubtitles: boolean
     readonly currentTrackIndex: number
-    readonly videoId: string
-    readonly userId: string
-    readonly username: string
     readonly dataPrefix: string
 
     pause(): void
