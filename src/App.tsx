@@ -10,8 +10,8 @@ function App() {
         <>
             <CluoubVideo
                 debug={true}
-                videoSrc="format.mpd"
-                videoType={VideoType.DASH}
+                videoSrc="https://video.e-esine.cn/video/Chaos_Icarus-video-1739970820417.mp4"
+                videoType={VideoType.NORMAL}
                 dataPrefix="./assets"
                 width="800px"
                 aspectRatio="16:9"

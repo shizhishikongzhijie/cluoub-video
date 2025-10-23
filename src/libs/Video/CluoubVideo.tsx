@@ -23,6 +23,7 @@ import {VideoProps, VideoRef, VideoType} from './Video.types'
 const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props, ref) => {
     const {
         videoSrc,
+        videoType,
         dataPrefix,
         width = '100%',
         height = 'auto',
@@ -66,7 +67,7 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
     // 使用播放器核心
     const playerCore = usePlayerCore({
         videoSrc: typeof videoSrc === 'string' ? videoSrc : videoSrc || '',
-        videoType: VideoType.DASH,
+        videoType: videoType || VideoType.DASH,
         dataPrefix: dataPrefix || ''
     })
 
