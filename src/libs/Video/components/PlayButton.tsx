@@ -14,8 +14,8 @@ const PlayButton: React.FC<PlayButtonProps> = ({ isPlaying, onToggle, customIcon
     return (
         <button className="control-button" onClick={onToggle}>
             {isPlaying
-                ? getIcon(customIconsKey.pause, customIcons?.play)
-                : getIcon(customIconsKey.play, customIcons?.pause)}
+                ? getIcon(customIconsKey.pause, customIcons?.pause)
+                : getIcon(customIconsKey.play, customIcons?.play)}
         </button>
     )
 }
