@@ -476,10 +476,6 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
             }
         }
     }
-
-    // 字幕菜单是否打开
-    const [isSubtitlesMenuOpen, setIsSubtitlesMenuOpen] = useState(false)
-
     // 字幕设置状态
     const [showSubtitles, setShowSubtitles] = useState(true)
     const [subtitleType, setSubtitleType] = useState('vtt')
@@ -489,11 +485,6 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
     const [bold, setBold] = useState(false)
     const [opacity, setOpacity] = useState(100) // 百分比
 
-    // 切换字幕菜单显示状态
-    const toggleSubtitlesMenu = () => {
-        setIsSubtitlesMenuOpen(!isSubtitlesMenuOpen)
-    }
-
     // 选择字幕轨道
     const selectSubtitleTrack = (trackId: string) => {
         const trackIndex = tracks.findIndex((track) => (track.id || track.label) === trackId)
@@ -502,14 +493,12 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
             playerCore.setShowSubtitles(true)
             setShowSubtitles(true) // 同步更新本地状态
         }
-        setIsSubtitlesMenuOpen(false)
     }
 
     // 关闭字幕
     const closeSubtitles = () => {
         playerCore.setShowSubtitles(false)
         setShowSubtitles(false) // 同步更新本地状态
-        setIsSubtitlesMenuOpen(false)
     }
 
     // 字幕设置变更处理函数
@@ -622,13 +611,7 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
                                 thumbnailUrl={thumbnailUrl}
                                 thumbnailWidth={thumbnailWidth}
                                 thumbnailHeight={thumbnailHeight}
-                                customIcons={
-                                    customIcons
-                                        ? {
-                                              progressThumbIcon: customIcons.progressThumbIcon
-                                          }
-                                        : undefined
-                                }
+                                customIcons={customIcons}
                                 onProgressChange={handleProgressChange}
                                 onSeek={handleSeek}
                                 onShowThumbnail={handleShowThumbnail}
@@ -640,18 +623,7 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
                         <div className="video-controls-left">
                             {/* 播放按钮 */}
                             {controls.play && (
-                                <PlayButton
-                                    isPlaying={isPlaying}
-                                    onToggle={togglePlay}
-                                    customIcons={
-                                        customIcons
-                                            ? {
-                                                  playIcon: customIcons.playIcon,
-                                                  pauseIcon: customIcons.pauseIcon
-                                              }
-                                            : undefined
-                                    }
-                                />
+                                <PlayButton isPlaying={isPlaying} onToggle={togglePlay} customIcons={customIcons} />
                             )}
 
                             {controlButtons
@@ -683,30 +655,10 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
                         {/*右侧控制按钮*/}
                         <div className="video-controls-right">
                             {/* 画质按钮 */}
-                            {controls.quality && (
-                                <QualityButton
-                                    customIcons={
-                                        customIcons
-                                            ? {
-                                                  qualityIcon: customIcons.qualityIcon
-                                              }
-                                            : undefined
-                                    }
-                                />
-                            )}
+                            {controls.quality && <QualityButton customIcons={customIcons} />}
 
                             {/* 倍速控制 */}
-                            {controls.speed && (
-                                <SpeedButton
-                                    customIcons={
-                                        customIcons
-                                            ? {
-                                                  speedIcon: customIcons.speedIcon
-                                              }
-                                            : undefined
-                                    }
-                                />
-                            )}
+                            {controls.speed && <SpeedButton customIcons={customIcons} />}
                             {/* 字幕控制按钮 - 使用SubtitlesMenu组件 */}
                             {controls.subtitles && tracks.length > 0 && (
                                 <SubtitlesMenu
@@ -717,8 +669,6 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
                                         language: track.srclang || 'auto',
                                         isActive: playerCore.showSubtitles && index === playerCore.currentTrackIndex
                                     }))}
-                                    isOpen={isSubtitlesMenuOpen}
-                                    onToggle={toggleSubtitlesMenu}
                                     onSelect={selectSubtitleTrack}
                                     onCloseSubtitles={closeSubtitles}
                                     // 新增props用于与播放器核心联动
@@ -746,14 +696,7 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
                                     volume={volume}
                                     onToggleMute={toggleMute}
                                     onVolumeChange={handleVolumeChange}
-                                    customIcons={
-                                        customIcons
-                                            ? {
-                                                  volumeIcon: customIcons.volumeIcon,
-                                                  muteIcon: customIcons.muteIcon
-                                              }
-                                            : undefined
-                                    }
+                                    customIcons={customIcons}
                                 />
                             )}
 
@@ -781,44 +724,17 @@ const CluoubVideo: React.ForwardRefRenderFunction<VideoRef, VideoProps> = (props
                                 ))}
 
                             {/* 设置按钮 */}
-                            {controls.settings && (
-                                <SettingsButton
-                                    customIcons={
-                                        customIcons
-                                            ? {
-                                                  settingsIcon: customIcons.settingsIcon
-                                              }
-                                            : undefined
-                                    }
-                                />
-                            )}
+                            {controls.settings && <SettingsButton customIcons={customIcons} />}
 
                             {/* 画中画按钮 */}
-                            {controls.pip && (
-                                <PipButton
-                                    onToggle={togglePip}
-                                    customIcons={
-                                        customIcons
-                                            ? {
-                                                  pipIcon: customIcons.pipIcon
-                                              }
-                                            : undefined
-                                    }
-                                />
-                            )}
+                            {controls.pip && <PipButton onToggle={togglePip} customIcons={customIcons} />}
 
                             {/* 全屏按钮 */}
                             {controls.fullscreen && (
                                 <FullscreenButton
                                     isFullscreen={isFullscreen}
                                     onToggle={toggleFullscreen}
-                                    customIcons={
-                                        customIcons
-                                            ? {
-                                                  fullscreenIcon: customIcons.fullscreenIcon
-                                              }
-                                            : undefined
-                                    }
+                                    customIcons={customIcons}
                                 />
                             )}
                         </div>

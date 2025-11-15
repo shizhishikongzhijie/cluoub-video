@@ -2,26 +2,17 @@ import './PipButton.css'
 
 import React from 'react'
 
-import SvgIcon from '../common/svgIcon'
-
-import pipSvg from '@/assets/svg/小屏.svg?raw'
+import {customIconsKey, customIconsMapType, getIcon} from '@/libs/Video/utils/icon'
 
 interface PipButtonProps {
     onToggle: () => void
-    customIcons?: {
-        pipIcon?: React.ReactNode
-    }
+    customIcons?: customIconsMapType
 }
 
 const PipButton: React.FC<PipButtonProps> = ({ onToggle, customIcons }) => {
-    // 获取图标，优先使用自定义图标，否则使用默认图标
-    const getIcon = (iconType: keyof NonNullable<PipButtonProps['customIcons']>, defaultIcon: React.ReactNode) => {
-        return customIcons && customIcons[iconType] ? customIcons[iconType] : defaultIcon
-    }
-
     return (
         <button className="control-button" onClick={onToggle} aria-label="Toggle picture in picture">
-            {getIcon('pipIcon', <SvgIcon src={pipSvg} isRaw noBackground size={20} />)}
+            {getIcon(customIconsKey.pip, customIcons?.pip)}
         </button>
     )
 }

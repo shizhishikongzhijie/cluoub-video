@@ -1,60 +1,27 @@
-@keyframes popover-entering {
-  from {
-    opacity: 0;
-    /*//transform: scale(0.8);*/
-  }
-  to {
-    opacity: 1;
-    /*//transform: scale(1);*/
-  }
-}
-@keyframes popover-exiting {
-  from {
-    opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-}
 .popover {
   position: fixed;
-  z-index: var( --z-index ,1000);
-  background: var(--popover-background,rgba(0, 0, 0, 0.5));
-  border-radius: var(--popover-border-radius, 6px);
-  box-shadow: var(--popover-box-shadow, 0 2px 12px 0 rgba(0, 0, 0, 0.1));
-  padding: var(--popover-padding, 12px);
-  min-width: var(--popover-min-width, 10px);
-  font-size: var(--popover-font-size, 14px);
-  line-height: var(--popover-line-height, 1.5);
-
-  /* 添加动画相关属性 */
+  z-index: var(--z-index, 1000);
+  padding: var(--popover-padding, 8px);
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(0, 0, 0, 0.7);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-radius: 4px;
   opacity: 0;
-  transform-origin: bottom center;
+  transform: scale(0.95);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
 }
 
-.popover.entering,
-.popover.entered {
+.popover.entered,
+.popover.entering {
   opacity: 1;
   transform: scale(1);
-  transition-delay: 0.2s;
-  animation: popover-entering 0.2s ease;
+  pointer-events: auto;
 }
 
 .popover.exiting {
   opacity: 0;
-  transform: scale(0.8);
-  transition-delay: 0.2s;
-  animation: popover-exiting 0.2s ease;
-}
-.popover.exited{
-  pointer-events: none;
-}
-
-.popover-content {
-  position: relative;
-  z-index: 1;
+  transform: scale(0.95);
 }
 
 .popover-arrow {

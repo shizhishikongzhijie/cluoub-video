@@ -26,11 +26,17 @@ export const useControlsVisibility = (
                 container.removeEventListener('mousemove', handleMouseMove)
             }
         }
+        return () => {
+            controlsManager.resetHideTimeout()
+        }
     }, [controlsManager])
 
     // 更新播放状态到控制管理器
     useEffect(() => {
         controlsManager.updatePlayingState(controlsManager.showControls)
+        return () => {
+            controlsManager.destroy()
+        }
     }, [controlsManager.showControls, controlsManager])
 
     return { showControls, setShowControls }

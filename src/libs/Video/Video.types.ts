@@ -3,9 +3,8 @@
  * 包含所有组件、配置和状态接口
  */
 
-import React from 'react'
-
 import {ControlButtonConfig, IPlayerPlugin, PlayerComponentConfig} from './core/IPlayerCore'
+import {customIconsMapType} from "@/libs/Video/utils/icon";
 
 /**
  * 向后兼容的类型别名
@@ -160,7 +159,7 @@ export interface VideoProps {
     }
 
     /** 自定义图标配置，用于替换默认图标 */
-    customIcons?: Record<string, React.ReactNode>
+    customIcons?: customIconsMapType
 
     /** 是否自动播放（注意：受浏览器策略限制） */
     autoPlay?: boolean

@@ -4,7 +4,7 @@
 export class ControlsManager {
     private _controlsTimeout: ReturnType<typeof setTimeout> | null = null
     private _isPlaying: boolean = false
-    private readonly _hideDelay: number = 3000 // 3秒后隐藏控制栏
+    private readonly _hideDelay: number = 1000 // 3秒后隐藏控制栏
 
     constructor(isPlaying?: boolean) {
         this.init(isPlaying || true)

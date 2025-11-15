@@ -28,10 +28,6 @@ interface SubtitleOption {
 interface SubtitlesMenuProps {
     /** 字幕选项列表 */
     options: SubtitleOption[]
-    /** 菜单是否打开 */
-    isOpen: boolean
-    /** 菜单开关切换回调 */
-    onToggle: () => void
     /** 选择字幕选项回调 */
     onSelect: (optionId: string) => void
     /** 关闭字幕回调 */
@@ -70,8 +66,6 @@ interface SubtitlesMenuProps {
 
 const SubtitlesMenu: React.FC<SubtitlesMenuProps> = ({
     options,
-    isOpen,
-    onToggle,
     onSelect,
     onCloseSubtitles,
     tracks,
@@ -180,9 +174,6 @@ const SubtitlesMenu: React.FC<SubtitlesMenuProps> = ({
 
     return (
         <Popover
-            visible={isOpen}
-            onVisibleChange={onToggle}
-            trigger="click"
             position="top"
             content={
                 <div className="subtitles-popover-content">
@@ -273,7 +264,7 @@ const SubtitlesMenu: React.FC<SubtitlesMenuProps> = ({
                 '--popover-padding': 0
             }}
         >
-            <button className={`subtitles-button control-button ${isOpen ? 'active' : ''}`} title="字幕设置">
+            <button className={`subtitles-button control-button`} title="字幕设置">
                 {/*<ChevronDown size={20} className={`subtitles-icon ${isOpen ? 'rotated' : ''}`} />*/}
                 <span>字幕</span>
             </button>

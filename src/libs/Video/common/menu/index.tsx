@@ -1,6 +1,6 @@
 import './index.css'
 
-import React, {useEffect, useRef, useState} from 'react'
+import React, {useEffect, useId, useRef, useState} from 'react'
 
 export interface MenuItemType {
     key: string
@@ -11,100 +11,125 @@ export interface MenuItemType {
 }
 
 export interface MenuProps {
-    /**
-     * 菜单项数据
-     */
     items: MenuItemType[]
-
-    /**
-     * 默认选中的菜单项 key
-     */
     defaultSelectedKey?: string
-
-    /**
-     * 选中的菜单项 key（受控模式）
-     */
     selectedKey?: string
-
-    /**
-     * 选中菜单项变化时的回调
-     */
     onSelect?: (key: string) => void
-
-    /**
-     * 自定义类名
-     */
     className?: string
-
-    /**
-     * 自定义样式
-     */
     style?: React.CSSProperties
 }
 
-const Menu: React.FC<MenuProps> = (props) => {
-    const { items, defaultSelectedKey, selectedKey, onSelect, className = '', style } = props
+const Menu: React.FC<MenuProps> = ({
+    items,
+    defaultSelectedKey,
+    selectedKey: controlledSelectedKey,
+    onSelect,
+    className = '',
+    style
+}) => {
+    const isControlled = controlledSelectedKey !== undefined
+    const [selectedKey, setSelectedKey] = useState(isControlled ? controlledSelectedKey : defaultSelectedKey || '')
+    const [openKeys, setOpenKeys] = useState<Set<string>>(new Set())
 
-    const [innerSelectedKey, setInnerSelectedKey] = useState<string>(defaultSelectedKey || '')
-    const selectedKeyRef = useRef(selectedKey !== undefined ? selectedKey : innerSelectedKey)
+    const id = useId()
+    const menuRef = useRef<HTMLUListElement>(null)
+    const itemRefs = useRef<Record<string, HTMLLIElement | null>>({})
 
-    // 更新选中项的引用
+    // 同步受控选中项
     useEffect(() => {
-        selectedKeyRef.current = selectedKey !== undefined ? selectedKey : innerSelectedKey
-    }, [selectedKey, innerSelectedKey])
-
-    // 处理菜单项点击
-    const handleSelect = (key: string, disabled: boolean | undefined) => {
-        if (disabled) return
-
-        if (selectedKey === undefined) {
-            setInnerSelectedKey(key)
+        if (isControlled) {
+            setSelectedKey(controlledSelectedKey)
         }
-        onSelect?.(key)
+    }, [controlledSelectedKey, isControlled])
+
+    const handleSelect = (item: MenuItemType) => {
+        if (item.disabled) return
+
+        const newKey = item.key
+        if (!isControlled) {
+            setSelectedKey(newKey)
+        }
+        onSelect?.(newKey)
+
+        // 如果有子菜单，切换展开状态
+        if (item.children && item.children.length > 0) {
+            setOpenKeys((prev) => {
+                const newSet = new Set(prev)
+                if (newSet.has(newKey)) {
+                    newSet.delete(newKey)
+                } else {
+                    newSet.add(newKey)
+                }
+                return newSet
+            })
+        }
     }
 
-    // 渲染菜单项
-    const renderMenuItem = (item: MenuItemType, level = 0) => {
-        const isSelected = selectedKeyRef.current === item.key
-        const hasChildren = item.children && item.children.length > 0
+    const renderMenuItem = (item: MenuItemType, level = 0): React.ReactNode => {
+        const hasChildren = !!item.children?.length
+        const isOpen = openKeys.has(item.key)
+        const isSelected = selectedKey === item.key
 
         return (
-            <div
+            <li
                 key={item.key}
+                ref={(el) => (itemRefs.current[item.key] = el)}
+                role={hasChildren ? 'menuitem' : 'menuitem'}
+                aria-haspopup={hasChildren ? 'true' : undefined}
+                aria-expanded={hasChildren ? isOpen : undefined}
+                aria-selected={isSelected}
+                aria-disabled={item.disabled}
                 className={`
-          menu-item 
-          ${isSelected ? 'menu-item-selected' : ''} 
+          menu-item
+          ${isSelected ? 'menu-item-selected' : ''}
           ${item.disabled ? 'menu-item-disabled' : ''}
           ${hasChildren ? 'menu-item-with-children' : ''}
         `.trim()}
-                onClick={() => handleSelect(item.key, item.disabled)}
+                onClick={() => handleSelect(item)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        handleSelect(item)
+                    }
+                }}
+                tabIndex={0}
                 style={{ paddingLeft: `${12 + level * 16}px` }}
             >
                 {item.icon && <span className="menu-item-icon">{item.icon}</span>}
                 <span className="menu-item-label">{item.label}</span>
-                {hasChildren && <span className="menu-item-arrow"></span>}
-            </div>
+                {hasChildren && (
+                    <span className={`menu-item-arrow ${isOpen ? 'menu-item-arrow-open' : ''}`} aria-hidden="true" />
+                )}
+            </li>
         )
     }
 
-    // 渲染菜单
-    const renderMenu = (menuItems: MenuItemType[], level = 0) => {
-        return menuItems.map((item) => {
-            const hasChildren = item.children && item.children.length > 0
+    const renderMenuItems = (items: MenuItemType[], level = 0) => {
+        return items.map((item) => {
+            const hasChildren = !!item.children?.length
+            const isOpen = openKeys.has(item.key)
 
             return (
-                <div key={item.key} className="menu-group">
+                <React.Fragment key={item.key}>
                     {renderMenuItem(item, level)}
-                    {hasChildren && <div className="menu-submenu">{renderMenu(item.children!, level + 1)}</div>}
-                </div>
+                    {hasChildren && (
+                        <div
+                            className={`menu-submenu ${isOpen ? 'menu-submenu-open' : ''}`}
+                            role="group"
+                            aria-labelledby={`${id}-${item.key}`}
+                        >
+                            <ul className="menu-submenu-list">{renderMenuItems(item.children!, level + 1)}</ul>
+                        </div>
+                    )}
+                </React.Fragment>
             )
         })
     }
 
     return (
-        <div className={`menu ${className}`.trim()} style={style}>
-            {renderMenu(items)}
-        </div>
+        <ul ref={menuRef} id={id} role="menu" className={`menu ${className}`.trim()} style={style}>
+            {renderMenuItems(items)}
+        </ul>
     )
 }
 

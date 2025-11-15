@@ -1,8 +1,8 @@
+import {ControlButtonConfig, IPlayerCore, IPlayerPlugin, PlayerComponentConfig, VideoType} from '@/libs/Video'
+
 import {PluginManager} from '../plugins'
 import Logger from '../utils/Logger'
-import {VideoType} from '../Video.types'
 import {EventEmitter} from './EventEmitter'
-import {ControlButtonConfig, IPlayerCore, IPlayerPlugin, PlayerComponentConfig} from './IPlayerCore'
 
 /**
  * 播放器核心类，负责管理播放器状态和逻辑
@@ -86,9 +86,9 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
     get progress() {
         return this._progress
     }
-    
+
     private _buffered: number = 0
-    
+
     get buffered() {
         return this._buffered
     }
@@ -196,7 +196,7 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
         this._progress = progress
         this.emit('progressChange', progress)
     }
-    
+
     setBuffered(buffered: number) {
         this.logger.debug('设置缓冲进度', { buffered })
         this._buffered = buffered
@@ -286,17 +286,16 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
                         // 更新可用画质选项
                         this.updateAvailableQualitiesFromDash()
                     })
-                    
+
                     // 监听视频元素的缓冲事件，更新缓冲进度
                     videoElement.addEventListener('progress', () => {
                         this.updateBufferedProgress(videoElement)
                     })
-                    
+
                     // 监听DASH播放器的缓冲变化事件
                     this._dashPlayer.on('bufferLevelStateChange', () => {
                         this.updateBufferedProgress(videoElement)
                     })
-
                 } catch (error) {
                     this.logger.error('DASH播放器初始化失败:', error)
                 }
@@ -478,7 +477,7 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
         if (!this._duration || !videoElement.buffered || videoElement.buffered.length === 0) {
             return
         }
-        
+
         try {
             // 获取最大的缓冲结束时间
             const bufferedEnd = videoElement.buffered.end(videoElement.buffered.length - 1)
@@ -490,7 +489,7 @@ export class PlayerCore extends EventEmitter implements IPlayerCore {
             this.logger.error('更新缓冲进度失败:', error)
         }
     }
-    
+
     // 时间相关方法
     setTimeUpdate(currentTime: number) {
         this._currentTime = currentTime

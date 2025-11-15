@@ -3,6 +3,8 @@ import './ProgressControl.css'
 import {Circle} from 'lucide-react'
 import React, {useCallback, useEffect, useRef, useState} from 'react'
 
+import {customIconsMapType} from '@/libs/Video/utils/icon'
+
 interface ProgressControlProps {
     progress: number
     buffered: number
@@ -12,9 +14,7 @@ interface ProgressControlProps {
     thumbnailUrl?: string
     thumbnailWidth?: number
     thumbnailHeight?: number
-    customIcons?: {
-        progressThumbIcon?: React.ReactNode
-    }
+    customIcons?: customIconsMapType
     onProgressChange: (progress: number, time: number) => void
     onSeek: (time: number) => void
     onShowThumbnail: (show: boolean, position?: { x: number; time: number }) => void
@@ -48,7 +48,7 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
         const seconds = Math.floor(time % 60)
         return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`
     }
-    
+
     // 更新进度条宽度
     const updateProgressBar = useCallback(() => {
         if (progressBarRef.current) {
@@ -286,7 +286,7 @@ const ProgressControl: React.FC<ProgressControlProps> = ({
             <div className="progress-bar" ref={progressBarRef} />
             <div className="progress-buffer" ref={progressBufferRef} />
             <div className="progress-thumb" ref={progressThumbRef}>
-                {customIcons?.progressThumbIcon || <Circle size={12} fill="white" />}
+                {customIcons?.progressThumb || <Circle size={12} fill="white" />}
             </div>
 
             {/* 缩略图预览 */}

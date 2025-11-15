@@ -2,42 +2,24 @@ import './FullscreenButton.css'
 
 import React from 'react'
 
-import fullscreenSvg from '@/assets/svg/全屏.svg?raw'
-import exitFullscreenSvg from '@/assets/svg/退出全屏.svg?raw'
-
-import {SvgIcon} from '../common'
+import {customIconsKey, customIconsMapType, getIcon} from '@/libs/Video/utils/icon'
 
 interface FullscreenButtonProps {
     isFullscreen: boolean
     onToggle: () => void
-    customIcons?: {
-        fullscreenIcon?: React.ReactNode
-    }
+    customIcons?: customIconsMapType
 }
 
 const FullscreenButton: React.FC<FullscreenButtonProps> = ({ isFullscreen, onToggle, customIcons }) => {
-    // 获取图标，优先使用自定义图标，否则使用默认图标
-    const getIcon = (
-        iconType: keyof NonNullable<FullscreenButtonProps['customIcons']>,
-        defaultIcon: React.ReactNode
-    ) => {
-        return customIcons && customIcons[iconType] ? customIcons[iconType] : defaultIcon
-    }
-
     return (
         <button
             className="control-button"
             onClick={onToggle}
             aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
         >
-            {getIcon(
-                'fullscreenIcon',
-                isFullscreen ? (
-                    <SvgIcon src={exitFullscreenSvg} isRaw noBackground size={20} />
-                ) : (
-                    <SvgIcon src={fullscreenSvg} isRaw noBackground size={20} />
-                )
-            )}
+            {!isFullscreen
+                ? getIcon(customIconsKey.fullscreen, customIcons?.fullscreen)
+                : getIcon(customIconsKey.exitFullscreen, customIcons?.exitFullscreen)}
         </button>
     )
 }

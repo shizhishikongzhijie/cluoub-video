@@ -2,20 +2,16 @@ import './VolumeControl.css'
 
 import React, {useCallback, useEffect, useRef} from 'react'
 
-import muteSvg from '@/assets/svg/静音.svg?raw'
-import volumeSvg from '@/assets/svg/音量.svg?raw'
+import {customIconsKey, customIconsMapType, getIcon} from '@/libs/Video/utils/icon'
+
 import Popover from '../common/popover'
-import SvgIcon from '../common/svgIcon'
 
 interface VolumeControlProps {
     isMuted: boolean
     volume: number
     onToggleMute: () => void
     onVolumeChange: (volume: number) => void
-    customIcons?: {
-        volumeIcon?: React.ReactNode
-        muteIcon?: React.ReactNode
-    }
+    customIcons?: customIconsMapType
 }
 
 const VolumeControl: React.FC<VolumeControlProps> = ({
@@ -28,11 +24,6 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
     const volumeContainerRef = useRef<HTMLDivElement>(null)
     const volumeBufferRef = useRef<HTMLDivElement>(null)
     const isVolumeChanging = useRef(false)
-
-    // 获取图标，优先使用自定义图标，否则使用默认图标
-    const getIcon = (iconType: keyof NonNullable<VolumeControlProps['customIcons']>, defaultIcon: React.ReactNode) => {
-        return customIcons && customIcons[iconType] ? customIcons[iconType] : defaultIcon
-    }
 
     // 更新音量条显示
     const updateVolumeBuffer = useCallback(() => {
@@ -129,8 +120,8 @@ const VolumeControl: React.FC<VolumeControlProps> = ({
             >
                 <button className="control-button volume-button" onClick={onToggleMute}>
                     {isMuted || volume === 0
-                        ? getIcon('muteIcon', <SvgIcon src={muteSvg} isRaw noBackground size={20} />)
-                        : getIcon('volumeIcon', <SvgIcon src={volumeSvg} isRaw noBackground size={20} />)}
+                        ? getIcon(customIconsKey.mute, customIcons?.mute)
+                        : getIcon(customIconsKey.volume, customIcons?.volume)}
                 </button>
             </Popover>
         </>
