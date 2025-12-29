@@ -1,6 +1,6 @@
 {
   "name": "@cluoub-design/cluoub-video",
-  "version": "1.0.8",
+  "version": "0.0.1",
   "type": "module",
   "description": "一个现代化、可定制的 React 视频播放器组件，带有弹幕系统、字幕支持和快捷键功能",
   "keywords": [
