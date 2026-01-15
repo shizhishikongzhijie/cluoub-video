@@ -1,0 +1,22 @@
+.layersContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* 关键：默认让鼠标穿透到底下的 Video */
+  z-index: 10; /* 在 Video 之上，在 Controls 之下 */
+}
+
+.layerItem {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  /*
+   * 注意：如果某个 Layer 需要响应点击（比如弹幕交互、暂停广告跳转）
+   * 该 Layer 的内部元素需要显式设置 pointer-events: auto
+   */
+}

@@ -30,5 +30,6 @@
       ]
     }
   },
-  "include": ["src/libs/Video/**/*", "vite.env.d.ts"],
+  "exclude": ["src/libs/Video/**/*"],
+  "include": ["src/libs/**/*", "vite.env.d.ts"]
 }

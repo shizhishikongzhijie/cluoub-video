@@ -1,0 +1,137 @@
+/* 变量定义 (如果全局没定义，这里提供默认值作为兜底) */
+$primary: var(--color-primary, #35ddd8);
+$text-light: #fff;
+
+/* 进度条高度 */
+$h-default: 3px;
+$h-hover: 6px;
+$thumb-size: 12px;
+$thumb-scale: 1.5;
+
+.container {
+  position: relative;
+  width: 100%;
+  height: 20px; /* 点击热区高度 */
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  z-index: 30; /* 确保在控制栏最上层 */
+
+  /* 悬停交互 */
+  &:hover {
+    .track { height: $h-hover; }
+    .thumb { transform: scale($thumb-scale); opacity: 1; }
+  }
+}
+
+.track {
+  position: relative;
+  width: 100%;
+  height: $h-default;
+  background: rgba(255, 255, 255, 0.2); /* 轨道底色 */
+  border-radius: 2px;
+  transition: height 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: visible; /* 允许 thumb 溢出 */
+}
+
+/* 进度条通用样式 */
+.buffered, .hoverTrack, .played {
+  position: absolute;
+  top: 0; left: 0; height: 100%;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.buffered {
+  background: rgba(255, 255, 255, 0.4);
+  transition: width 0.2s linear;
+}
+
+.hoverTrack {
+  background: rgba(255, 255, 255, 0.5);
+  transition: opacity 0.2s;
+}
+
+.played {
+  background: $primary;
+  /* 播放时平滑，拖拽时由 JS 直接控制 style，移除 transition 以防延迟 */
+  will-change: width;
+}
+
+/* 指示点 (圆球) */
+.thumb {
+  position: absolute;
+  right: -6px; /* ($thumb-size / 2) */
+  top: 50%;
+  margin-top: -6px;
+
+  width: $thumb-size;
+  height: $thumb-size;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(0,0,0,0.3);
+
+  transform: scale(0); /* 默认隐藏 */
+  opacity: 0;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+  z-index: 10;
+
+  /* 拖拽时一直显示 */
+  .container:active & {
+    transform: scale($thumb-scale);
+    opacity: 1;
+  }
+}
+
+/* --- Tooltip (时间+预览图) --- */
+.tooltip {
+  position: absolute;
+  bottom: 24px; /* 距离进度条上方 */
+  transform: translateX(-50%); /* 居中对齐 */
+  pointer-events: none;
+
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+
+  opacity: 0;
+  animation: fadeIn 0.2s forwards;
+
+  /* 小三角 */
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -5px; left: 50%; margin-left: -5px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid rgba(0, 0, 0, 0.85);
+  }
+}
+
+.thumbnailBox {
+  background-color: #000;
+  background-size: cover;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.timeLabel {
+  color: #fff;
+  font-size: 13px;
+  text-align: center;
+  font-family: 'Roboto Mono', monospace; /* 等宽字体防止抖动 */
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  line-height: 1;
+  padding-bottom: 2px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}

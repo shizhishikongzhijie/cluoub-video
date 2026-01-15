@@ -19,7 +19,7 @@ export default defineConfig({
         }),
         visualizer({
             filename: 'dist/stats.html'
-        }),
+        })
         // rawPlugin({
         //     fileRegex: /\.svg$/
         // })
@@ -28,7 +28,7 @@ export default defineConfig({
         emptyOutDir: true,
         sourcemap: true,
         lib: {
-            entry: path.resolve(__dirname, 'src/libs/Video/index.ts'),
+            entry: path.resolve(__dirname, 'src/libs/index.ts'),
             name: 'CluoubVideo',
             formats: ['es', 'cjs'],
             fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}.js`

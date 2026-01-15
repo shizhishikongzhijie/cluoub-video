@@ -1,0 +1,128 @@
+$primary: var(--color-primary, #35ddd8);
+/* 控制栏容器 */
+.controlsLayer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 0 0 12px; /* 底部留空，增加悬浮感 */
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 40%, transparent 100%);
+  z-index: 20;
+
+  /* 动效：滑入滑出 */
+  //opacity: 0;
+  transform: translateY(64px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  //pointer-events: none; /* 隐藏时不可点 */
+  .buttonsRow {
+    opacity: 0;
+    pointer-events: none; /* 隐藏时不可点 */
+  }
+
+  &.visible {
+    //opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    .buttonsRow{
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+}
+
+.controlsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px; /* 进度条和按钮的间距 */
+}
+
+/* 1. 进度条区域 */
+.progressWrap {
+  width: 100%;
+  padding: 0 4px;
+}
+
+/* 2. 按钮行 */
+.buttonsRow {
+  padding: 0 12px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 40px;
+}
+
+.leftGroup, .rightGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 图标按钮 */
+.iconBtn {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.9);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); /* 阴影防背景过白 */
+  }
+
+  &:hover {
+    color: $primary; /* 主题色 */
+    background: rgba(255,255,255,0.1);
+  }
+}
+
+/* 时间显示 */
+.timeDisplay {
+  font-size: 13px;
+  color: #fff;
+  font-feature-settings: "tnum"; /* 等宽数字 */
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  user-select: none;
+
+  .separator {
+    margin: 0 4px;
+    opacity: 0.6;
+  }
+}
+
+/* 音量条交互 */
+.volumeBox {
+  display: flex;
+  align-items: center;
+  position: relative;
+
+  /* 音量滑块容器 (悬停展开) */
+  .volumeSlider {
+    width: 0;
+    overflow: hidden;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+
+    input {
+      width: 80px;
+      margin-left: 8px;
+      cursor: pointer;
+      accent-color: $primary; /* 原生 range 颜色 */
+    }
+  }
+
+  /* 悬停展开逻辑 */
+  &:hover .volumeSlider,
+  .volumeSlider:hover {
+    width: 90px;
+  }
+}
