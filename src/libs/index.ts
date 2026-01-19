@@ -1,3 +1,4 @@
+export * from './core/types'
 export * from './plugins/dash'
 export * from './plugins/subtitle'
 export * from './types'

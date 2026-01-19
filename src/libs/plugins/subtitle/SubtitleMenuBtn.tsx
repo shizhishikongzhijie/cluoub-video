@@ -1,9 +1,10 @@
 import {Captions} from 'lucide-react'
 import {useState} from 'react'
 
+import type {SubtitleTrack} from '@/libs'
+
 import type {PlayerInstance} from '../../core/types'
-import type {SubtitleTrack} from './index.tsx'
-import {SubtitleMenu} from './SubtitleMenu.tsx'
+import {SubtitleMenu} from './SubtitleMenu'
 
 // 按钮组件 (把 Popover 逻辑放在这里)
 export const SubtitleMenuBtn = ({ player, tracks }: { player: PlayerInstance; tracks: SubtitleTrack[] }) => {
