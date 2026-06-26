@@ -1,7 +1,7 @@
-import {useStore} from 'zustand'
+import { useStore } from 'zustand'
 
-import type {PlayerInstance} from '../../core/types'
-import type {SubtitleTrack} from './index'
+import type { PlayerInstance, SubtitleStyles } from '../../core/types'
+import type { SubtitleTrack } from './index'
 import styles from './styles.module.scss'
 
 // --- 简单的 Switch 组件 ---
@@ -11,20 +11,21 @@ const Switch = ({ checked, onChange }: { checked: boolean; onChange: (v: boolean
     </div>
 )
 
-export const SubtitleMenu = ({
-    player,
-    tracks,
-    onClose
-}: {
-    player: PlayerInstance
-    tracks: SubtitleTrack[]
-    onClose: () => void
-}) => {
-    const { isSubtitleVisible, subtitleTrack, subtitleStyles } = useStore(player.store, (s) => s as any)
+const DEFAULT_SUBTITLE_STYLES: SubtitleStyles = {
+    fontSize: 20,
+    color: '#ffffff',
+    isOutline: true,
+    isBold: false,
+    opacity: 1
+}
 
-    const updateStyle = (key: string, val: any) => {
+export const SubtitleMenu = ({ player, tracks }: { player: PlayerInstance; tracks: SubtitleTrack[] }) => {
+    const { isSubtitleVisible, subtitleTrack } = useStore(player.store)
+    const subtitleStyles = useStore(player.store, (s) => s.subtitleStyles) ?? DEFAULT_SUBTITLE_STYLES
+
+    const updateStyle = (key: keyof SubtitleStyles, val: number | string | boolean) => {
         player.store.setState((prev) => ({
-            subtitleStyles: { ...(prev as any).subtitleStyles, [key]: val }
+            subtitleStyles: { ...(prev.subtitleStyles ?? DEFAULT_SUBTITLE_STYLES), [key]: val }
         }))
     }
 

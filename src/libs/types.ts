@@ -1,5 +1,4 @@
-import type {IPlayerPlugin} from './core/types.ts' // 假设你的核心库路径
-// 假设你的核心库路径
+import type { IPlayerPlugin, PlayerInstance } from './core/types.ts'
 
 // 使用 const 对象替代 enum
 export const VideoType = {
@@ -30,10 +29,24 @@ export interface PlayerControlsConfig {
     speed?: boolean
 }
 
+export interface PlaylistItem {
+    /** 该集的视频源 */
+    source: string | VideoSource | VideoSource[]
+    /** 该集封面 */
+    poster?: string
+    /** 该集标题（用于回调/UI） */
+    title?: string
+}
+
 export interface CluoubVideoProps {
     // --- 数据源 ---
     source: string | VideoSource | VideoSource[] // 支持多画质
     poster?: string // 封面图
+
+    // --- 播放列表 / 连播 ---
+    playlist?: PlaylistItem[]
+    /** 单集播放结束后自动播放下一集，默认 false */
+    autoNext?: boolean
 
     // --- 样式配置 ---
     width?: string | number
@@ -46,6 +59,11 @@ export interface CluoubVideoProps {
     loop?: boolean
     muted?: boolean
     controls?: boolean | PlayerControlsConfig // true 显示全部，object 自定义
+    /**
+     * 本地持久化：记忆音量/倍速并在播放到一半时记录断点，下次自动续播。
+     * true 开启全部；可用对象细分；按视频源 URL 作为 key 存储于 localStorage。
+     */
+    persist?: boolean | { progress?: boolean; volume?: boolean; playbackRate?: boolean }
 
     // --- 插件系统 ---
     plugins?: IPlayerPlugin[]
@@ -58,20 +76,43 @@ export interface CluoubVideoProps {
         interval: number // 每张图代表的时间间隔
     }
     // --- 事件回调 ---
-    onReady?: (player: any) => void
+    onReady?: (player: PlayerInstance) => void
     onPlay?: () => void
     onPause?: () => void
     onEnded?: () => void
-    onError?: (err: any) => void
+    onError?: (err: unknown) => void
+    /** 画质切换回调：mode 为用户选择的档位（auto/具体 key），activeKey 为当前实际生效的档位 */
+    onQualityChange?: (info: { mode: string; activeKey: string; label: string }) => void
+    /** 播放列表切换回调 */
+    onPlaylistChange?: (info: { index: number; item: PlaylistItem }) => void
 
-    [any: string]: any
+    // 允许插件读取自定义配置项（如 subtitle 插件的 tracks）
+
+    [key: string]: any
 }
 
 export interface VideoRef {
     play: () => void
     pause: () => void
+    togglePlay: () => void
     seek: (time: number) => void
     setVolume: (vol: number) => void
+    toggleMute: () => void
     toggleFullscreen: () => void
-    // ... 其他方法
+    setPlaybackRate: (rate: number) => void
+    togglePip: () => Promise<void>
+    /** 播放列表：跳到指定索引 */
+    playIndex: (index: number) => void
+    /** 播放列表：下一集 */
+    next: () => void
+    /** 播放列表：上一集 */
+    prev: () => void
+    /** 截取当前帧，返回图片 dataURL */
+    captureFrame: (options?: { type?: string; quality?: number }) => string | null
+    /** 按帧率截取多帧（用于 GIF） */
+    captureFrames: (options?: { count?: number; intervalMs?: number; type?: string }) => Promise<string[]>
+    /** 底层 HTMLVideoElement，用于高级用法 */
+    getVideoElement: () => HTMLVideoElement | null
+    /** 完整播放器实例，用于访问 store 等 */
+    getPlayer: () => PlayerInstance | null
 }

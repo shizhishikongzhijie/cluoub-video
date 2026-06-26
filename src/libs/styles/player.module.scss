@@ -116,7 +116,6 @@
 .videoContainer {
   position: relative;
   width: 100%;
-  height: 100%;
   background: #000;
   //border-radius: 12px;
   overflow: hidden; /* 防止全屏时圆角露馅 */
@@ -128,6 +127,18 @@
     object-fit: contain;
     display: block;
   }
+
+  /* 全屏：容器即全屏元素，需覆盖内联的 width/height/aspect-ratio 约束 */
+  &:fullscreen {
+    width: 100vw !important;
+    height: 100vh !important;
+    aspect-ratio: auto !important;
+
+    video {
+      width: 100%;
+      height: 100%;
+    }
+  }
 }
 
 /* React UI 层 (PlayerUI) */
@@ -137,15 +148,9 @@
   //pointer-events: none; /* ✨ 关键：默认穿透，让用户能点击底下的 video (播放/暂停) */
   z-index: 10;
 
-  /* 全屏模式 */
-  &.fullscreen {
-    position: fixed;
-    z-index: 9999;
-    width: 100vw !important;
-    height: 100vh !important;
-    background: #000;
-    pointer-events: auto; /* 全屏时接管交互，防止穿透到背后的页面 */
-  }
+  /* 全屏模式：容器(.videoContainer)才是全屏元素并铺满+黑底，
+     playerRoot 只需保持 absolute inset:0 覆盖容器内部。
+     不可再设 position:fixed / background，否则会盖住兄弟节点 <video>。 */
 
   /* 隐藏鼠标 */
   &.hideCursor {
@@ -162,4 +167,77 @@
   align-items: center;
   justify-content: center;
   color: #666;
+}
+
+/* 点击热区：铺满播放区域，位于控制栏(z-index:20)之下，承接点击播放/双击全屏 */
+.clickCatcher {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  cursor: pointer;
+}
+
+/* 缓冲 Loading 覆盖层 */
+.loadingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 15;
+  pointer-events: none;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--theme-color, #35ddd8);
+  border-radius: 50%;
+  animation: cluoub-spin 0.8s linear infinite;
+}
+
+@keyframes cluoub-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 手势反馈浮层（移动端） */
+.gestureFeedback {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 16;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.gestureBar {
+  width: 120px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+}
+
+.gestureBarFill {
+  height: 100%;
+  background: var(--theme-color, #35ddd8);
 }

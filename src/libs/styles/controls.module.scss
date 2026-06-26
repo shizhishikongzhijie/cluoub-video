@@ -61,6 +61,8 @@ $primary: var(--color-primary, #35ddd8);
 .iconBtn {
   background: transparent;
   border: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
   color: rgba(255,255,255,0.9);
   cursor: pointer;
   padding: 8px;
@@ -71,6 +73,11 @@ $primary: var(--color-primary, #35ddd8);
   justify-content: center;
   position: relative;
 
+  &:focus,
+  &:focus-visible {
+    outline: none;
+  }
+
   svg {
     width: 20px;
     height: 20px;
@@ -80,6 +87,16 @@ $primary: var(--color-primary, #35ddd8);
   &:hover {
     color: $primary; /* 主题色 */
     background: rgba(255,255,255,0.1);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+
+    &:hover {
+      color: rgba(255,255,255,0.9);
+      background: transparent;
+    }
   }
 }
 
@@ -124,5 +141,160 @@ $primary: var(--color-primary, #35ddd8);
   &:hover .volumeSlider,
   .volumeSlider:hover {
     width: 90px;
+  }
+}
+
+/* 图标按钮激活态（如 PiP 开启） */
+.active {
+  color: $primary;
+}
+
+/* 插件控制槽：仅作布局容器，交互元素由插件自带 */
+.pluginSlot {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 倍速菜单 */
+.speedBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.speedBtn {
+  background: transparent;
+  border: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 8px;
+  border-radius: 8px;
+  min-width: 44px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s;
+
+  &:hover {
+    color: $primary;
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.speedMenu {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 8px;
+  background: rgba(28, 28, 30, 0.95);
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  min-width: 80px;
+  z-index: 40;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+
+  /* 桥接层：填补与按钮间的 8px 空隙，避免鼠标穿过时触发 onMouseLeave */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 8px;
+  }
+}
+
+.speedItem {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-align: center;
+  white-space: nowrap;
+  transition: all 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.speedActive {
+  color: $primary;
+  font-weight: 600;
+}
+
+/* 设置菜单 */
+.settingsBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.settingsMenu {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 8px;
+  background: rgba(28, 28, 30, 0.95);
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  z-index: 40;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+
+  /* 桥接层：填补与按钮间的 8px 空隙，避免鼠标穿过时触发 onMouseLeave */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 8px;
+  }
+}
+
+.settingsItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: all 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.settingsState {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+}
+
+.settingsActive {
+  color: $primary;
+
+  .settingsState {
+    color: $primary;
   }
 }

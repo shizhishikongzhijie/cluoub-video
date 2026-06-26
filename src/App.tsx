@@ -1,12 +1,8 @@
 import './App.css'
 
-// import { Circle } from 'lucide-react'
-//
-// import { CluoubVideo, VideoType } from './libs/Video'
-// import { DanmuPlugin } from './plugins/DanmuPlugin'
-import {CluoubVideo} from './libs'
-import {dashPlugin} from './libs/plugins/dash'
-import {subtitlePlugin, type SubtitleTrack} from './libs/plugins/subtitle'
+import { CluoubVideo } from './libs'
+import { dashPlugin } from './libs/plugins/dash'
+import { subtitlePlugin, type SubtitleTrack } from './libs/plugins/subtitle'
 
 const MOCK_TRACKS: SubtitleTrack[] = [
     {
@@ -64,7 +60,7 @@ function App() {
         <>
             <CluoubVideo
                 // debug={true}
-                source="https://cluoub-video-test.shizhishi.cn/user_9556_20251105163519/original/e0f81a8f079e82ca42dd8db6153df2fe.mp4"
+                source="./video.mp4_ja.mp4"
                 // videoType={VideoType.NORMAL}
                 // dataPrefix="./assets"
                 width="800px"

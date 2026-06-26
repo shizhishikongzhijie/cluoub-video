@@ -1,7 +1,7 @@
 import React from 'react'
-import {useStore} from 'zustand'
+import { useStore } from 'zustand'
 
-import type {PlayerInstance} from '../core/types'
+import type { PlayerInstance } from '../core/types'
 import styles from '../styles/layers.module.scss'
 
 interface LayersProps {

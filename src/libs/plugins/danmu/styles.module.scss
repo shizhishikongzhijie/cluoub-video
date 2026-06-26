@@ -1,0 +1,60 @@
+.danmuStage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 70%; /* 弹幕只占据上部，避免遮挡字幕 */
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.danmu {
+  position: absolute;
+  left: 0;
+  white-space: nowrap;
+  font-weight: 600;
+  text-shadow:
+    1px 0 1px rgba(0, 0, 0, 0.8),
+    0 1px 1px rgba(0, 0, 0, 0.8),
+    -1px 0 1px rgba(0, 0, 0, 0.8),
+    0 -1px 1px rgba(0, 0, 0, 0.8);
+  will-change: transform;
+}
+
+/* 滚动弹幕：从右向左 */
+.scroll {
+  animation-name: danmu-scroll;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+/* 顶部/底部固定弹幕：居中淡入淡出 */
+.fixed {
+  left: 50%;
+  transform: translateX(-50%);
+  animation-name: danmu-fixed;
+  animation-timing-function: ease;
+  animation-fill-mode: forwards;
+}
+
+@keyframes danmu-scroll {
+  from {
+    transform: translateX(var(--stage-w, 100%));
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes danmu-fixed {
+  0% {
+    opacity: 0;
+  }
+  10%,
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

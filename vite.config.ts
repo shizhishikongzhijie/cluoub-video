@@ -1,8 +1,8 @@
 // vite.config.ts
 import react from '@vitejs/plugin-react'
-import path, {resolve} from 'path'
-import {visualizer} from 'rollup-plugin-visualizer'
-import {defineConfig} from 'vite'
+import path, { resolve } from 'path'
+import { visualizer } from 'rollup-plugin-visualizer'
+import { defineConfig } from 'vite'
 import dts from 'vite-plugin-dts'
 
 // https://vitejs.dev/config/
@@ -34,14 +34,15 @@ export default defineConfig({
             fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}.js`
         },
         rolldownOptions: {
-            external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react', 'dashjs'],
+            external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react', 'dashjs', 'hls.js'],
             output: {
                 globals: {
                     react: 'React',
                     'react-dom': 'ReactDOM',
                     'react/jsx-runtime': 'reactJsxRuntime',
                     'lucide-react': 'LucideReact',
-                    dashjs: 'dashjs'
+                    dashjs: 'dashjs',
+                    'hls.js': 'Hls'
                 }
             }
         }

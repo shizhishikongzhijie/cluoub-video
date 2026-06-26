@@ -1,297 +1,146 @@
 # Cluoub Video Player
 
-一个现代化、功能丰富的 React 视频播放器组件，专为二次元文化爱好者打造，集成弹幕系统、多字幕支持和快捷键功能。
+一个现代化的 React 视频播放器组件，基于 Zustand 状态管理与函数式插件架构，支持多字幕（VTT / SRT）与 DASH 自适应码流。
 
 ## 特性
 
-- 🎬 完整的视频播放控制功能
-- 💬 实时弹幕系统，支持 WebSocket 通信
-- 📝 多语言字幕轨道支持（WebVTT 格式）
-- ⌨️ 全面的键盘快捷键支持
-- 🎨 精美的二次元风格 UI 设计
-- 📱 完全响应式设计，适配各种屏幕尺寸
-- 🔧 高度可定制的播放器控件
+- 🎬 完整的视频播放控制功能（播放/暂停、进度、音量、全屏）
+- 📝 多语言字幕轨道支持（WebVTT 与 SRT 格式，可在线调节字号、颜色、透明度、描边、加粗）
+- 📺 DASH 自适应码流支持（按需加载 dashjs）
+- 🧩 函数式插件系统，可按需注册 UI 层与控制按钮
 - 🌐 完整的 TypeScript 类型定义
-- 🧩 可扩展的插件系统架构
 
 ## 安装
 
 ```bash
 npm install @cluoub-design/cluoub-video
-# 或使用 yarn
-yarn add @cluoub-design/cluoub-video
-# 或使用 pnpm
+# 或
 pnpm add @cluoub-design/cluoub-video
 ```
 
 ## 快速开始
 
-```jsx
-import React from 'react';
-import CluoubVideo from '@cluoub-design/cluoub-video';
-import '@cluoub-design/cluoub-video/dist/cluoub-video.css';
+```tsx
+import React from 'react'
+import { CluoubVideo } from '@cluoub-design/cluoub-video'
 
 function App() {
   return (
-    <div className="app-container">
-      <h1>Cluoub Video Player 演示</h1>
-      <CluoubVideo
-        videoSrc="https://example.com/video.mp4"
-        width="100%"
-        maxWidth="1200px"
-        aspectRatio="16:9"
-      />
-    </div>
-  );
+    <CluoubVideo
+      source="https://example.com/video.mp4"
+      width="800px"
+      aspectRatio="16:9"
+    />
+  )
 }
 
-export default App;
+export default App
 ```
 
-## 功能详解
+> 注意：组件以**命名导出** `CluoubVideo` 提供，请使用 `import { CluoubVideo }` 而非默认导入。
 
-### 1. 弹幕系统
+## 插件用法
 
-我们的弹幕系统专为二次元文化定制，具有以下特点：
+播放器本身只负责核心播放能力，字幕、DASH 等功能以插件形式按需启用，通过 `plugins` 属性传入。
 
-- **实时通信**：基于 WebSocket 的实时弹幕传输
-- **智能过滤**：多层级过滤机制（敏感词检测、用户屏蔽词、长度限制、重复内容检测）
-- **性能优化**：自动清理过期弹幕，智能控制同时显示的弹幕数量
-- **个性化定制**：支持自定义弹幕颜色、大小、透明度和移动速度
-- **二次元风格**：精心设计的视觉效果，符合二次元美学
+### 字幕插件
 
-```jsx
+字幕轨道通过 `tracks` 属性传入，并启用 `subtitlePlugin`：
+
+```tsx
+import { CluoubVideo } from '@cluoub-design/cluoub-video'
+import { subtitlePlugin, type SubtitleTrack } from '@cluoub-design/cluoub-video/plugins/subtitle'
+
+const tracks: SubtitleTrack[] = [
+  { id: '1', label: '简体中文', lang: 'zh', type: 'vtt', src: '/subtitles/zh.vtt' },
+  { id: '2', label: 'English', lang: 'en', type: 'srt', src: '/subtitles/en.srt' }
+]
+
 <CluoubVideo
-  videoSrc="https://example.com/video.mp4"
-  controls={{
-    barrage: true // 启用弹幕功能
-  }}
-  barrageConfig={{
-    enabled: true,
-    maxDisplayCount: 30,
-    display: {
-      fontSize: 16,
-      opacity: 0.9
-    }
-  }}
+  source="https://example.com/video.mp4"
+  plugins={[subtitlePlugin]}
+  tracks={tracks}
 />
 ```
 
-### 2. 字幕支持
+VTT 与 SRT 两种格式均受支持，时间戳分隔符（`.` 与 `,`）会被自动识别。
 
-提供专业级的字幕支持：
+### DASH 插件
 
-```jsx
-<CluoubVideo
-  videoSrc="https://example.com/video.mp4"
-  tracks={[
-    {
-      id: "subtitle-cn",
-      label: "简体中文",
-      language: "zh-CN",
-      src: "/video_翻译.vtt",
-      kind: "subtitles",
-      default: true
-    },
-    {
-      id: "subtitle-jp",
-      label: "日本語",
-      language: "ja",
-      src: "/video_original.vtt",
-      kind: "subtitles"
-    }
-  ]}
-/>
-```
-
-### 3. 快捷键支持
-
-默认快捷键：
-
-| 快捷键 | 功能 |
-|--------|------|
-| 空格键 | 播放/暂停 |
-| ←/→ 方向键 | 快退/快进 5 秒 |
-| ↑/↓ 方向键 | 增加/减少音量 10% |
-| F | 全屏切换 |
-| M | 静音切换 |
-| S | 字幕开关 |
-| B | 弹幕开关 |
-| 数字键 0-9 | 跳转到视频的 0%-90% 位置 |
-
-控制快捷键：
-
-```jsx
-<CluoubVideo
-  videoSrc="https://example.com/video.mp4"
-  enableShortcuts={true} // 启用快捷键
-  customShortcuts={{
-    // 自定义快捷键映射
-    playPause: [' ', 'k'],
-    toggleFullscreen: ['f', 'F11']
-  }}
-/>
-```
-
-### 4. 自定义控件
-
-灵活配置播放器控件：
-
-```jsx
-<CluoubVideo
-  videoSrc="https://example.com/video.mp4"
-  controls={{
-    play: true,
-    volume: true,
-    time: true,
-    progress: true,
-    settings: true,
-    fullscreen: true,
-    barrage: true,
-    subtitles: true,
-    pictureInPicture: false
-  }}
-/>
-```
-
-### 5. 自定义图标
-
-使用您喜欢的图标库：
-
-```jsx
-import { Play, Pause, Volume2, VolumeX, Maximize, Settings, MessageCircle } from 'lucide-react';
+```tsx
+import { CluoubVideo } from '@cluoub-design/cluoub-video'
+import { dashPlugin } from '@cluoub-design/cluoub-video/plugins/dash'
 
 <CluoubVideo
-  videoSrc="https://example.com/video.mp4"
-  customIcons={{
-    playIcon: <Play size={20} />,
-    pauseIcon: <Pause size={20} />,
-    volumeIcon: <Volume2 size={20} />,
-    muteIcon: <VolumeX size={20} />,
-    fullscreenIcon: <Maximize size={20} />,
-    settingsIcon: <Settings size={20} />,
-    barrageIcon: <MessageCircle size={20} />
-  }}
+  source="https://example.com/stream.mpd"
+  plugins={[dashPlugin]}
 />
 ```
 
 ## API 参考
 
-### 主要属性
+### CluoubVideo 主要属性
 
 | 属性 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
-| videoSrc | string | 必需 | 视频源 URL |
-| width | string \| number | '100%' | 视频宽度 |
-| height | string \| number | 'auto' | 视频高度 |
-| maxWidth | string \| number | undefined | 最大宽度 |
-| aspectRatio | string | '16:9' | 视频宽高比 |
-| controls | ControlConfig | 见下方 | 控件配置 |
-| customIcons | CustomIcons | undefined | 自定义图标 |
-| thumbnailUrl | string | undefined | 缩略图 URL |
-| thumbnailWidth | number | 120 | 缩略图宽度 |
-| thumbnailHeight | number | 80 | 缩略图高度 |
-| tracks | Track[] | [] | 字幕轨道列表 |
-| enableShortcuts | boolean | true | 是否启用快捷键 |
-| customShortcuts | ShortcutConfig | undefined | 自定义快捷键配置 |
-| barrageConfig | BarrageConfig | undefined | 弹幕配置 |
+| source | string \| VideoSource \| VideoSource[] | 必需 | 视频源 |
+| poster | string | undefined | 封面图 |
+| width | string \| number | undefined | 视频宽度 |
+| height | string \| number | undefined | 视频高度 |
+| aspectRatio | string | undefined | 视频宽高比，如 `'16:9'` |
+| themeColor | string | `#35ddd8` | 主题色 |
+| autoPlay | boolean | false | 自动播放 |
+| loop | boolean | false | 循环播放 |
+| muted | boolean | false | 静音 |
+| controls | boolean \| PlayerControlsConfig | true | 控件配置 |
+| plugins | IPlayerPlugin[] | [] | 插件列表 |
+| tracks | SubtitleTrack[] | [] | 字幕轨道（由字幕插件消费） |
+| thumbnail | { url, cols, rows, interval } | undefined | 缩略图雪碧图配置 |
+| onReady | (player) => void | undefined | 播放器就绪回调 |
+| onPlay / onPause / onEnded | () => void | undefined | 播放状态回调 |
+| onError | (err) => void | undefined | 错误回调 |
 
-### ControlConfig 接口
-
-| 属性 | 类型 | 默认值 | 描述 |
-|------|------|--------|------|
-| play | boolean | true | 播放/暂停按钮 |
-| volume | boolean | true | 音量控制 |
-| time | boolean | true | 时间显示 |
-| progress | boolean | true | 进度条 |
-| settings | boolean | true | 设置按钮 |
-| fullscreen | boolean | true | 全屏按钮 |
-| barrage | boolean | true | 弹幕功能 |
-| subtitles | boolean | true | 字幕功能 |
-| pictureInPicture | boolean | true | 画中画功能 |
-
-### Track 接口
+### SubtitleTrack 接口
 
 | 属性 | 类型 | 描述 |
 |------|------|------|
 | id | string | 字幕轨道唯一标识符 |
-| label | string | 字幕轨道标签 |
-| language | string | 字幕语言代码 |
-| src | string | 字幕文件路径 |
-| kind | 'subtitles' \| 'captions' \| 'descriptions' \| 'chapters' \| 'metadata' | 字幕类型 |
-| default | boolean (可选) | 是否为默认轨道 |
+| label | string | 字幕轨道显示名称 |
+| lang | string | 字幕语言代码，如 `'zh'` |
+| src | string | 字幕文件 URL |
+| type | `'vtt'` \| `'srt'` \| `'ass'` | 字幕格式（`ass` 暂未实现渲染） |
 
 ## 架构设计
 
-Cluoub Video Player 采用模块化、插件化的架构设计：
+Cluoub Video Player 采用「核心 + 状态 + 函数式插件」的架构：
 
-- **核心层**：PlayerCore 提供基础播放控制和事件管理
-- **插件系统**：通过 PluginManager 支持功能扩展
-- **UI 组件**：基于 React 组件构建的用户界面
-- **Hooks 封装**：提供便捷的 React Hooks 接口
-
-### 主要模块
-
-1. **PlayerCore** - 播放器核心
-   - 视频状态管理
-   - 事件系统
-   - 插件管理
-
-2. **插件系统**
-   - 弹幕插件 (BarragePlugin)
-   - 字幕插件 (SubtitlePlugin)
-   - 可自定义的插件接口
-
-3. **UI 组件**
-   - 控制面板
-   - 弹幕渲染器
-   - 字幕显示组件
+- **核心层（`core/createPlayer`）**：封装 `<video>` 元素的生命周期、原生事件绑定与统一清理，提供播放控制 API 与简单的事件总线。
+- **状态层（`core/store`）**：基于 Zustand 的单一数据源，管理播放状态与插件 UI 注册表。
+- **React 绑定（`hooks/usePlayer`）**：负责播放器的挂载与销毁，保证仅初始化一次。
+- **UI 层（`Controls` / `Layers`）**：纯展示组件，订阅 store 切片渲染控制栏与覆盖层。
+- **插件（`plugins/*`）**：形如 `(player) => cleanup` 的函数，通过 `registerUI` / `unregisterUI` 向播放器注入控制按钮或覆盖层，零侵入核心。
 
 ## 浏览器兼容性
 
-- Chrome (最新 2 个版本)
-- Firefox (最新 2 个版本)
-- Safari (最新 2 个版本)
-- Edge (最新 2 个版本)
+- Chrome / Firefox / Safari / Edge（最新 2 个版本）
 - 移动端主流浏览器
 
 ## 开发指南
 
-### 本地开发
-
 ```bash
-# 克隆仓库
-git clone https://github.com/your-username/cluoub-video.git
-cd cluoub-video
-
 # 安装依赖
 pnpm install
 
 # 启动开发服务器
 pnpm run dev
-```
 
-### 构建项目
-
-```bash
 # 构建生产版本
 pnpm run build
 
-# 运行类型检查
-pnpm run type-check
-
-# 运行代码风格检查
+# 代码风格检查
 pnpm run lint
 ```
 
 ## 许可证
 
 MIT License
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request 来帮助改进这个项目！
-
-## 联系我们
-
-如有任何问题或建议，请在 GitHub 上提交 Issue 或联系我们的开发团队。

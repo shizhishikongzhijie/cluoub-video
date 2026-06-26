@@ -1,6 +1,6 @@
-import type {IPlayerPlugin} from '../../core/types.ts'
-import {SubtitleLayer} from './SubtitleLayer'
-import {SubtitleMenuBtn} from './SubtitleMenuBtn'
+import type { IPlayerPlugin } from '../../core/types.ts'
+import { SubtitleLayer } from './SubtitleLayer'
+import { SubtitleMenuBtn } from './SubtitleMenuBtn'
 
 export interface SubtitleTrack {
     id: string
@@ -22,14 +22,13 @@ export const subtitlePlugin: IPlayerPlugin<SubtitleConfig> = (player) => {
     player.store.setState({
         subtitleTrack: 0,
         isSubtitleVisible: defaultShow,
-        // 扩展一个 subtitleStyles 状态
         subtitleStyles: {
             fontSize: 20,
             color: '#ffffff',
             isOutline: true,
             isBold: false,
             opacity: 1
-        } as any
+        }
     })
 
     // 2. 注册 UI：字幕渲染层
@@ -47,7 +46,7 @@ export const subtitlePlugin: IPlayerPlugin<SubtitleConfig> = (player) => {
     })
 
     return () => {
-        // player.unregisterUI('subtitle-layer')
-        // player.unregisterUI('subtitle-btn')
+        player.unregisterUI('subtitle-layer')
+        player.unregisterUI('subtitle-btn')
     }
 }

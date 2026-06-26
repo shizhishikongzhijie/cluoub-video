@@ -43,6 +43,34 @@ $text: #eee;
   font-size: 13px;
 }
 
+/* 字幕按钮 + Popover 容器 */
+.subtitleBox {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Popover：锚定按钮上方、右对齐，避免溢出容器被裁切 */
+.subtitlePopover {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 8px;
+  z-index: 40;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+
+  /* 桥接层：填补与按钮间的 8px 空隙，避免鼠标穿过时触发 onMouseLeave */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 8px;
+  }
+}
+
 .section {
   margin-bottom: 16px;
   &:last-child { margin-bottom: 0; }

@@ -1,5 +1,7 @@
 export * from './core/types'
+export * from './plugins/danmu'
 export * from './plugins/dash'
+export * from './plugins/hls'
 export * from './plugins/subtitle'
 export * from './types'
 export * from './video'
