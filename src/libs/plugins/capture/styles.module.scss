@@ -1,0 +1,66 @@
+/* 右侧竖排工具栏：截图 / GIF 录制（悬浮在视频右边缘中部） */
+.captureToolbar {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto; /* 覆盖层默认穿透，这里需可点击 */
+  z-index: 20;
+}
+
+.toolbarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  }
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.72);
+    color: var(--theme-color, #35ddd8);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+/* 录制中：呼吸红点动画 */
+.recording {
+  background: rgba(255, 60, 60, 0.35);
+  color: #fff;
+
+  &:hover {
+    background: rgba(255, 60, 60, 0.55);
+    color: #fff;
+  }
+
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 60, 60, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 60, 60, 0);
+  }
+}

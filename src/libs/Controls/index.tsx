@@ -1,13 +1,17 @@
 import classNames from 'classnames'
 import {
     Maximize,
+    Minimize,
     Pause,
     PictureInPicture2,
     Play,
+    RectangleHorizontal,
+    RectangleVertical,
     Repeat,
     Settings,
     SkipBack,
     SkipForward,
+    Square,
     Volume2,
     VolumeX
 } from 'lucide-react'
@@ -17,6 +21,7 @@ import { useStore } from 'zustand'
 import type { PlayerInstance } from '../core/types'
 import styles from '../styles/controls.module.scss'
 import type { PlayerControlsConfig } from '../types'
+import { resolveSource } from '../utils/source'
 import { formatTime } from '../utils/time'
 import Progress from './Process'
 
@@ -34,7 +39,8 @@ const resolveControlsConfig = (controls: PlayerInstance['options']['controls']):
         pip: true,
         danmu: true,
         quality: true,
-        speed: true
+        speed: true,
+        screenMode: true
     }
     if (controls === false) {
         return Object.keys(allOn).reduce((acc, k) => ({ ...acc, [k]: false }), {} as Required<PlayerControlsConfig>)
@@ -55,11 +61,13 @@ export const Controls = ({ player }: { player: PlayerInstance }) => {
         uiRegistry,
         playbackRate,
         isPip,
+        isFullscreen,
         buffered,
         bufferedRanges,
         isLoop,
         playlistIndex,
-        playlistLength
+        playlistLength,
+        screenMode
     } = useStore(player.store)
     const {
         togglePlay,
@@ -74,6 +82,8 @@ export const Controls = ({ player }: { player: PlayerInstance }) => {
         prev
     } = player
 
+    const currentSrc = player.video?.currentSrc || resolveSource(player.options.source)
+
     const [isSpeedOpen, setIsSpeedOpen] = useState(false)
     const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
@@ -82,13 +92,13 @@ export const Controls = ({ player }: { player: PlayerInstance }) => {
 
     // 按位置筛选并排序插件注册的控制按钮
     // 插件组件自带交互元素（按钮/弹层），这里仅做容器，不再额外包 <button> 以免嵌套
-    // 同时遵循 controls 配置：quality/danmu 关闭时隐藏对应插件控件
+    // 同时遵循 controls 配置：quality/danmu 关闭时隐藏对应 controlKey 的插件控件
     const controlsByPosition = (position: 'left' | 'right') =>
         uiRegistry.controls
             .filter((control) => (control.position || 'right') === position)
             .filter((control) => {
-                if (control.id === 'quality-selector-hls' || control.id === 'quality-selector-dash') return cfg.quality
-                if (control.id === 'danmu-btn') return cfg.danmu
+                if (control.controlKey === 'quality') return cfg.quality
+                if (control.controlKey === 'danmu') return cfg.danmu
                 return true
             })
             .sort((a, b) => (a.order || 0) - (b.order || 0))
@@ -109,6 +119,7 @@ export const Controls = ({ player }: { player: PlayerInstance }) => {
                         bufferedRanges={bufferedRanges}
                         duration={duration}
                         thumbnail={player.options.thumbnail}
+                        source={currentSrc}
                         onSeek={seek}
                     />
                 </div>
@@ -273,9 +284,31 @@ export const Controls = ({ player }: { player: PlayerInstance }) => {
                         </div>
                     )}
 
+                    {cfg.screenMode && (
+                        <button
+                            className={classNames(styles.iconBtn, { [styles.active]: screenMode !== 'normal' })}
+                            onClick={player.toggleScreenMode}
+                            aria-label={
+                                screenMode === 'wide' ? '切换小窗' : screenMode === 'small' ? '恢复常规' : '切换宽屏'
+                            }
+                        >
+                            {screenMode === 'wide' ? (
+                                <RectangleVertical />
+                            ) : screenMode === 'small' ? (
+                                <Square />
+                            ) : (
+                                <RectangleHorizontal />
+                            )}
+                        </button>
+                    )}
+
                     {cfg.fullscreen && (
-                        <button className={styles.iconBtn} onClick={toggleFullscreen} aria-label="全屏">
-                            <Maximize />
+                        <button
+                            className={styles.iconBtn}
+                            onClick={toggleFullscreen}
+                            aria-label={isFullscreen ? '退出全屏' : '全屏'}
+                        >
+                            {isFullscreen ? <Minimize /> : <Maximize />}
                         </button>
                     )}
                 </div>

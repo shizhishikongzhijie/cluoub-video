@@ -1,6 +1,6 @@
 import { createStore } from 'zustand/vanilla'
 
-import type { PlayerState } from './types.ts'
+import { DEFAULT_SUBTITLE_STYLES, type PlayerState } from './types'
 
 export const createPlayerStore = () =>
     createStore<PlayerState>(() => ({
@@ -19,17 +19,17 @@ export const createPlayerStore = () =>
         qualities: [],
         subtitleTrack: -1,
         isSubtitleVisible: true,
-        subtitleStyles: {
-            fontSize: 20,
-            color: '#ffffff',
-            isOutline: true,
-            isBold: false,
-            opacity: 1
-        },
+        subtitleStyles: DEFAULT_SUBTITLE_STYLES,
+        subtitleOffset: 0,
+        activeSubtitleText: '',
         isFullscreen: false,
         isPip: false,
         isControlsVisible: true,
         isDanmuVisible: true,
+        danmuMode: 'scroll',
+        danmuColor: '#ffffff',
+        // 屏幕模式：normal 常规 / wide 宽屏（21:9）/ small 小窗
+        screenMode: 'normal',
         playlistIndex: 0,
         playlistLength: 0,
         uiRegistry: { layers: [], controls: [] }

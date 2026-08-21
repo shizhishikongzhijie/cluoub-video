@@ -1,6 +1,6 @@
 {
   "name": "@cluoub-design/cluoub-video",
-  "version": "0.0.5",
+  "version": "0.1.0-beta.0",
   "type": "module",
   "description": "一个现代化、可定制的 React 视频播放器组件，带有弹幕系统、字幕支持和快捷键功能",
   "keywords": [
@@ -23,34 +23,67 @@
     "url": "https://github.com/cluoub-design/cluoub-video/issues"
   },
   "homepage": "https://github.com/cluoub-design/cluoub-video#readme",
-  "main": "dist/index.cjs.js",
-  "module": "dist/index.mjs.js",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs.js",
-      "require": "./dist/index.cjs.js"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./plugins/subtitle": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./plugins/dash": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./plugins/hls": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./plugins/danmu": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./plugins/capture": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
     },
     "./dist/cluoub-video.css": {
       "import": "./dist/cluoub-video.css",
       "require": "./dist/cluoub-video.css"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist/index.mjs",
+    "dist/index.mjs.map",
+    "dist/index.cjs",
+    "dist/index.cjs.map",
+    "dist/index.d.ts",
+    "dist/cluoub-video.css"
   ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "peerDependencies": {
     "dashjs": "^4.7.4",
     "hls.js": "^1.5.0",
+    "libjass": "^0.11.0",
     "react": "^17.0.0 || ^18.0.0 || ^19.0.0",
     "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0"
   },
@@ -60,10 +93,14 @@
     },
     "hls.js": {
       "optional": true
+    },
+    "libjass": {
+      "optional": true
     }
   },
   "dependencies": {
     "classnames": "^2.5.1",
+    "gifenc": "^1.0.3",
     "lucide-react": "^0.544.0",
     "zustand": "^5.0.10"
   },
@@ -84,6 +121,7 @@
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "globals": "^16.4.0",
     "jsdom": "^29.1.1",
+    "libjass": "^0.11.0",
     "prettier": "^3.6.2",
     "prettier-plugin-organize-imports": "^4.2.0",
     "prettier-plugin-packagejson": "^2.5.19",

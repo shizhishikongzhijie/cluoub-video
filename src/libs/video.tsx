@@ -1,6 +1,6 @@
 import classNames from 'classnames'
 import type { CSSProperties } from 'react'
-import { forwardRef, useImperativeHandle, useRef } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { useStore } from 'zustand'
 
 import { Controls } from './Controls'
@@ -83,6 +83,15 @@ export const CluoubVideo = forwardRef<VideoRef, CluoubVideoProps>((props, ref) =
     // 会丢失 source 的必填性，这里显式断言回完整类型
     const player = usePlayer(containerRef, props as CluoubVideoProps)
 
+    // 2. 屏幕模式：从 store 订阅，应用到容器 className（仅在变化时触发重渲染）
+    const [screenMode, setScreenMode] = useState<'normal' | 'wide' | 'small'>('normal')
+    useEffect(() => {
+        if (!player) return
+        return player.store.subscribe((state) => {
+            setScreenMode((prev) => (prev === state.screenMode ? prev : state.screenMode))
+        })
+    }, [player])
+
     // 2. 键盘快捷键（绑定在容器上，需容器可聚焦）
     useKeyboardShortcuts(containerRef, player)
 
@@ -102,12 +111,16 @@ export const CluoubVideo = forwardRef<VideoRef, CluoubVideoProps>((props, ref) =
             toggleFullscreen: () => player?.toggleFullscreen(),
             setPlaybackRate: (rate: number) => player?.setPlaybackRate(rate),
             togglePip: () => player?.togglePip() ?? Promise.resolve(),
+            setScreenMode: (mode) => player?.setScreenMode(mode),
+            toggleScreenMode: () => player?.toggleScreenMode(),
             playIndex: (index: number) => player?.playIndex(index),
             next: () => player?.next(),
             prev: () => player?.prev(),
             captureFrame: (options?: { type?: string; quality?: number }) => player?.captureFrame(options) ?? null,
             captureFrames: (options?: { count?: number; intervalMs?: number; type?: string }) =>
                 player?.captureFrames(options) ?? Promise.resolve([]),
+            captureComposite: (options?: { type?: string; quality?: number }) =>
+                player?.captureComposite(options) ?? Promise.resolve(null),
             getVideoElement: () => player?.video ?? null,
             getPlayer: () => player
         }),
@@ -126,7 +139,15 @@ export const CluoubVideo = forwardRef<VideoRef, CluoubVideoProps>((props, ref) =
 
     return (
         // 这个 div 是挂载点，必须始终存在；tabIndex 使其可聚焦以接收键盘事件
-        <div ref={containerRef} className={styles.videoContainer} style={containerStyle} tabIndex={0}>
+        <div
+            ref={containerRef}
+            className={classNames(styles.videoContainer, {
+                [styles.screenWide]: screenMode === 'wide',
+                [styles.screenSmall]: screenMode === 'small'
+            })}
+            style={containerStyle}
+            tabIndex={0}
+        >
             {/* 5. 条件渲染：只有 player 初始化完成后，才渲染 UI */}
             {player ? (
                 <PlayerUI player={player} feedback={feedback} />

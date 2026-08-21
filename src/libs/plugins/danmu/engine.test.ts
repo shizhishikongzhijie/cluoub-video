@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { type ActiveDanmu, allocateTrack, estimateWidth } from './engine'
+import { type ActiveDanmu, allocateTrack, cursorForTime, estimateWidth } from './engine'
 
 const makeActive = (over: Partial<ActiveDanmu>): ActiveDanmu => ({
     id: 1,
@@ -58,5 +58,29 @@ describe('allocateTrack', () => {
         // 顶部弹幕占了 track 0，但不影响滚动弹道分配
         const topDanmu = makeActive({ track: 0, mode: 'top', enterAt: ctx.now })
         expect(allocateTrack([topDanmu], ctx, 100)).toBe(0)
+    })
+})
+
+describe('cursorForTime（seek 后重定位发射游标）', () => {
+    const sorted = [
+        { time: 1, text: 'a' },
+        { time: 3, text: 'b' },
+        { time: 5, text: 'c' }
+    ]
+
+    it('定位到第一个 time >= currentTime 的弹幕', () => {
+        expect(cursorForTime(sorted, 0)).toBe(0)
+        expect(cursorForTime(sorted, 1)).toBe(0)
+        expect(cursorForTime(sorted, 2)).toBe(1)
+        expect(cursorForTime(sorted, 3.5)).toBe(2)
+        expect(cursorForTime(sorted, 5)).toBe(2)
+    })
+
+    it('无匹配时返回列表长度（后续不再发射）', () => {
+        expect(cursorForTime(sorted, 10)).toBe(3)
+    })
+
+    it('空列表返回 0', () => {
+        expect(cursorForTime([], 5)).toBe(0)
     })
 })

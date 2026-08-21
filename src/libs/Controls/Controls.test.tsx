@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { createPlayerStore } from '../core/store'
@@ -19,6 +19,7 @@ const createMockPlayer = (overrides?: Partial<PlayerInstance>): PlayerInstance =
         setPlaybackRate: vi.fn(),
         togglePip: vi.fn(),
         toggleLoop: vi.fn(),
+        toggleScreenMode: vi.fn(),
         next: vi.fn(),
         prev: vi.fn(),
         ...overrides
@@ -57,6 +58,31 @@ describe('Controls 交互', () => {
         expect(player.toggleFullscreen).toHaveBeenCalledOnce()
     })
 
+    it('全屏图标随状态切换：进入全屏后显示退出图标', () => {
+        const player = createMockPlayer()
+        render(<Controls player={player} />)
+        expect(screen.getByLabelText('全屏')).toBeDefined()
+        act(() => player.store.setState({ isFullscreen: true }))
+        expect(screen.getByLabelText('退出全屏')).toBeDefined()
+        expect(screen.queryByLabelText('全屏')).toBeNull()
+    })
+
+    it('屏幕模式按钮随状态循环并触发 toggleScreenMode', () => {
+        const player = createMockPlayer()
+        render(<Controls player={player} />)
+        // 初始 normal：按钮提示切换宽屏
+        fireEvent.click(screen.getByLabelText('切换宽屏'))
+        expect(player.toggleScreenMode).toHaveBeenCalledOnce()
+
+        // wide：提示切换小窗
+        act(() => player.store.setState({ screenMode: 'wide' }))
+        expect(screen.getByLabelText('切换小窗')).toBeDefined()
+
+        // small：提示恢复常规（图标不再复用全屏的 Maximize）
+        act(() => player.store.setState({ screenMode: 'small' }))
+        expect(screen.getByLabelText('恢复常规')).toBeDefined()
+    })
+
     it('选择倍速触发 setPlaybackRate', () => {
         const player = createMockPlayer()
         render(<Controls player={player} />)
@@ -70,6 +96,48 @@ describe('Controls 交互', () => {
         const player = createMockPlayer({ options: { controls: false } } as Partial<PlayerInstance>)
         render(<Controls player={player} />)
         expect(screen.queryByLabelText('播放')).toBeNull()
+    })
+
+    describe('插件控件按 controlKey 过滤', () => {
+        it('controlKey=danmu 的控件在 danmu 关闭时隐藏', () => {
+            const player = createMockPlayer({ options: { controls: { danmu: false } } } as Partial<PlayerInstance>)
+            player.store.setState({
+                uiRegistry: {
+                    layers: [],
+                    controls: [{ id: 'danmu-btn', controlKey: 'danmu', component: <span>弹幕开关</span> }]
+                }
+            })
+            render(<Controls player={player} />)
+            expect(screen.queryByText('弹幕开关')).toBeNull()
+        })
+
+        it('controlKey=quality 的控件在 quality 关闭时隐藏，无 controlKey 的控件始终显示', () => {
+            const player = createMockPlayer({ options: { controls: { quality: false } } } as Partial<PlayerInstance>)
+            player.store.setState({
+                uiRegistry: {
+                    layers: [],
+                    controls: [
+                        { id: 'quality-menu', controlKey: 'quality', component: <span>画质菜单</span> },
+                        { id: 'custom-btn', component: <span>自定义按钮</span> }
+                    ]
+                }
+            })
+            render(<Controls player={player} />)
+            expect(screen.queryByText('画质菜单')).toBeNull()
+            expect(screen.getByText('自定义按钮')).toBeDefined()
+        })
+
+        it('controlKey=danmu 的控件在默认配置（全开）下显示', () => {
+            const player = createMockPlayer()
+            player.store.setState({
+                uiRegistry: {
+                    layers: [],
+                    controls: [{ id: 'danmu-btn', controlKey: 'danmu', component: <span>弹幕开关</span> }]
+                }
+            })
+            render(<Controls player={player} />)
+            expect(screen.getByText('弹幕开关')).toBeDefined()
+        })
     })
 
     describe('播放列表按钮', () => {

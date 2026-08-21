@@ -21,6 +21,7 @@ $text: #eee;
     border-radius: 4px;
     white-space: pre-line;
     transition: all 0.2s;
+    line-height: 1.2; /* 与合成截图 drawSubtitle 的行高对齐，保证截图/录屏字幕高度一致 */
 
     /* 动态 CSS 变量 */
     font-size: var(--sub-size, 20px);
@@ -155,12 +156,73 @@ $text: #eee;
   &::-webkit-color-swatch { border: 1px solid #fff; border-radius: 4px; }
 }
 
-/* 4. Select 下拉 */
-.nativeSelect {
-  background: rgba(255,255,255,0.1);
-  color: #fff; border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 4px; padding: 4px 8px;
-  width: 100%; outline: none; font-size: 12px;
+/* 4. 自定义轨道下拉（替代原生 select） */
+.trackSelect {
+  position: relative;
+  width: 100%;
+}
 
-  option { background: #333; color: #fff; }
+.trackSelectTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+
+  &:hover { background: rgba(255,255,255,0.16); }
+}
+
+.trackSelectChevron {
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.trackSelectList {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: rgba(40,40,40,0.98);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  max-height: 180px;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.trackSelectItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 4px;
+  color: #eee;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover { background: rgba(255,255,255,0.1); }
+
+  &.active {
+    background: rgba(53, 221, 216, 0.18);
+    color: #fff;
+  }
+
+  .trackLang {
+    margin-left: auto;
+    color: #999;
+    font-size: 11px;
+    text-transform: uppercase;
+  }
 }

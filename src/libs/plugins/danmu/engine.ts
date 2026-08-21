@@ -96,3 +96,12 @@ export const estimateWidth = (text: string, fontSize: number): number => {
     }
     return Math.ceil(units * fontSize)
 }
+
+/**
+ * seek / 进度条拖动后重定位发射游标：返回第一个 time >= currentTime 的弹幕索引。
+ * 前跳/后跳都跳过期弹幕，从新位置重新计算（避免跳过区间内的弹幕瞬时齐射）。
+ */
+export const cursorForTime = (sorted: DanmuItem[], currentTime: number): number => {
+    const idx = sorted.findIndex((d) => d.time >= currentTime)
+    return idx < 0 ? sorted.length : idx
+}

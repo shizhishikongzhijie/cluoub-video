@@ -27,7 +27,27 @@ export interface PlayerControlsConfig {
     danmu?: boolean // 弹幕开关
     quality?: boolean
     speed?: boolean
+    screenMode?: boolean // 宽屏/小窗模式
 }
+
+/** 雪碧图缩略图：单张图片按 cols×rows 网格切分，interval 秒一张 */
+export interface SpriteThumbnailConfig {
+    /** 缩略图模式：默认 sprite，可省略（向后兼容旧配置） */
+    type?: 'sprite'
+    url: string
+    cols: number
+    rows: number
+    interval: number // 每张图代表的时间间隔
+}
+
+/** 视频抽帧缩略图：悬停进度条时从视频源直接截取对应画面 */
+export interface VideoThumbnailConfig {
+    type: 'video'
+    /** 抽帧使用的视频源；缺省时自动使用当前播放源 */
+    source?: string
+}
+
+export type ThumbnailConfig = SpriteThumbnailConfig | VideoThumbnailConfig
 
 export interface PlaylistItem {
     /** 该集的视频源 */
@@ -68,13 +88,8 @@ export interface CluoubVideoProps {
     // --- 插件系统 ---
     plugins?: IPlayerPlugin[]
 
-    // --- 缩略图 (雪碧图) ---
-    thumbnail?: {
-        url: string
-        cols: number
-        rows: number
-        interval: number // 每张图代表的时间间隔
-    }
+    // --- 缩略图 ---
+    thumbnail?: ThumbnailConfig
     // --- 事件回调 ---
     onReady?: (player: PlayerInstance) => void
     onPlay?: () => void
@@ -101,6 +116,10 @@ export interface VideoRef {
     toggleFullscreen: () => void
     setPlaybackRate: (rate: number) => void
     togglePip: () => Promise<void>
+    /** 设置屏幕模式（normal/wide/small） */
+    setScreenMode: (mode: 'normal' | 'wide' | 'small') => void
+    /** 屏幕模式单按钮循环切换 */
+    toggleScreenMode: () => void
     /** 播放列表：跳到指定索引 */
     playIndex: (index: number) => void
     /** 播放列表：下一集 */
@@ -111,6 +130,8 @@ export interface VideoRef {
     captureFrame: (options?: { type?: string; quality?: number }) => string | null
     /** 按帧率截取多帧（用于 GIF） */
     captureFrames: (options?: { count?: number; intervalMs?: number; type?: string }) => Promise<string[]>
+    /** 合成截图：视频帧 + 弹幕 canvas + 字幕文本一起导出（异步） */
+    captureComposite: (options?: { type?: string; quality?: number }) => Promise<string | null>
     /** 底层 HTMLVideoElement，用于高级用法 */
     getVideoElement: () => HTMLVideoElement | null
     /** 完整播放器实例，用于访问 store 等 */

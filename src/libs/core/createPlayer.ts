@@ -1,14 +1,9 @@
 import type { CluoubVideoProps } from '../types'
-import { loadPersisted, savePersisted } from '../utils/storage'
+import { captureContainerComposite } from '../utils/captureContainer'
+import { isStreamingSource, resolveSource } from '../utils/source'
+import { createPersistence, resolvePersistConfig } from './persistence'
 import { createPlayerStore } from './store'
-import type { EventHandler, PlayerInstance } from './types.ts'
-
-// 解析视频源，支持 string / VideoSource / VideoSource[]
-export const resolveSource = (source: CluoubVideoProps['source']): string => {
-    if (typeof source === 'string') return source
-    if (Array.isArray(source)) return source[0]?.src ?? ''
-    return source?.src ?? ''
-}
+import type { EventHandler, PlayerInstance } from './types'
 
 export function createPlayer(options: CluoubVideoProps): PlayerInstance {
     const store = createPlayerStore()
@@ -19,6 +14,9 @@ export function createPlayer(options: CluoubVideoProps): PlayerInstance {
 
     // 挂载容器引用，用于全屏（对容器而非 video 全屏，保留自定义 UI）
     let containerEl: HTMLElement | null = null
+
+    // 捕获层注册表：插件（如弹幕）注册的 canvas，合成截图时按容器坐标逐层叠加
+    const captureLayers: { id: string; getCanvas: () => HTMLCanvasElement | null }[] = []
 
     // 记录绑定到 video 的原生监听器，便于 destroy 时统一解绑
     const videoListeners: { type: string; handler: EventListener }[] = []
@@ -38,52 +36,17 @@ export function createPlayer(options: CluoubVideoProps): PlayerInstance {
     store.setState({ isMuted: video.muted, isLoop: video.loop })
 
     // 播放列表初始化
-    const playlist = options.playlist ?? []
+    let playlist = options.playlist ?? []
     store.setState({ playlistLength: playlist.length })
 
     // --- 本地持久化配置 ---
-    const persistCfg = (() => {
-        if (options.persist === true) return { progress: true, volume: true, playbackRate: true }
-        if (options.persist && typeof options.persist === 'object') return options.persist
-        return null
-    })()
     // 当前生效的源（随播放列表切换更新），作为持久化 key
     let currentSrc = resolveSource(options.source)
+    const persistence = createPersistence(video, store, resolvePersistConfig(options.persist), () => currentSrc)
 
-    // 恢复音量/倍速（在初次设置 src 后立即应用，进度需等元数据加载）
-    if (persistCfg) {
-        const saved = loadPersisted(currentSrc)
-        if (saved) {
-            if (persistCfg.volume && typeof saved.volume === 'number') {
-                video.volume = saved.volume
-                video.muted = saved.volume === 0
-                store.setState({ volume: saved.volume, isMuted: video.muted })
-            }
-            if (persistCfg.playbackRate && typeof saved.playbackRate === 'number') {
-                video.playbackRate = saved.playbackRate
-                store.setState({ playbackRate: saved.playbackRate })
-            }
-            // 进度续播：等元数据加载后再 seek
-            if (persistCfg.progress && typeof saved.time === 'number' && saved.time > 0) {
-                video.addEventListener(
-                    'loadedmetadata',
-                    () => {
-                        // 已播完（接近结尾）则不续播
-                        if (saved.time! < video.duration - 1) video.currentTime = saved.time!
-                    },
-                    { once: true }
-                )
-            }
-        }
-    }
-
-    // 加载播放列表中指定索引的条目（切换源并播放）
-    const loadItem = (index: number) => {
-        const item = playlist[index]
-        if (!item) return
-        const nextSrc = resolveSource(item.source)
-        currentSrc = nextSrc
-        if (item.poster) video.poster = item.poster
+    // 切换源（供 loadItem / updateSource / updatePlaylist 复用）：重置播放状态并处理流媒体接管
+    const loadSource = (src: string, index: number) => {
+        currentSrc = src
         store.setState({
             playlistIndex: index,
             currentTime: 0,
@@ -94,13 +57,20 @@ export function createPlayer(options: CluoubVideoProps): PlayerInstance {
         })
 
         // 流媒体源（m3u8/mpd）交给对应插件重新加载；普通源直接换 video.src
-        const isStreaming = /\.(m3u8|mpd)(\?|$)/i.test(nextSrc)
-        if (isStreaming) {
-            emitEvent('source-change', nextSrc)
+        if (isStreamingSource(src)) {
+            emitEvent('source-change', src)
         } else {
-            video.src = nextSrc
+            video.src = src
             video.load()
         }
+    }
+
+    // 加载播放列表中指定索引的条目（切换源并播放）
+    const loadItem = (index: number) => {
+        const item = playlist[index]
+        if (!item) return
+        if (item.poster) video.poster = item.poster
+        loadSource(resolveSource(item.source), index)
         options.onPlaylistChange?.({ index, item })
         // 切集后自动播放，避免黑屏停在首帧
         video.play().catch(() => {})
@@ -126,17 +96,12 @@ export function createPlayer(options: CluoubVideoProps): PlayerInstance {
     addVideoListener('error', () => options.onError?.(video.error))
     // timeupdate 浏览器以 4~66Hz 触发，节流到 ~250ms 一次，降低 store 写入与 UI 重渲染频率
     let lastTimeUpdate = 0
-    let lastPersistSave = 0
     addVideoListener('timeupdate', () => {
         const now = performance.now()
         if (now - lastTimeUpdate < 250) return
         lastTimeUpdate = now
         store.setState({ currentTime: video.currentTime })
-        // 持久化进度：每 ~3s 落盘一次，避免频繁写 localStorage
-        if (persistCfg?.progress && now - lastPersistSave > 3000) {
-            lastPersistSave = now
-            savePersisted(currentSrc, { time: video.currentTime })
-        }
+        persistence.onTimeUpdate(now, video.currentTime)
     })
     addVideoListener('durationchange', () => store.setState({ duration: video.duration }))
     // 缓冲态：等待数据时显示 loading，可播放/播放中时关闭
@@ -168,11 +133,11 @@ export function createPlayer(options: CluoubVideoProps): PlayerInstance {
     // 倍速变化同步
     addVideoListener('ratechange', () => {
         store.setState({ playbackRate: video.playbackRate })
-        if (persistCfg?.playbackRate) savePersisted(currentSrc, { playbackRate: video.playbackRate })
+        persistence.onRateChange(video.playbackRate)
     })
     // 音量变化持久化（含静音切换）
     addVideoListener('volumechange', () => {
-        if (persistCfg?.volume) savePersisted(currentSrc, { volume: video.muted ? 0 : video.volume })
+        persistence.onVolumeChange(video.volume, video.muted)
     })
     // 画中画进入/退出同步
     addVideoListener('enterpictureinpicture', () => store.setState({ isPip: true }))
@@ -183,7 +148,6 @@ export function createPlayer(options: CluoubVideoProps): PlayerInstance {
         video,
         store,
         options,
-        isControlsVisible: false,
         setShowControls: (show) => {
             store.setState({ isControlsVisible: show })
         },
@@ -259,6 +223,17 @@ export function createPlayer(options: CluoubVideoProps): PlayerInstance {
             store.setState({ isLoop: video.loop })
         },
 
+        setScreenMode: (mode) => {
+            store.setState({ screenMode: mode })
+        },
+
+        // 屏幕模式单按钮循环：normal → wide → small → normal
+        toggleScreenMode: () => {
+            const { screenMode } = store.getState()
+            const next = screenMode === 'normal' ? 'wide' : screenMode === 'wide' ? 'small' : 'normal'
+            store.setState({ screenMode: next })
+        },
+
         playIndex: (index) => {
             if (index < 0 || index >= playlist.length) return
             loadItem(index)
@@ -302,6 +277,54 @@ export function createPlayer(options: CluoubVideoProps): PlayerInstance {
                 if (i < count - 1) await new Promise((r) => setTimeout(r, intervalMs))
             }
             return frames
+        },
+
+        // 合成截图：视频帧 + 弹幕 canvas + 字幕文本一起导出
+        captureComposite: async (opts) => {
+            if (!containerEl) return null
+            const canvas = captureContainerComposite(containerEl, video, {
+                captureLayers: [...captureLayers],
+                subtitle: {
+                    text: store.getState().activeSubtitleText,
+                    styles: store.getState().subtitleStyles
+                }
+            })
+            if (!canvas) return null
+            try {
+                return canvas.toDataURL(opts?.type ?? 'image/png', opts?.quality)
+            } catch (e) {
+                // 跨域视频未设置 CORS 时 canvas 会被污染，toDataURL 抛 SecurityError
+                console.error('captureComposite failed (可能为跨域未授权)', e)
+                return null
+            }
+        },
+
+        // 响应式更新：外部 source prop 变化时切换源（源不变则跳过，避免重复加载）
+        updateSource: (source) => {
+            const nextSrc = resolveSource(source)
+            if (!nextSrc || nextSrc === currentSrc) return
+            loadSource(nextSrc, 0)
+            video.play().catch(() => {})
+        },
+
+        // 响应式更新：外部 playlist prop 变化时更新播放列表；
+        // 当前索引越界则收敛到边界，当前播放源与该索引条目不一致才重新加载
+        updatePlaylist: (next) => {
+            playlist = next ?? []
+            const current = store.getState().playlistIndex
+            const clamped = Math.max(0, Math.min(current, playlist.length - 1))
+            store.setState({ playlistLength: playlist.length, playlistIndex: clamped })
+            const item = playlist[clamped]
+            if (item && resolveSource(item.source) !== currentSrc) loadItem(clamped)
+        },
+
+        // 响应式更新：应用 autoPlay/loop/muted/poster 等标量配置（undefined 保持原值）
+        applyOptions: (next) => {
+            if (next.loop !== undefined) video.loop = next.loop
+            if (next.muted !== undefined) video.muted = next.muted
+            if (next.autoPlay !== undefined) video.autoplay = next.autoPlay
+            if (next.poster !== undefined) video.poster = next.poster
+            store.setState({ isMuted: video.muted, isLoop: video.loop })
         },
 
         mount: (container) => {
@@ -363,6 +386,15 @@ export function createPlayer(options: CluoubVideoProps): PlayerInstance {
 
         emit: (evt, ...args) => {
             emitEvent(evt, ...args)
+        },
+
+        captureLayers,
+        registerCaptureLayer: (id, getCanvas) => {
+            if (!captureLayers.some((l) => l.id === id)) captureLayers.push({ id, getCanvas })
+        },
+        unregisterCaptureLayer: (id) => {
+            const i = captureLayers.findIndex((l) => l.id === id)
+            if (i >= 0) captureLayers.splice(i, 1)
         }
     }
 

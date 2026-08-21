@@ -1,4 +1,4 @@
-import type { IPlayerPlugin } from '../../core/types.ts'
+import { DEFAULT_SUBTITLE_STYLES, type IPlayerPlugin } from '../../core/types'
 import { SubtitleLayer } from './SubtitleLayer'
 import { SubtitleMenuBtn } from './SubtitleMenuBtn'
 
@@ -22,13 +22,8 @@ export const subtitlePlugin: IPlayerPlugin<SubtitleConfig> = (player) => {
     player.store.setState({
         subtitleTrack: 0,
         isSubtitleVisible: defaultShow,
-        subtitleStyles: {
-            fontSize: 20,
-            color: '#ffffff',
-            isOutline: true,
-            isBold: false,
-            opacity: 1
-        }
+        subtitleStyles: DEFAULT_SUBTITLE_STYLES,
+        subtitleOffset: 0
     })
 
     // 2. 注册 UI：字幕渲染层

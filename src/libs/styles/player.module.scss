@@ -139,6 +139,19 @@
       height: 100%;
     }
   }
+
+  /* 宽屏模式：21:9 拉宽（!important 覆盖内联 width/height 约束） */
+  &.screenWide {
+    width: 100% !important;
+    aspect-ratio: 21 / 9 !important;
+  }
+
+  /* 小窗模式：50% 宽度小窗 */
+  &.screenSmall {
+    width: 50% !important;
+    aspect-ratio: 16 / 9 !important;
+    margin: 0 auto;
+  }
 }
 
 /* React UI 层 (PlayerUI) */

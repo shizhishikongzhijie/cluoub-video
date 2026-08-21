@@ -1,10 +1,9 @@
 import { Captions } from 'lucide-react'
 import { useState } from 'react'
 
-import type { SubtitleTrack } from '@/libs'
-
 import type { PlayerInstance } from '../../core/types'
 import controlStyles from '../../styles/controls.module.scss'
+import type { SubtitleTrack } from './index'
 import styles from './styles.module.scss'
 import { SubtitleMenu } from './SubtitleMenu'
 

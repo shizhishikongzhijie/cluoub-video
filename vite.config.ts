@@ -27,14 +27,16 @@ export default defineConfig({
     build: {
         emptyOutDir: true,
         sourcemap: true,
+        // 库构建不复制 public/（演示视频等资产不应进入发布包）
+        copyPublicDir: false,
         lib: {
             entry: path.resolve(__dirname, 'src/libs/index.ts'),
             name: 'CluoubVideo',
             formats: ['es', 'cjs'],
-            fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}.js`
+            fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}`
         },
         rolldownOptions: {
-            external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react', 'dashjs', 'hls.js'],
+            external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react', 'dashjs', 'hls.js', 'libjass'],
             output: {
                 globals: {
                     react: 'React',

@@ -17,6 +17,9 @@ importers:
       dashjs:
         specifier: ^4.7.4
         version: 4.7.4
+      gifenc:
+        specifier: ^1.0.3
+        version: 1.0.3
       lucide-react:
         specifier: ^0.544.0
         version: 0.544.0(react@19.2.0)
@@ -78,6 +81,9 @@ importers:
       jsdom:
         specifier: ^29.1.1
         version: 29.1.1
+      libjass:
+        specifier: ^0.11.0
+        version: 0.11.0
       prettier:
         specifier: ^3.6.2
         version: 3.6.2
@@ -1319,6 +1325,9 @@ packages:
     resolution: {integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==}
     engines: {node: 6.* || 8.* || >= 10.*}
 
+  gifenc@1.0.3:
+    resolution: {integrity: sha512-xdr6AdrfGBcfzncONUOlXMBuc5wJDtOueE3c5rdG0oNgtINLD+f2iFZltrBRZYzACRbKr+mSVU/x98zv2u3jmw==}
+
   git-hooks-list@4.1.1:
     resolution: {integrity: sha512-cmP497iLq54AZnv4YRAEMnEyQ1eIn4tGKbmswqwmFV4GBnAqE8NLtWxxdXa++AalfgL5EBH4IxTPyquEuGY/jA==}
 
@@ -1493,6 +1502,9 @@ packages:
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
+
+  libjass@0.11.0:
+    resolution: {integrity: sha512-RAxIlq0CZ78RIY2KYKyDrnRnQQN5YRyqnP5rPl9injlTJ9F06wlfd9qiTzb2gk9GXMVj/noh2UVcAdSmEu0ccw==}
 
   lie@3.1.1:
     resolution: {integrity: sha512-RiNhHysUjhrDQntfYSfY4MU24coXXdEOgw9WGcKHNeEwffDYbF//u87M1EWaMGzuFoSbqW0C9C6lEEhDOAswfw==}
@@ -3534,6 +3546,8 @@ snapshots:
 
   get-caller-file@2.0.5: {}
 
+  gifenc@1.0.3: {}
+
   git-hooks-list@4.1.1: {}
 
   glob-parent@5.1.2:
@@ -3686,6 +3700,8 @@ snapshots:
     dependencies:
       prelude-ls: 1.2.1
       type-check: 0.4.0
+
+  libjass@0.11.0: {}
 
   lie@3.1.1:
     dependencies:

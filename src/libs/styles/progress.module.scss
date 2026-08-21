@@ -89,7 +89,6 @@ $thumb-scale: 1.5;
 .tooltip {
   position: absolute;
   bottom: 24px; /* 距离进度条上方 */
-  transform: translateX(-50%); /* 居中对齐 */
   pointer-events: none;
 
   background: rgba(0, 0, 0, 0.85);
@@ -101,14 +100,16 @@ $thumb-scale: 1.5;
   opacity: 0;
   animation: fadeIn 0.2s forwards;
 
-  /* 小三角 */
-  &::after {
-    content: '';
+  /* 三角箭头：位置由 JS 计算并内联设置，保证始终指向悬停点 */
+  .tooltipArrow {
     position: absolute;
-    bottom: -5px; left: 50%; margin-left: -5px;
+    top: 100%;
+    width: 0;
+    height: 0;
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
     border-top: 5px solid rgba(0, 0, 0, 0.85);
+    transform: translateX(-50%);
   }
 }
 
@@ -118,6 +119,18 @@ $thumb-scale: 1.5;
   border-radius: 4px;
   margin-bottom: 4px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* 视频抽帧预览图 */
+.thumbnailImg {
+  display: block;
+  width: 160px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  background-color: #000;
 }
 
 .timeLabel {
@@ -132,6 +145,6 @@ $thumb-scale: 1.5;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
-  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }

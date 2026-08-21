@@ -1,14 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import styles from '../styles/progress.module.scss'
+import { createVideoThumbnailGrabber, type VideoThumbnailGrabber } from '../thumbnail/videoThumbnails'
+import type { ThumbnailConfig } from '../types'
 import { formatTime } from '../utils/time'
-
-interface ThumbnailConfig {
-    url: string
-    cols: number
-    rows: number
-    interval: number // 每张缩略图代表的秒数
-}
 
 interface ProgressProps {
     progress: number // 当前进度 0-100
@@ -16,12 +11,17 @@ interface ProgressProps {
     bufferedRanges?: { start: number; end: number }[] // 多段缓冲区间
     duration: number // 总时长 (秒)
 
-    // 雪碧图缩略图配置 (可选)
+    // 缩略图配置 (可选)：sprite 雪碧图 / video 视频抽帧
     thumbnail?: ThumbnailConfig
+    /** 当前播放源（video 抽帧模式使用，缺省回退到 thumbnail.source） */
+    source?: string
 
     onSeek: (time: number) => void
     onProgressChange?: (percent: number) => void // 拖拽时的回调
 }
+
+// 视频抽帧的节流间隔（毫秒）：seek 网络开销大，避免悬停时高频请求
+const VIDEO_THUMB_THROTTLE = 300
 
 const Progress: React.FC<ProgressProps> = ({
     progress,
@@ -29,6 +29,7 @@ const Progress: React.FC<ProgressProps> = ({
     bufferedRanges,
     duration,
     thumbnail,
+    source,
     onSeek,
     onProgressChange
 }) => {
@@ -39,13 +40,21 @@ const Progress: React.FC<ProgressProps> = ({
     const [hoverTime, setHoverTime] = useState(0)
     const [isHovering, setIsHovering] = useState(false)
 
+    // 视频抽帧模式状态
+    const grabberRef = useRef<VideoThumbnailGrabber | null>(null)
+    const lastThumbReqRef = useRef(0)
+    const [videoThumbUrl, setVideoThumbUrl] = useState<string | null>(null)
+
+    const isVideoThumb = thumbnail?.type === 'video'
+    const videoThumbSource = thumbnail?.type === 'video' ? thumbnail.source : undefined
+
     // 单张缩略图尺寸（用于预览框与雪碧图偏移计算）
     const THUMB_W = 160
     const THUMB_H = 90
 
     // 根据 hoverTime 计算雪碧图背景定位
     const getThumbnailStyle = (): React.CSSProperties | undefined => {
-        if (!thumbnail) return undefined
+        if (!thumbnail || thumbnail.type === 'video') return undefined
         const { url, cols, rows, interval } = thumbnail
         const total = cols * rows
         // 当前时间落在第几张
@@ -65,6 +74,38 @@ const Progress: React.FC<ProgressProps> = ({
     useEffect(() => {
         if (!isSeeking.current) setLocalProgress(progress)
     }, [progress])
+
+    // 视频抽帧 grabber 生命周期：模式/源变化时重建
+    useEffect(() => {
+        if (!isVideoThumb) {
+            grabberRef.current?.dispose()
+            grabberRef.current = null
+            setVideoThumbUrl(null)
+            return
+        }
+        const src = videoThumbSource ?? source ?? ''
+        if (!src) return
+        grabberRef.current?.dispose()
+        grabberRef.current = createVideoThumbnailGrabber(src)
+        setVideoThumbUrl(null)
+        return () => {
+            grabberRef.current?.dispose()
+            grabberRef.current = null
+        }
+    }, [isVideoThumb, videoThumbSource, source])
+
+    // 节流请求视频抽帧
+    const requestVideoThumb = useCallback((time: number) => {
+        const grabber = grabberRef.current
+        if (!grabber) return
+        const now = Date.now()
+        if (now - lastThumbReqRef.current < VIDEO_THUMB_THROTTLE) return
+        lastThumbReqRef.current = now
+        grabber.getFrame(time).then((url) => {
+            // 仅当 grabber 未被重建时应用结果，避免串图
+            if (grabberRef.current === grabber) setVideoThumbUrl(url)
+        })
+    }, [])
 
     // --- 核心计算 ---
     const calculate = useCallback(
@@ -93,6 +134,7 @@ const Progress: React.FC<ProgressProps> = ({
             setHoverProgress(percent)
             setHoverTime(time)
         }
+        if (isVideoThumb) requestVideoThumb(time)
     }
 
     // 2. Mouse Down (Start Seek)
@@ -118,8 +160,9 @@ const Progress: React.FC<ProgressProps> = ({
             // 拖拽时也要更新 hover time
             setHoverTime(time)
             setHoverProgress(percent)
+            if (isVideoThumb) requestVideoThumb(time)
         },
-        [calculate, onProgressChange]
+        [calculate, onProgressChange, isVideoThumb, requestVideoThumb]
     )
 
     // 4. Global Up (End Seek)
@@ -166,6 +209,26 @@ const Progress: React.FC<ProgressProps> = ({
     }
 
     const currentTime = (localProgress / 100) * duration
+
+    // 缩略图浮窗视口内钳位：左边缘限制在容器内，并让三角箭头始终指向悬停位置
+    const containerW = containerRef.current?.getBoundingClientRect().width ?? 0
+    const hoverX = containerW > 0 ? (hoverProgress / 100) * containerW : 0
+    // 浮窗宽度估算：有缩略图时按图片宽+内边距，否则按时间标签估算
+    const tooltipHalf = (thumbnail ? THUMB_W + 14 : 60) / 2
+    const clampedX =
+        containerW > 0
+            ? Math.min(Math.max(hoverX, tooltipHalf), Math.max(containerW - tooltipHalf, tooltipHalf))
+            : hoverX
+    const tooltipLeft = clampedX - tooltipHalf
+    // 三角箭头：水平钳位在浮窗「底部平直区」内（避开圆角），避免箭头与圆角间出现缝隙
+    const ARROW_HALF = 5 // 箭头半宽
+    const CORNER_RADIUS = 8 // 浮窗圆角
+    const tooltipW = thumbnail ? THUMB_W + 14 : 84 // 浮窗宽度估算
+    const arrowSafeMin = CORNER_RADIUS + ARROW_HALF
+    const tooltipArrowLeft = Math.min(
+        Math.max(hoverX - tooltipLeft, arrowSafeMin),
+        Math.max(tooltipW - arrowSafeMin, arrowSafeMin)
+    )
 
     return (
         <div
@@ -217,11 +280,17 @@ const Progress: React.FC<ProgressProps> = ({
                 </div>
             </div>
 
-            {/* 缩略图 Tooltip */}
+            {/* 缩略图 Tooltip（浮窗位置与三角箭头均在视口内计算） */}
             {(isHovering || isSeeking.current) && (
-                <div className={styles.tooltip} style={{ left: `${hoverProgress}%` }}>
-                    {thumbnail && <div className={styles.thumbnailBox} style={getThumbnailStyle()} />}
+                <div className={styles.tooltip} style={{ left: tooltipLeft }}>
+                    {thumbnail &&
+                        (isVideoThumb ? (
+                            videoThumbUrl && <img className={styles.thumbnailImg} src={videoThumbUrl} alt="" />
+                        ) : (
+                            <div className={styles.thumbnailBox} style={getThumbnailStyle()} />
+                        ))}
                     <div className={styles.timeLabel}>{formatTime(hoverTime)}</div>
+                    <div className={styles.tooltipArrow} style={{ left: tooltipArrowLeft }} />
                 </div>
             )}
         </div>

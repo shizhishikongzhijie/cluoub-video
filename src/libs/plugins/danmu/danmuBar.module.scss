@@ -1,0 +1,144 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  color: #fff;
+
+  /* 内联用法（外部渲染）：随文档流居中 */
+  &.docked {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 25; /* 位于控制栏(z-index:20)之上，保证可交互 */
+    pointer-events: auto;
+    max-width: calc(100% - 24px);
+  }
+
+  .input {
+    width: 220px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  .sendBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 50%;
+    background: #00a1d6;
+    color: #fff;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    &:hover:not(:disabled) {
+      background: #00b3e5;
+    }
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .modeBtn {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 12px;
+    cursor: pointer;
+
+    &:hover {
+      color: #fff;
+    }
+
+    &.active {
+      background: #00a1d6;
+      color: #fff;
+    }
+  }
+
+  .colors {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 4px;
+    border-left: 1px solid rgba(255, 255, 255, 0.25);
+    border-right: 1px solid rgba(255, 255, 255, 0.25);
+  }
+
+  .colorDot {
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    cursor: pointer;
+
+    &.active {
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+    }
+  }
+
+  .customColor {
+    display: inline-flex;
+    align-items: center;
+
+    input[type='color'] {
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+    }
+  }
+
+  .toggleBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 12px;
+    cursor: pointer;
+
+    &:hover {
+      color: #fff;
+    }
+
+    &.active {
+      color: #00a1d6;
+    }
+  }
+}

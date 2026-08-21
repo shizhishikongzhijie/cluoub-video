@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveSource } from './createPlayer'
+import { resolveSource } from '../utils/source'
 
 describe('resolveSource', () => {
     it('字符串源原样返回', () => {

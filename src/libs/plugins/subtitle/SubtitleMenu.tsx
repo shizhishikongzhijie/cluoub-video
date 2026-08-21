@@ -1,6 +1,9 @@
+import classNames from 'classnames'
+import { Check, ChevronDown } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from 'zustand'
 
-import type { PlayerInstance, SubtitleStyles } from '../../core/types'
+import { DEFAULT_SUBTITLE_STYLES, type PlayerInstance, type SubtitleStyles } from '../../core/types'
 import type { SubtitleTrack } from './index'
 import styles from './styles.module.scss'
 
@@ -11,16 +14,76 @@ const Switch = ({ checked, onChange }: { checked: boolean; onChange: (v: boolean
     </div>
 )
 
-const DEFAULT_SUBTITLE_STYLES: SubtitleStyles = {
-    fontSize: 20,
-    color: '#ffffff',
-    isOutline: true,
-    isBold: false,
-    opacity: 1
+// --- 自定义下拉：替代原生 <select>，支持点击外部关闭 ---
+const TrackSelector = ({
+    tracks,
+    value,
+    onChange
+}: {
+    tracks: SubtitleTrack[]
+    value: number
+    onChange: (index: number) => void
+}) => {
+    const [open, setOpen] = useState(false)
+    const boxRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        const onDocMouseDown = (e: MouseEvent) => {
+            if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
+        }
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setOpen(false)
+        }
+        document.addEventListener('mousedown', onDocMouseDown)
+        document.addEventListener('keydown', onKeyDown)
+        return () => {
+            document.removeEventListener('mousedown', onDocMouseDown)
+            document.removeEventListener('keydown', onKeyDown)
+        }
+    }, [])
+
+    const selected = tracks[value]
+
+    return (
+        <div className={styles.trackSelect} ref={boxRef}>
+            <button
+                type="button"
+                className={styles.trackSelectTrigger}
+                onClick={() => setOpen((v) => !v)}
+                aria-haspopup="listbox"
+                aria-expanded={open}
+                aria-label="选择字幕语言"
+            >
+                <span>{selected ? `${selected.label} (${selected.lang})` : '选择字幕语言'}</span>
+                <ChevronDown size={14} className={styles.trackSelectChevron} />
+            </button>
+
+            {open && (
+                <ul className={styles.trackSelectList} role="listbox">
+                    {tracks.map((t, i) => (
+                        <li
+                            key={t.id}
+                            role="option"
+                            aria-selected={i === value}
+                            className={classNames(styles.trackSelectItem, { [styles.active]: i === value })}
+                            onClick={() => {
+                                onChange(i)
+                                setOpen(false)
+                            }}
+                        >
+                            <span>{t.label}</span>
+                            <span className={styles.trackLang}>{t.lang}</span>
+                            {i === value && <Check size={14} />}
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    )
 }
 
 export const SubtitleMenu = ({ player, tracks }: { player: PlayerInstance; tracks: SubtitleTrack[] }) => {
-    const { isSubtitleVisible, subtitleTrack } = useStore(player.store)
+    const { isSubtitleVisible, subtitleTrack, subtitleOffset } = useStore(player.store)
     const subtitleStyles = useStore(player.store, (s) => s.subtitleStyles) ?? DEFAULT_SUBTITLE_STYLES
 
     const updateStyle = (key: keyof SubtitleStyles, val: number | string | boolean) => {
@@ -43,17 +106,27 @@ export const SubtitleMenu = ({ player, tracks }: { player: PlayerInstance; track
 
                 {isSubtitleVisible && (
                     <div className={styles.row}>
-                        <select
-                            className={styles.nativeSelect}
+                        <TrackSelector
+                            tracks={tracks}
                             value={subtitleTrack}
-                            onChange={(e) => player.store.setState({ subtitleTrack: Number(e.target.value) })}
-                        >
-                            {tracks.map((t, i) => (
-                                <option key={t.id} value={i}>
-                                    {t.label} ({t.lang})
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(i) => player.store.setState({ subtitleTrack: i })}
+                        />
+                    </div>
+                )}
+
+                {isSubtitleVisible && (
+                    <div className={styles.row}>
+                        <span>同步</span>
+                        <input
+                            type="range"
+                            min={-5}
+                            max={5}
+                            step={0.5}
+                            className={styles.slider}
+                            value={subtitleOffset}
+                            onChange={(e) => player.store.setState({ subtitleOffset: Number(e.target.value) })}
+                        />
+                        <span>{subtitleOffset > 0 ? `+${subtitleOffset}s` : `${subtitleOffset}s`}</span>
                     </div>
                 )}
             </div>
