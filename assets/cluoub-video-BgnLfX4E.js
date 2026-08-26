@@ -1,0 +1,1 @@
+var e={};throw Error(`Could not resolve "hls.js" imported by "@cluoub-design/cluoub-video". Is it installed?`);export{e as default};
