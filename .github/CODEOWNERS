@@ -1,0 +1,9 @@
+# Default ownership for source, documentation, workflows, and releases.
+* @shizhishikongzhijie
+
+# Changes to repository policy and release automation require maintainer review.
+/.github/ @shizhishikongzhijie
+/package.json @shizhishikongzhijie
+/pnpm-lock.yaml @shizhishikongzhijie
+/LICENSE @shizhishikongzhijie
+/NOTICE @shizhishikongzhijie

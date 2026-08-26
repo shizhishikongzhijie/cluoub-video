@@ -1,0 +1,36 @@
+name: 功能建议
+description: 提议可复用的新能力或 API 改进
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 先描述使用场景和限制，不要只给出实现方案。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: 说明期望 API、交互或行为，以及为什么适合播放器 Core、React 层或插件层。
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 已考虑的替代方案
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: 兼容性影响
+      description: 是否影响根兼容入口、包体积、浏览器支持或现有插件。
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 提交确认
+      options:
+        - label: 我已搜索 Roadmap 和现有 Issue，确认没有重复建议。
+          required: true

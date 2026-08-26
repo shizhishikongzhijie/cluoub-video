@@ -1,0 +1,66 @@
+name: Bug 报告
+description: 报告可以稳定复现的问题
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: 感谢反馈。安全漏洞请不要在这里提交，请使用 Security 页面私密报告。
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: 例如 0.3.0-beta.1
+    validations:
+      required: true
+  - type: dropdown
+    id: entry
+    attributes:
+      label: 使用入口
+      options:
+        - 根兼容入口
+        - core
+        - react
+        - plugins/subtitle
+        - plugins/danmu
+        - plugins/hls
+        - plugins/dash
+        - plugins/capture
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 最小复现
+      description: 提供代码、仓库链接或明确步骤，移除密钥和用户数据。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 环境
+      description: 浏览器、操作系统、React 与 Node.js 版本
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 提交确认
+      options:
+        - label: 我已搜索现有 Issue，确认没有重复报告。
+          required: true
+        - label: 这不是需要私密披露的安全漏洞。
+          required: true

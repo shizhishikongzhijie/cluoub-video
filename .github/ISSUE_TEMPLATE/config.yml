@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 私密报告安全漏洞
+    url: https://github.com/shizhishikongzhijie/cluoub-video/security/advisories/new
+    about: 请不要在公开 Issue 中披露安全漏洞。
+  - name: 使用文档与在线 Demo
+    url: https://shizhishikongzhijie.github.io/cluoub-video/
+    about: 提交问题前先核对文档、示例和当前行为。

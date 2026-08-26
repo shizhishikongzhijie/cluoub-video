@@ -311,6 +311,13 @@ pnpm run test:e2e
 
 当前验证基线：24 个测试文件、141 项测试通过。
 
+## 参与贡献与安全
+
+- 贡献流程与本地门禁：[CONTRIBUTING.md](CONTRIBUTING.md)
+- 安全支持和私密漏洞报告：[SECURITY.md](SECURITY.md)
+- 社区协作规范：[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- `master` 保护、合并及发布策略：[Repository governance](docs/repository-governance.md)
+
 ## Roadmap
 
 ### v0.4 — Framework Bindings
@@ -322,8 +329,6 @@ pnpm run test:e2e
 ### Future — AI-ready Video Player
 
 AI 能力只会以可选插件探索，不进入 Headless Core：字幕翻译、章节、摘要、语义搜索和视频问答。
-
-## License
 
 ## 开源协议
 
