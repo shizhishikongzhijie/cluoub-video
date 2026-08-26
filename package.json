@@ -1,6 +1,6 @@
 {
   "name": "@cluoub-design/cluoub-video",
-  "version": "0.3.0-beta.0",
+  "version": "0.3.0-beta.1",
   "type": "module",
   "description": "一个现代化、可定制的 React 视频播放器组件，带有弹幕系统、字幕支持和快捷键功能",
   "keywords": [
@@ -14,7 +14,7 @@
     "shortcuts"
   ],
   "author": "shizhishi",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/shizhishikongzhijie/cluoub-video.git"
@@ -78,7 +78,8 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "NOTICE"
   ],
   "scripts": {
     "dev": "vite",

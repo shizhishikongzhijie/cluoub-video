@@ -6,7 +6,7 @@
 
 Cluoub Video Player 是一个面向现代 Web 应用的视频播放器 SDK。它以轻量 Headless Core 为基础，将默认 React UI、字幕、流媒体、弹幕和截图能力拆分为独立入口，通过统一的播放器实例、插件运行时和 Slot API 按需组合功能。
 
-当前代码版本：`0.3.0-beta.0`。代码、Demo 构建和 Pages 部署配置已完成；本仓库不声明尚未实际上线的公开 Demo URL。
+当前代码版本：`0.3.0-beta.1`。代码、Demo 构建和 Pages 部署配置已完成；公开 Demo 地址以实际部署结果为准。
 
 ## 为什么是 Cluoub Video Player？
 
@@ -42,9 +42,9 @@ Cluoub Video Player 是一个面向现代 Web 应用的视频播放器 SDK。它
 ## 安装
 
 ```bash
-npm install @cluoub-design/cluoub-video@0.3.0-beta.0
+npm install @cluoub-design/cluoub-video@0.3.0-beta.1
 # 或
-pnpm add @cluoub-design/cluoub-video@0.3.0-beta.0
+pnpm add @cluoub-design/cluoub-video@0.3.0-beta.1
 ```
 
 `react` / `react-dom` 是 React 入口的 peer dependencies。`dashjs`、`hls.js`、`libjass` 是对应插件的可选 peer dependencies。
@@ -286,6 +286,7 @@ danmu?.send('你好', { mode: 'top', color: '#35ddd8' })
 
 ## Demo 与 Pages
 
+- 在线 Demo：https://shizhishikongzhijie.github.io/cluoub-video/
 - 默认播放器 Demo：`#/default`
 - Headless 自定义控制栏 Demo：`#/headless`
 - 两者共用 `/cluoub-video/` base path 和同一个 `demo-dist` 产物
@@ -324,4 +325,6 @@ AI 能力只会以可选插件探索，不进入 Headless Core：字幕翻译、
 
 ## License
 
-MIT License
+## 开源协议
+
+本项目采用 [Apache License 2.0](LICENSE)。允许个人及商业使用、修改和再分发；分发源码或构建产物时，必须保留许可证、版权及 [NOTICE](NOTICE) 中的 Cluoub Video 来源声明。修改后的文件还应明确标注已作修改。
