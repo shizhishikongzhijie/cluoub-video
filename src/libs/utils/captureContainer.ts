@@ -12,7 +12,21 @@
  * 由调用方捕获后返回 null（与「仅捕获视频帧」行为一致）。
  */
 
-import { DEFAULT_SUBTITLE_STYLES, type SubtitleStyles } from '../core/types'
+export interface CaptureSubtitleStyles {
+    fontSize: number
+    color: string
+    isOutline: boolean
+    isBold: boolean
+    opacity: number
+}
+
+const DEFAULT_SUBTITLE_STYLES: CaptureSubtitleStyles = {
+    fontSize: 20,
+    color: '#ffffff',
+    isOutline: true,
+    isBold: false,
+    opacity: 1
+}
 
 /** 与 DOM 字幕层的 bottom: 60px 对齐的离底距离（px） */
 const SUBTITLE_BOTTOM = 60
@@ -24,7 +38,27 @@ export interface CompositeCaptureOptions {
     /** 各插件注册的 canvas 捕获层（如弹幕），按容器内坐标逐层叠加 */
     captureLayers?: { getCanvas: () => HTMLCanvasElement | null }[]
     /** 当前字幕文本与样式；缺省/空文本时不绘制字幕 */
-    subtitle?: { text: string; styles?: SubtitleStyles } | null
+    /** undefined 时从带 data-cluoub-subtitle-cue 的已渲染字幕读取；null 时禁用字幕捕获。 */
+    subtitle?: { text: string; styles?: CaptureSubtitleStyles } | null
+}
+
+export const readRenderedSubtitle = (root: HTMLElement): { text: string; styles: CaptureSubtitleStyles } | null => {
+    const cue = root.querySelector<HTMLElement>('[data-cluoub-subtitle-cue]')
+    const text = cue?.textContent?.trim()
+    if (!cue || !text) return null
+    const computed = window.getComputedStyle(cue)
+    const fontSize = Number.parseFloat(computed.fontSize)
+    const opacity = Number.parseFloat(computed.opacity)
+    return {
+        text,
+        styles: {
+            fontSize: Number.isFinite(fontSize) ? fontSize : DEFAULT_SUBTITLE_STYLES.fontSize,
+            color: computed.color || DEFAULT_SUBTITLE_STYLES.color,
+            isOutline: computed.textShadow !== 'none',
+            isBold: Number.parseInt(computed.fontWeight, 10) >= 600 || computed.fontWeight === 'bold',
+            opacity: Number.isFinite(opacity) ? opacity : DEFAULT_SUBTITLE_STYLES.opacity
+        }
+    }
 }
 
 /**
@@ -78,7 +112,7 @@ export const wrapSubtitle = (ctx: CanvasRenderingContext2D, text: string, maxWid
 const drawSubtitle = (
     ctx: CanvasRenderingContext2D,
     text: string,
-    styles: SubtitleStyles | undefined,
+    styles: CaptureSubtitleStyles | undefined,
     w: number,
     h: number
 ) => {
@@ -166,8 +200,9 @@ export const captureContainerComposite = (
     }
 
     // 2) 字幕文本（VTT/SRT）—— 与 DOM z 序一致（字幕 z-index 5 在弹幕层 8 之下）
-    if (options.subtitle?.text) {
-        drawSubtitle(ctx, options.subtitle.text, options.subtitle.styles, w, h)
+    const subtitle = options.subtitle === undefined ? readRenderedSubtitle(root) : options.subtitle
+    if (subtitle?.text) {
+        drawSubtitle(ctx, subtitle.text, subtitle.styles, w, h)
     }
 
     // 3) 逐层叠加插件注册的 canvas 捕获层（按容器内坐标对齐屏幕布局，如弹幕盖在字幕上）

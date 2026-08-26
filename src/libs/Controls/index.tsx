@@ -19,17 +19,19 @@ import { useState } from 'react'
 import { useStore } from 'zustand'
 
 import type { PlayerInstance } from '../core/types'
+import { QualityMenu } from '../plugins/quality/QualityMenu'
+import { PlayerSlotContribution, usePlayerViewState, usePlayerViewStore, useSlotContributions } from '../react/context'
 import styles from '../styles/controls.module.scss'
 import type { PlayerControlsConfig } from '../types'
-import { resolveSource } from '../utils/source'
+import { isStreamingSource, resolveSource } from '../utils/source'
 import { formatTime } from '../utils/time'
 import Progress from './Process'
 
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
 // 默认全部显示；controls=false 隐藏全部内置控件；传对象则按字段覆盖（未指定的默认显示）
-const resolveControlsConfig = (controls: PlayerInstance['options']['controls']): Required<PlayerControlsConfig> => {
-    const allOn: Required<PlayerControlsConfig> = {
+const resolveControlsConfig = (controls: boolean | PlayerControlsConfig | undefined) => {
+    const allOn: Required<Omit<PlayerControlsConfig, 'plugins'>> & { plugins: Record<string, boolean> } = {
         play: true,
         volume: true,
         time: true,
@@ -40,10 +42,24 @@ const resolveControlsConfig = (controls: PlayerInstance['options']['controls']):
         danmu: true,
         quality: true,
         speed: true,
-        screenMode: true
+        screenMode: true,
+        plugins: {}
     }
     if (controls === false) {
-        return Object.keys(allOn).reduce((acc, k) => ({ ...acc, [k]: false }), {} as Required<PlayerControlsConfig>)
+        return {
+            ...allOn,
+            play: false,
+            volume: false,
+            time: false,
+            progress: false,
+            fullscreen: false,
+            settings: false,
+            pip: false,
+            danmu: false,
+            quality: false,
+            speed: false,
+            screenMode: false
+        }
     }
     if (controls && typeof controls === 'object') {
         return { ...allOn, ...controls }
@@ -51,14 +67,21 @@ const resolveControlsConfig = (controls: PlayerInstance['options']['controls']):
     return allOn
 }
 
-export const Controls = ({ player }: { player: PlayerInstance }) => {
+export const Controls = ({
+    player,
+    controls,
+    thumbnail
+}: {
+    player: PlayerInstance
+    controls?: boolean | PlayerControlsConfig
+    thumbnail?: import('../types').ThumbnailConfig
+}) => {
     const {
         currentTime,
         duration,
         isPlaying,
         isMuted,
         volume,
-        uiRegistry,
         playbackRate,
         isPip,
         isFullscreen,
@@ -67,8 +90,10 @@ export const Controls = ({ player }: { player: PlayerInstance }) => {
         isLoop,
         playlistIndex,
         playlistLength,
-        screenMode
+        qualities
     } = useStore(player.store)
+    const screenMode = usePlayerViewState((state) => state.screenMode)
+    const viewStore = usePlayerViewStore()
     const {
         togglePlay,
         toggleMute,
@@ -87,24 +112,32 @@ export const Controls = ({ player }: { player: PlayerInstance }) => {
     const [isSpeedOpen, setIsSpeedOpen] = useState(false)
     const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
+    const toggleScreenMode = () =>
+        viewStore.setState((state) => ({
+            screenMode: state.screenMode === 'normal' ? 'wide' : state.screenMode === 'wide' ? 'small' : 'normal'
+        }))
+
+    const leadingControls = useSlotContributions('controls.leading')
+    const progressControls = useSlotContributions('controls.progress')
+    const settingsControls = useSlotContributions('controls.settings')
+    const trailingControls = useSlotContributions('controls.trailing')
+
     // 解析控件可见性配置
-    const cfg = resolveControlsConfig(player.options.controls)
+    const cfg = resolveControlsConfig(controls)
 
     // 按位置筛选并排序插件注册的控制按钮
     // 插件组件自带交互元素（按钮/弹层），这里仅做容器，不再额外包 <button> 以免嵌套
     // 同时遵循 controls 配置：quality/danmu 关闭时隐藏对应 controlKey 的插件控件
-    const controlsByPosition = (position: 'left' | 'right') =>
-        uiRegistry.controls
-            .filter((control) => (control.position || 'right') === position)
+    const renderPluginControls = (contributions: typeof leadingControls) =>
+        contributions
             .filter((control) => {
-                if (control.controlKey === 'quality') return cfg.quality
-                if (control.controlKey === 'danmu') return cfg.danmu
-                return true
+                if (control.controlId === 'quality') return cfg.quality
+                if (control.controlId === 'danmu') return cfg.danmu
+                return control.controlId ? cfg.plugins[control.controlId] !== false : true
             })
-            .sort((a, b) => (a.order || 0) - (b.order || 0))
             .map((control) => (
                 <span key={control.id} className={styles.pluginSlot}>
-                    {control.component}
+                    <PlayerSlotContribution contribution={control} />
                 </span>
             ))
 
@@ -118,10 +151,15 @@ export const Controls = ({ player }: { player: PlayerInstance }) => {
                         buffered={buffered}
                         bufferedRanges={bufferedRanges}
                         duration={duration}
-                        thumbnail={player.options.thumbnail}
+                        thumbnail={thumbnail}
                         source={currentSrc}
                         onSeek={seek}
                     />
+                    {progressControls.map((contribution) => (
+                        <span key={contribution.id} className={styles.progressPluginSlot}>
+                            <PlayerSlotContribution contribution={contribution} />
+                        </span>
+                    ))}
                 </div>
             )}
 
@@ -169,7 +207,7 @@ export const Controls = ({ player }: { player: PlayerInstance }) => {
                         </div>
                     )}
 
-                    {controlsByPosition('left')}
+                    {renderPluginControls(leadingControls)}
                 </div>
 
                 {/* 右侧：音量 + 倍速 + 画中画 + 设置 + 全屏 */}
@@ -198,7 +236,11 @@ export const Controls = ({ player }: { player: PlayerInstance }) => {
                         </div>
                     )}
 
-                    {controlsByPosition('right')}
+                    {renderPluginControls(trailingControls)}
+
+                    {cfg.quality && qualities.length > 0 && (
+                        <QualityMenu player={player} allowAuto={isStreamingSource(currentSrc)} />
+                    )}
 
                     {/* 倍速菜单 */}
                     {cfg.speed && (
@@ -279,6 +321,11 @@ export const Controls = ({ player }: { player: PlayerInstance }) => {
                                         <span>循环播放</span>
                                         <span className={styles.settingsState}>{isLoop ? '开' : '关'}</span>
                                     </button>
+                                    {settingsControls.map((contribution) => (
+                                        <div key={contribution.id} className={styles.settingsPluginSlot}>
+                                            <PlayerSlotContribution contribution={contribution} />
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>
@@ -287,7 +334,7 @@ export const Controls = ({ player }: { player: PlayerInstance }) => {
                     {cfg.screenMode && (
                         <button
                             className={classNames(styles.iconBtn, { [styles.active]: screenMode !== 'normal' })}
-                            onClick={player.toggleScreenMode}
+                            onClick={toggleScreenMode}
                             aria-label={
                                 screenMode === 'wide' ? '切换小窗' : screenMode === 'small' ? '恢复常规' : '切换宽屏'
                             }

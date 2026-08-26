@@ -4,7 +4,9 @@ import { useState } from 'react'
 import { useStore } from 'zustand'
 
 import type { PlayerInstance } from '../../core/types'
+import { useOptionalPlayerViewState } from '../../react/context'
 import styles from './danmuBar.module.scss'
+import { type DanmuAPI, getLegacyDanmuApi } from './state'
 
 const MODES: { key: 'scroll' | 'top' | 'bottom'; label: string }[] = [
     { key: 'scroll', label: '滚动' },
@@ -36,16 +38,24 @@ const COLORS = [
  * 2) 默认（内联）：外部任意位置渲染 <DanmuBar player={player} /> 放入播放器下方的专门区域。
  * 依赖弹幕插件已安装（player.danmu）。弹幕隐藏时禁止发送（与 B 站行为一致）。
  */
-export const DanmuBar = ({ player, docked = false }: { player: PlayerInstance; docked?: boolean }) => {
-    const isVisible = useStore(player.store, (s) => s.isDanmuVisible)
-    const mode = useStore(player.store, (s) => s.danmuMode)
-    const color = useStore(player.store, (s) => s.danmuColor)
-    const showControls = useStore(player.store, (s) => s.isControlsVisible)
+export const DanmuBar = ({
+    player,
+    api: configuredApi,
+    docked = false
+}: {
+    player: PlayerInstance
+    api?: DanmuAPI
+    docked?: boolean
+}) => {
+    const api = configuredApi ?? getLegacyDanmuApi(player)
+    if (!api) throw new Error('DanmuBar requires an installed danmuPlugin')
+    const { isVisible, mode, color } = useStore(api.store)
+    const showControls = useOptionalPlayerViewState((state) => state.controlsVisible)
     const [text, setText] = useState('')
 
     const send = () => {
         if (!isVisible || !text.trim()) return
-        player.danmu?.send(text.trim())
+        api.send(text.trim())
         setText('')
     }
 
@@ -89,7 +99,7 @@ export const DanmuBar = ({ player, docked = false }: { player: PlayerInstance; d
                     <button
                         key={m.key}
                         className={classNames(styles.modeBtn, { [styles.active]: mode === m.key })}
-                        onClick={() => player.store.setState({ danmuMode: m.key })}
+                        onClick={() => api.setMode(m.key)}
                         aria-pressed={mode === m.key}
                     >
                         {m.label}
@@ -102,23 +112,19 @@ export const DanmuBar = ({ player, docked = false }: { player: PlayerInstance; d
                             key={c}
                             className={classNames(styles.colorDot, { [styles.active]: color === c })}
                             style={{ background: c }}
-                            onClick={() => player.store.setState({ danmuColor: c })}
+                            onClick={() => api.setColor(c)}
                             aria-label={`弹幕颜色 ${c}`}
                         />
                     ))}
                 </div>
 
                 <label className={styles.customColor} title="自定义颜色" aria-label="自定义弹幕颜色">
-                    <input
-                        type="color"
-                        value={color}
-                        onChange={(e) => player.store.setState({ danmuColor: e.target.value })}
-                    />
+                    <input type="color" value={color} onChange={(e) => api.setColor(e.target.value)} />
                 </label>
 
                 <button
                     className={classNames(styles.toggleBtn, { [styles.active]: isVisible })}
-                    onClick={() => player.store.setState({ isDanmuVisible: !isVisible })}
+                    onClick={api.toggleVisible}
                     aria-pressed={isVisible}
                     aria-label={isVisible ? '关闭弹幕' : '开启弹幕'}
                 >

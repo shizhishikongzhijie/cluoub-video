@@ -1,0 +1,10 @@
+{
+  "dist/index.mjs": { "measuredGzipBytes": 1088, "maxGzipBytes": 26122 },
+  "dist/core.mjs": { "measuredGzipBytes": 206, "maxGzipBytes": 256 },
+  "dist/react.mjs": { "measuredGzipBytes": 396, "maxGzipBytes": 448 },
+  "dist/plugins/capture.mjs": { "measuredGzipBytes": 171, "maxGzipBytes": 192 },
+  "dist/plugins/danmu.mjs": { "measuredGzipBytes": 186, "maxGzipBytes": 192 },
+  "dist/plugins/dash.mjs": { "measuredGzipBytes": 159, "maxGzipBytes": 224 },
+  "dist/plugins/hls.mjs": { "measuredGzipBytes": 157, "maxGzipBytes": 224 },
+  "dist/plugins/subtitle.mjs": { "measuredGzipBytes": 175, "maxGzipBytes": 192 }
+}

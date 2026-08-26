@@ -1,6 +1,10 @@
-import { DEFAULT_SUBTITLE_STYLES, type IPlayerPlugin } from '../../core/types'
+import { optionalBoolean, parseConfigObject } from '../../core/config'
+import { definePlugin } from '../../core/plugin'
+import { createSubtitleApi, type SubtitleAPI } from './state'
 import { SubtitleLayer } from './SubtitleLayer'
 import { SubtitleMenuBtn } from './SubtitleMenuBtn'
+
+export type { SubtitleAPI, SubtitleState, SubtitleStyles } from './state'
 
 export interface SubtitleTrack {
     id: string
@@ -15,33 +19,52 @@ export interface SubtitleConfig {
     defaultShow?: boolean
 }
 
-export const subtitlePlugin: IPlayerPlugin<SubtitleConfig> = (player) => {
-    const { tracks = [], defaultShow = true } = player.options || {}
-
-    // 1. 初始化状态
-    player.store.setState({
-        subtitleTrack: 0,
-        isSubtitleVisible: defaultShow,
-        subtitleStyles: DEFAULT_SUBTITLE_STYLES,
-        subtitleOffset: 0
+const parseTracks = (input: unknown): SubtitleTrack[] => {
+    if (!Array.isArray(input)) throw new TypeError('tracks must be an array')
+    return input.map((value, index) => {
+        const track = parseConfigObject(value, `tracks[${index}]`, ['id', 'label', 'src', 'lang', 'type'])
+        for (const key of ['id', 'label', 'src', 'lang'] as const) {
+            if (typeof track[key] !== 'string') throw new TypeError(`tracks[${index}].${key} must be a string`)
+        }
+        if (!['vtt', 'srt', 'ass'].includes(String(track.type))) {
+            throw new TypeError(`tracks[${index}].type is invalid`)
+        }
+        return track as unknown as SubtitleTrack
     })
+}
 
-    // 2. 注册 UI：字幕渲染层
-    player.registerUI(
-        'subtitle-layer',
-        <SubtitleLayer player={player} tracks={tracks} />,
-        'layer',
-        { zIndex: 5 } // 在弹幕之下
-    )
-
-    // 3. 注册 UI：控制栏按钮 (带 Popover)
-    player.registerUI('subtitle-btn', <SubtitleMenuBtn player={player} tracks={tracks} />, 'control', {
-        order: 3,
-        position: 'right'
-    })
-
-    return () => {
-        player.unregisterUI('subtitle-layer')
-        player.unregisterUI('subtitle-btn')
+const parseSubtitleConfig = (input: unknown): Required<SubtitleConfig> => {
+    const config = parseConfigObject(input, 'subtitle', ['tracks', 'defaultShow'])
+    return {
+        tracks: parseTracks(config.tracks ?? []),
+        defaultShow: optionalBoolean(config, 'defaultShow', true)
     }
 }
+
+export const subtitlePlugin = definePlugin<SubtitleConfig, SubtitleAPI>({
+    id: 'subtitle',
+    schema: { parse: parseSubtitleConfig },
+    setup: ({ player, slots }, config) => {
+        const { tracks, defaultShow } = config as Required<SubtitleConfig>
+
+        const api = createSubtitleApi({ isVisible: defaultShow })
+
+        // 2. 注册 UI：字幕渲染层
+        slots.register({
+            id: 'subtitle-layer',
+            slot: 'overlay',
+            content: <SubtitleLayer player={player} tracks={tracks} api={api} />,
+            zIndex: 5
+        })
+
+        // 3. 注册 UI：控制栏按钮 (带 Popover)
+        slots.register({
+            id: 'subtitle-btn',
+            slot: 'controls.trailing',
+            content: <SubtitleMenuBtn tracks={tracks} api={api} />,
+            order: 3
+        })
+
+        return { api }
+    }
+})

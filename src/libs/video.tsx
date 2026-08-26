@@ -1,6 +1,6 @@
 import classNames from 'classnames'
 import type { CSSProperties } from 'react'
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import { useStore } from 'zustand'
 
 import { Controls } from './Controls'
@@ -11,22 +11,43 @@ import { usePlayer } from './hooks/usePlayer'
 import type { GestureFeedback } from './hooks/useTouchGestures'
 import { useTouchGestures } from './hooks/useTouchGestures'
 import { Layers } from './Layers'
+import { getLegacyDanmuApi } from './plugins/danmu/state'
+import {
+    createPlayerViewStore,
+    PlayerProvider,
+    PlayerRoot,
+    PlayerSlotContribution,
+    usePlayerViewState,
+    usePlayerViewStore,
+    useSlotContributions
+} from './react/context'
 import controlsStyles from './styles/controls.module.scss'
 import styles from './styles/player.module.scss'
 import type { CluoubVideoProps, VideoRef } from './types'
 
 // --- 子组件：PlayerUI (只有当 player 存在时才渲染) ---
-const PlayerUI = ({ player, feedback }: { player: PlayerInstance; feedback: GestureFeedback | null }) => {
+const PlayerUI = ({
+    player,
+    feedback,
+    controls,
+    thumbnail
+}: {
+    player: PlayerInstance
+    feedback: GestureFeedback | null
+    controls: CluoubVideoProps['controls']
+    thumbnail: CluoubVideoProps['thumbnail']
+}) => {
     // 现在这里可以放心使用 useStore 了，因为 player 肯定不为 null
     const isPlaying = useStore(player.store, (s) => s.isPlaying)
-    const isControlsVisible = useStore(player.store, (s) => s.isControlsVisible)
+    const isControlsVisible = usePlayerViewState((state) => state.controlsVisible)
+    const viewStore = usePlayerViewStore()
     const isWaiting = useStore(player.store, (s) => s.isWaiting)
     const showControls = !isPlaying || isControlsVisible
 
     // 鼠标交互
-    const handleMouseEnter = () => player.setShowControls(true)
+    const handleMouseEnter = () => viewStore.setState({ controlsVisible: true })
     const handleMouseLeave = () => {
-        if (isPlaying) player.setShowControls(false)
+        if (isPlaying) viewStore.setState({ controlsVisible: false })
     }
 
     return (
@@ -64,12 +85,24 @@ const PlayerUI = ({ player, feedback }: { player: PlayerInstance; feedback: Gest
             )}
 
             {/* 插件层 (弹幕等) */}
-            <Layers player={player} />
+            <Layers />
 
             {/* 控制栏层 */}
             <div className={classNames(controlsStyles.controlsLayer, { [controlsStyles.visible]: showControls })}>
-                <Controls player={player} />
+                <Controls player={player} controls={controls} thumbnail={thumbnail} />
             </div>
+        </div>
+    )
+}
+
+const DefaultBelowSlots = () => {
+    const contributions = useSlotContributions('below')
+    if (!contributions.length) return null
+    return (
+        <div className={styles.belowSlots}>
+            {contributions.map((contribution) => (
+                <PlayerSlotContribution key={contribution.id} contribution={contribution} />
+            ))}
         </div>
     )
 }
@@ -77,20 +110,13 @@ const PlayerUI = ({ player, feedback }: { player: PlayerInstance; feedback: Gest
 // --- 主组件 ---
 export const CluoubVideo = forwardRef<VideoRef, CluoubVideoProps>((props, ref) => {
     const containerRef = useRef<HTMLDivElement>(null)
+    const [viewStore] = useState(createPlayerViewStore)
 
-    // 1. 初始化 Player
-    // forwardRef 会将 props 推断为 Omit<CluoubVideoProps, 'ref'>，因 CluoubVideoProps 含索引签名
-    // 会丢失 source 的必填性，这里显式断言回完整类型
-    const player = usePlayer(containerRef, props as CluoubVideoProps)
+    // 1. 初始化 Headless Core；DOM 挂载由 PlayerRoot 负责。
+    const player = usePlayer(props)
 
-    // 2. 屏幕模式：从 store 订阅，应用到容器 className（仅在变化时触发重渲染）
-    const [screenMode, setScreenMode] = useState<'normal' | 'wide' | 'small'>('normal')
-    useEffect(() => {
-        if (!player) return
-        return player.store.subscribe((state) => {
-            setScreenMode((prev) => (prev === state.screenMode ? prev : state.screenMode))
-        })
-    }, [player])
+    // 2. 默认视图状态属于 React 层，不进入 Headless Core 的媒体状态。
+    const screenMode = useStore(viewStore, (state) => state.screenMode)
 
     // 2. 键盘快捷键（绑定在容器上，需容器可聚焦）
     useKeyboardShortcuts(containerRef, player)
@@ -111,20 +137,26 @@ export const CluoubVideo = forwardRef<VideoRef, CluoubVideoProps>((props, ref) =
             toggleFullscreen: () => player?.toggleFullscreen(),
             setPlaybackRate: (rate: number) => player?.setPlaybackRate(rate),
             togglePip: () => player?.togglePip() ?? Promise.resolve(),
-            setScreenMode: (mode) => player?.setScreenMode(mode),
-            toggleScreenMode: () => player?.toggleScreenMode(),
+            setScreenMode: (screenMode) => viewStore.setState({ screenMode }),
+            toggleScreenMode: () =>
+                viewStore.setState((state) => ({
+                    screenMode:
+                        state.screenMode === 'normal' ? 'wide' : state.screenMode === 'wide' ? 'small' : 'normal'
+                })),
             playIndex: (index: number) => player?.playIndex(index),
             next: () => player?.next(),
             prev: () => player?.prev(),
+            selectQuality: (key: string) => player?.selectQuality(key),
             captureFrame: (options?: { type?: string; quality?: number }) => player?.captureFrame(options) ?? null,
             captureFrames: (options?: { count?: number; intervalMs?: number; type?: string }) =>
                 player?.captureFrames(options) ?? Promise.resolve([]),
             captureComposite: (options?: { type?: string; quality?: number }) =>
                 player?.captureComposite(options) ?? Promise.resolve(null),
             getVideoElement: () => player?.video ?? null,
-            getPlayer: () => player
+            getPlayer: () => player,
+            getDanmu: () => (player ? getLegacyDanmuApi(player) : undefined)
         }),
-        [player]
+        [player, viewStore]
     )
 
     // 4. 将尺寸/比例等 props 应用到容器
@@ -134,27 +166,39 @@ export const CluoubVideo = forwardRef<VideoRef, CluoubVideoProps>((props, ref) =
         height: typeof height === 'number' ? `${height}px` : height,
         // aspectRatio 支持 '16:9' 写法，转换为 CSS 的 '16 / 9'
         aspectRatio: aspectRatio ? aspectRatio.replace(':', ' / ') : undefined,
-        ...(themeColor ? ({ '--theme-color': themeColor } as CSSProperties) : {})
+        ...(themeColor ? ({ '--cluoub-accent': themeColor, '--theme-color': themeColor } as CSSProperties) : {})
+    }
+
+    if (!player) {
+        return (
+            <div className={styles.videoContainer} style={containerStyle} aria-busy="true">
+                <div className={styles.skeleton}>Loading...</div>
+            </div>
+        )
     }
 
     return (
-        // 这个 div 是挂载点，必须始终存在；tabIndex 使其可聚焦以接收键盘事件
-        <div
-            ref={containerRef}
-            className={classNames(styles.videoContainer, {
-                [styles.screenWide]: screenMode === 'wide',
-                [styles.screenSmall]: screenMode === 'small'
-            })}
-            style={containerStyle}
-            tabIndex={0}
-        >
-            {/* 5. 条件渲染：只有 player 初始化完成后，才渲染 UI */}
-            {player ? (
-                <PlayerUI player={player} feedback={feedback} />
-            ) : (
-                <div className={styles.skeleton}>Loading...</div>
-            )}
-        </div>
+        <PlayerProvider player={player} viewStore={viewStore}>
+            <>
+                <PlayerRoot
+                    ref={containerRef}
+                    className={classNames(styles.videoContainer, {
+                        [styles.screenWide]: screenMode === 'wide',
+                        [styles.screenSmall]: screenMode === 'small'
+                    })}
+                    style={containerStyle}
+                    tabIndex={0}
+                >
+                    <PlayerUI
+                        player={player}
+                        feedback={feedback}
+                        controls={props.controls}
+                        thumbnail={props.thumbnail}
+                    />
+                </PlayerRoot>
+                <DefaultBelowSlots />
+            </>
+        </PlayerProvider>
     )
 })
 

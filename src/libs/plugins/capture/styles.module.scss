@@ -33,12 +33,28 @@
 
   &:hover {
     background: rgba(0, 0, 0, 0.72);
-    color: var(--theme-color, #35ddd8);
+    color: var(--cluoub-accent, var(--theme-color, #35ddd8));
   }
 
   &:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+
+
+  &:focus-visible {
+    outline: 2px solid var(--cluoub-focus-ring, var(--cluoub-accent, #35ddd8));
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toolbarBtn {
+    transition: none;
+  }
+
+  .recording {
+    animation: none;
   }
 }
 

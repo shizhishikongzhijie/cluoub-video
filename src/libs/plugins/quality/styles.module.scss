@@ -1,4 +1,4 @@
-$primary: var(--color-primary, #35ddd8);
+$primary: var(--cluoub-accent, var(--theme-color, var(--color-primary, #35ddd8)));
 
 .qualityBox {
   position: relative;

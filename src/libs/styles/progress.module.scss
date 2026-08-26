@@ -1,5 +1,5 @@
 /* 变量定义 (如果全局没定义，这里提供默认值作为兜底) */
-$primary: var(--color-primary, #35ddd8);
+$primary: var(--cluoub-accent, var(--theme-color, var(--color-primary, #35ddd8)));
 $text-light: #fff;
 
 /* 进度条高度 */
@@ -147,4 +147,18 @@ $thumb-scale: 1.5;
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track,
+  .buffered,
+  .hoverTrack,
+  .thumb {
+    transition: none !important;
+  }
+
+  .tooltip {
+    animation: none;
+    opacity: 1;
+  }
 }

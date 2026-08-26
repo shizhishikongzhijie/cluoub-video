@@ -1,5 +1,5 @@
 /* 变量 */
-$primary: var(--color-primary, #35ddd8);
+$primary: var(--cluoub-accent, var(--theme-color, var(--color-primary, #35ddd8)));
 $bg-panel: rgba(30, 30, 30, 0.95);
 $border: rgba(255, 255, 255, 0.1);
 $text: #eee;

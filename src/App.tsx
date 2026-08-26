@@ -2,7 +2,7 @@ import './App.css'
 
 import { useEffect, useRef, useState } from 'react'
 
-import { CluoubVideo, DanmuBar, type VideoRef } from './libs'
+import { CluoubVideo, DanmuBar, definePlugin, type VideoRef } from './libs'
 import type { PlayerInstance } from './libs/core/types'
 import { capturePlugin } from './libs/plugins/capture'
 import { type DanmuItem, danmuPlugin } from './libs/plugins/danmu'
@@ -70,10 +70,16 @@ We support both VTT and SRT formats.
     }
 ]
 
+const failingDemoPlugin = definePlugin({
+    id: 'demo-failure',
+    setup: (context) => context.reportError(new Error('Intentional demo failure'))
+})
+
 function App() {
     const ref = useRef<VideoRef>(null)
     // 拿到 PlayerInstance 用于渲染播放器下方的弹幕操作区（B 站式专门操作区）
     const [player, setPlayer] = useState<PlayerInstance | null>(null)
+    const [pluginError, setPluginError] = useState<string>()
 
     // 支持 URL 参数用于演示/调试：mode=wide|small、autoplay=1、seek=<秒>、debug=1
     useEffect(() => {
@@ -86,7 +92,7 @@ function App() {
             if (!p) return
             window.clearInterval(iv)
             setPlayer(p)
-            if (mode === 'wide' || mode === 'small') p.setScreenMode(mode)
+            if (mode === 'wide' || mode === 'small') ref.current?.setScreenMode(mode)
             if (seekRaw !== null) {
                 const time = Number(seekRaw)
                 if (!Number.isNaN(time)) p.seek(time)
@@ -141,7 +147,8 @@ function App() {
                                 pre.textContent = JSON.stringify({
                                     ok: !!dataUrl,
                                     size: dataUrl ? dataUrl.length : 0,
-                                    subtitleText: p.store.getState().activeSubtitleText,
+                                    subtitleText:
+                                        document.querySelector('[data-cluoub-subtitle-cue]')?.textContent ?? '',
                                     danmuCanvas: !!danmuCanvas,
                                     danmuPixels
                                 })
@@ -157,18 +164,34 @@ function App() {
 
     const params = new URLSearchParams(window.location.search)
     const autoplay = params.get('autoplay') === '1'
+    const qualityDemo = params.get('quality') === '1'
+    const errorDemo = params.get('pluginError') === '1'
 
     return (
         <>
             <CluoubVideo
                 // debug={true}
                 ref={ref}
-                source="./video.mp4_ja.mp4"
+                source={
+                    qualityDemo
+                        ? [
+                              { src: './video.mp4_ja.mp4', quality: '原画' },
+                              { src: './video.mp4_ja.mp4?quality=720', quality: '720P' }
+                          ]
+                        : './video.mp4_ja.mp4'
+                }
                 width="800px"
                 aspectRatio="16:9"
                 autoPlay={autoplay}
                 muted={autoplay}
-                plugins={[dashPlugin, subtitlePlugin, capturePlugin, danmuPlugin]}
+                plugins={[
+                    dashPlugin,
+                    subtitlePlugin,
+                    capturePlugin,
+                    danmuPlugin,
+                    ...(errorDemo ? [failingDemoPlugin] : [])
+                ]}
+                onPluginError={(error) => setPluginError(`${error.pluginId}:${error.phase}`)}
                 tracks={MOCK_TRACKS}
                 danmuList={MOCK_DANMU}
                 thumbnail={{ type: 'video' }}
@@ -197,6 +220,7 @@ function App() {
                 // ]}
                 // plugins={[new DanmuPlugin()]}
             />
+            {pluginError && <output data-testid="plugin-error">{pluginError}</output>}
             {/* B 站式弹幕操作区：播放器下方专门区域（也可通过 showDanmuBar 挂载到播放器内） */}
             <div className="danmuBarArea" style={{ marginTop: 12 }}>
                 {player && <DanmuBar player={player} />}

@@ -3,8 +3,8 @@ import { Check, ChevronDown } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from 'zustand'
 
-import { DEFAULT_SUBTITLE_STYLES, type PlayerInstance, type SubtitleStyles } from '../../core/types'
 import type { SubtitleTrack } from './index'
+import type { SubtitleAPI, SubtitleStyles } from './state'
 import styles from './styles.module.scss'
 
 // --- 简单的 Switch 组件 ---
@@ -82,14 +82,11 @@ const TrackSelector = ({
     )
 }
 
-export const SubtitleMenu = ({ player, tracks }: { player: PlayerInstance; tracks: SubtitleTrack[] }) => {
-    const { isSubtitleVisible, subtitleTrack, subtitleOffset } = useStore(player.store)
-    const subtitleStyles = useStore(player.store, (s) => s.subtitleStyles) ?? DEFAULT_SUBTITLE_STYLES
+export const SubtitleMenu = ({ api, tracks }: { api: SubtitleAPI; tracks: SubtitleTrack[] }) => {
+    const { isVisible, track, offset, styles: subtitleStyles } = useStore(api.store)
 
     const updateStyle = (key: keyof SubtitleStyles, val: number | string | boolean) => {
-        player.store.setState((prev) => ({
-            subtitleStyles: { ...(prev.subtitleStyles ?? DEFAULT_SUBTITLE_STYLES), [key]: val }
-        }))
+        api.store.setState((prev) => ({ styles: { ...prev.styles, [key]: val } }))
     }
 
     return (
@@ -98,23 +95,16 @@ export const SubtitleMenu = ({ player, tracks }: { player: PlayerInstance; track
             <div className={styles.section}>
                 <div className={styles.title}>
                     <span>字幕开关</span>
-                    <Switch
-                        checked={isSubtitleVisible}
-                        onChange={(v) => player.store.setState({ isSubtitleVisible: v })}
-                    />
+                    <Switch checked={isVisible} onChange={api.setVisible} />
                 </div>
 
-                {isSubtitleVisible && (
+                {isVisible && (
                     <div className={styles.row}>
-                        <TrackSelector
-                            tracks={tracks}
-                            value={subtitleTrack}
-                            onChange={(i) => player.store.setState({ subtitleTrack: i })}
-                        />
+                        <TrackSelector tracks={tracks} value={track} onChange={api.setTrack} />
                     </div>
                 )}
 
-                {isSubtitleVisible && (
+                {isVisible && (
                     <div className={styles.row}>
                         <span>同步</span>
                         <input
@@ -123,15 +113,15 @@ export const SubtitleMenu = ({ player, tracks }: { player: PlayerInstance; track
                             max={5}
                             step={0.5}
                             className={styles.slider}
-                            value={subtitleOffset}
-                            onChange={(e) => player.store.setState({ subtitleOffset: Number(e.target.value) })}
+                            value={offset}
+                            onChange={(e) => api.setOffset(Number(e.target.value))}
                         />
-                        <span>{subtitleOffset > 0 ? `+${subtitleOffset}s` : `${subtitleOffset}s`}</span>
+                        <span>{offset > 0 ? `+${offset}s` : `${offset}s`}</span>
                     </div>
                 )}
             </div>
 
-            {isSubtitleVisible && (
+            {isVisible && (
                 <>
                     <div className={styles.section}>
                         <div className={styles.title}>样式</div>

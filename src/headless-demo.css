@@ -1,0 +1,129 @@
+.demo-nav {
+  position: fixed;
+  inset: 16px 16px auto auto;
+  z-index: 100;
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(16, 21, 26, 0.82);
+  backdrop-filter: blur(16px);
+}
+
+.demo-nav a {
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: #dce7e6;
+  font-size: 13px;
+}
+
+.demo-nav a[aria-current="page"] {
+  color: #071514;
+  background: #65e6d9;
+}
+
+.headless-demo {
+  width: min(960px, calc(100vw - 32px));
+  margin: 72px auto 32px;
+  color: #e7f1ef;
+}
+
+.headless-demo header {
+  max-width: 720px;
+  margin-bottom: 24px;
+}
+
+.headless-demo h1 {
+  margin: 6px 0 8px;
+  font-size: clamp(30px, 5vw, 54px);
+  letter-spacing: -0.04em;
+}
+
+.headless-demo header p:last-child {
+  color: #99aaa7;
+}
+
+.headless-eyebrow {
+  color: #65e6d9;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.headless-player {
+  --headless-accent: #65e6d9;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid rgba(101, 230, 217, 0.25);
+  border-radius: 18px;
+  background: #050807;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+}
+
+.headless-player video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.headless-controls {
+  position: absolute;
+  inset: auto 14px 14px;
+  display: grid;
+  grid-template-columns: auto minmax(100px, 1fr) auto minmax(64px, 120px) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(5, 12, 11, 0.82);
+  backdrop-filter: blur(18px);
+}
+
+.headless-controls button {
+  border: 1px solid rgba(101, 230, 217, 0.25);
+  color: #e7f1ef;
+  background: transparent;
+}
+
+.headless-controls button:hover,
+.headless-controls button:focus-visible {
+  border-color: var(--headless-accent);
+  color: var(--headless-accent);
+}
+
+.headless-controls input {
+  width: 100%;
+  accent-color: var(--headless-accent);
+}
+
+.headless-controls output {
+  color: #b9c8c6;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.headless-error {
+  color: #ff8f8f;
+}
+
+@media (max-width: 600px) {
+  .headless-controls {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .headless-controls input[aria-label="音量"],
+  .headless-controls output {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .headless-controls *,
+  .demo-nav * {
+    transition: none !important;
+  }
+}

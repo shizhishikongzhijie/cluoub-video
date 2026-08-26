@@ -84,11 +84,7 @@ export const CaptureControl = ({ player, config }: { player: PlayerInstance; con
         try {
             const container = findContainer(player)
             const canvas = captureContainerComposite(container, player.video, {
-                captureLayers: [...player.captureLayers],
-                subtitle: {
-                    text: player.store.getState().activeSubtitleText,
-                    styles: player.store.getState().subtitleStyles
-                }
+                captureLayers: [...player.captureLayers]
             })
             if (canvas) {
                 const ctx = canvas.getContext('2d')

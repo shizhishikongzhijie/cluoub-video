@@ -9,7 +9,7 @@ import styles from './styles.module.scss'
  * 读取 store 中由 dash 插件填充的 qualities 列表，
  * 选择后通过事件总线通知插件切换，并同步 quality 状态。
  */
-export const QualityMenu = ({ player }: { player: PlayerInstance }) => {
+export const QualityMenu = ({ player, allowAuto = true }: { player: PlayerInstance; allowAuto?: boolean }) => {
     const qualities = useStore(player.store, (s) => s.qualities)
     const quality = useStore(player.store, (s) => s.quality)
     const activeQuality = useStore(player.store, (s) => s.activeQuality)
@@ -27,8 +27,7 @@ export const QualityMenu = ({ player }: { player: PlayerInstance }) => {
             : (qualities.find((q) => q.key === quality)?.label ?? '自动')
 
     const select = (key: string) => {
-        player.store.setState({ quality: key })
-        player.emit('request-quality-change', key)
+        player.selectQuality(key)
         setIsOpen(false)
     }
 
@@ -39,14 +38,16 @@ export const QualityMenu = ({ player }: { player: PlayerInstance }) => {
             </button>
             {isOpen && (
                 <div className={styles.qualityMenu} role="menu">
-                    <button
-                        role="menuitemradio"
-                        aria-checked={quality === 'auto'}
-                        className={`${styles.qualityItem} ${quality === 'auto' ? styles.qualityActive : ''}`}
-                        onClick={() => select('auto')}
-                    >
-                        自动{activeLabel ? ` · ${activeLabel}` : ''}
-                    </button>
+                    {allowAuto && (
+                        <button
+                            role="menuitemradio"
+                            aria-checked={quality === 'auto'}
+                            className={`${styles.qualityItem} ${quality === 'auto' ? styles.qualityActive : ''}`}
+                            onClick={() => select('auto')}
+                        >
+                            自动{activeLabel ? ` · ${activeLabel}` : ''}
+                        </button>
+                    )}
                     {qualities.map((q) => (
                         <button
                             key={q.key}

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useStore } from 'zustand'
 
-import type { PlayerInstance, SendDanmuOptions } from '../../core/types'
+import type { PlayerInstance } from '../../core/types'
 import { type ActiveDanmu, allocateTrack, cursorForTime, type DanmuItem, estimateWidth } from './engine'
 import { drawDanmu, FIXED_DURATION, FONT_FAMILY, FONT_SIZE, SCROLL_DURATION, TRACK_HEIGHT } from './render'
+import type { DanmuAPI, SendDanmuOptions } from './state'
 import styles from './styles.module.scss'
 
 /**
@@ -16,8 +17,8 @@ interface VirtualClock {
     running: boolean
 }
 
-export const DanmuLayer = ({ player, data }: { player: PlayerInstance; data: DanmuItem[] }) => {
-    const isVisible = useStore(player.store, (s) => s.isDanmuVisible)
+export const DanmuLayer = ({ player, data, api }: { player: PlayerInstance; data: DanmuItem[]; api: DanmuAPI }) => {
+    const isVisible = useStore(api.store, (state) => state.isVisible)
     const isPlaying = useStore(player.store, (s) => s.isPlaying)
     const currentTime = useStore(player.store, (s) => s.currentTime)
 
@@ -176,7 +177,7 @@ export const DanmuLayer = ({ player, data }: { player: PlayerInstance; data: Dan
 
             const stageWidth = stage.clientWidth
             const trackCount = Math.max(1, Math.floor(stage.clientHeight / TRACK_HEIGHT))
-            const mode = options?.mode ?? player.store.getState().danmuMode ?? 'scroll'
+            const mode = options?.mode ?? api.store.getState().mode
             const width = measureWidth(trimmed)
             const now = vtNow()
 
@@ -202,7 +203,7 @@ export const DanmuLayer = ({ player, data }: { player: PlayerInstance; data: Dan
                     id: idRef.current++,
                     time: player.store.getState().currentTime,
                     text: trimmed,
-                    color: options?.color ?? player.store.getState().danmuColor,
+                    color: options?.color ?? api.store.getState().color,
                     mode,
                     track,
                     enterAt: now,
@@ -213,7 +214,7 @@ export const DanmuLayer = ({ player, data }: { player: PlayerInstance; data: Dan
 
         player.on('danmu-send', handler)
         return () => player.off('danmu-send', handler)
-    }, [isVisible, measureWidth, player, vtNow])
+    }, [api, isVisible, measureWidth, player, vtNow])
 
     // 渲染循环：绘制活动弹幕；播放暂停时由虚拟时钟冻结位置（暂停不漂移）
     useEffect(() => {

@@ -1,31 +1,39 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from 'zustand'
 
-import { DEFAULT_SUBTITLE_STYLES, type PlayerInstance } from '../../core/types'
+import type { PlayerInstance } from '../../core/types'
 import { type AssRendererHandle, createAssRenderer } from './assRenderer'
 import type { SubtitleTrack } from './index'
 import { fetchSubtitle, type SubtitleCue } from './parser'
+import { type SubtitleAPI } from './state'
 import styles from './styles.module.scss'
 
-export const SubtitleLayer = ({ player, tracks }: { player: PlayerInstance; tracks: SubtitleTrack[] }) => {
-    const { isSubtitleVisible, subtitleTrack, subtitleStyles, subtitleOffset, currentTime, screenMode } = useStore(
-        player.store
-    )
+export const SubtitleLayer = ({
+    player,
+    tracks,
+    api
+}: {
+    player: PlayerInstance
+    tracks: SubtitleTrack[]
+    api: SubtitleAPI
+}) => {
+    const currentTime = useStore(player.store, (state) => state.currentTime)
+    const { isVisible, track, styles: subtitleStyles, offset } = useStore(api.store)
     const [cues, setCues] = useState<SubtitleCue[]>([])
     const assRendererRef = useRef<AssRendererHandle | null>(null)
 
     // 1. 加载并解析当前轨道；ASS 走 libjass 渲染器（懒加载，未安装 libjass 时回退为空）
     useEffect(() => {
-        const track = tracks[subtitleTrack]
-        if (!track) {
+        const selectedTrack = tracks[track]
+        if (!selectedTrack) {
             setCues([])
             return
         }
 
-        if (track.type === 'ass') {
+        if (selectedTrack.type === 'ass') {
             setCues([])
             let cancelled = false
-            createAssRenderer(player.video, track.src)
+            createAssRenderer(player.video, selectedTrack.src)
                 .then((renderer) => {
                     if (cancelled) {
                         renderer.dispose()
@@ -33,7 +41,7 @@ export const SubtitleLayer = ({ player, tracks }: { player: PlayerInstance; trac
                     }
                     assRendererRef.current = renderer
                     // 初始化时若字幕处于隐藏状态，立即同步（避免异步就绪后字幕直接显示）
-                    if (!player.store.getState().isSubtitleVisible) renderer.pause()
+                    if (!api.store.getState().isVisible) renderer.pause()
                 })
                 .catch((e) => {
                     console.error('ASS 字幕渲染失败（需安装可选依赖 libjass）', e)
@@ -46,47 +54,46 @@ export const SubtitleLayer = ({ player, tracks }: { player: PlayerInstance; trac
         }
 
         let cancelled = false
-        fetchSubtitle(track.src).then((parsed) => {
+        fetchSubtitle(selectedTrack.src).then((parsed) => {
             if (!cancelled) setCues(parsed)
         })
         return () => {
             cancelled = true
         }
-    }, [subtitleTrack, tracks, player])
+    }, [api, player, track, tracks])
 
     // 2. 字幕可见性开关同步到 ASS 渲染器（VTT/SRT 由下方 activeCue 天然控制）
     useEffect(() => {
-        if (isSubtitleVisible) {
+        if (isVisible) {
             assRendererRef.current?.resume()
         } else {
             assRendererRef.current?.pause()
         }
-    }, [isSubtitleVisible])
+    }, [isVisible])
 
-    // 2.5 容器尺寸变化（全屏/屏幕模式/窗口缩放）时通知 ASS 渲染器重新布局
+    // 2.5 尺寸变化时通知 ASS 渲染器重新布局；不依赖默认 React UI 的屏幕模式状态。
     useEffect(() => {
-        assRendererRef.current?.resize()
-    }, [screenMode])
+        const resize = () => assRendererRef.current?.resize()
+        if (typeof ResizeObserver === 'undefined') {
+            window.addEventListener('resize', resize)
+            return () => window.removeEventListener('resize', resize)
+        }
+        const observer = new ResizeObserver(resize)
+        observer.observe(player.video)
+        return () => observer.disconnect()
+    }, [player])
 
     // 2. 查找当前应该显示的字幕（应用同步偏移）
     const activeCue = useMemo(() => {
-        if (!isSubtitleVisible) return null
-        const t = currentTime - subtitleOffset
+        if (!isVisible) return null
+        const t = currentTime - offset
         return cues.find((c) => t >= c.start && t <= c.end)
-    }, [currentTime, cues, isSubtitleVisible, subtitleOffset])
-
-    // 2.75 当前字幕文本写入 store，供合成截图在 canvas 上绘制（VTT/SRT；ASS 走 DOM 渲染不参与）
-    useEffect(() => {
-        const text = activeCue?.text ?? ''
-        if (player.store.getState().activeSubtitleText !== text) {
-            player.store.setState({ activeSubtitleText: text })
-        }
-    }, [activeCue, player])
+    }, [currentTime, cues, isVisible, offset])
 
     if (!activeCue) return null
 
     // 3. 应用样式
-    const sub = subtitleStyles ?? DEFAULT_SUBTITLE_STYLES
+    const sub = subtitleStyles
     const cssVars = {
         '--sub-size': `${sub.fontSize}px`,
         '--sub-color': sub.color,
@@ -97,7 +104,9 @@ export const SubtitleLayer = ({ player, tracks }: { player: PlayerInstance; trac
 
     return (
         <div className={styles.subtitleLayer} style={cssVars}>
-            <span className={styles.cue}>{activeCue.text}</span>
+            <span className={styles.cue} data-cluoub-subtitle-cue>
+                {activeCue.text}
+            </span>
         </div>
     )
 }

@@ -1,4 +1,4 @@
-$primary: var(--color-primary, #35ddd8);
+$primary: var(--cluoub-accent, var(--theme-color, var(--color-primary, #35ddd8)));
 /* 控制栏容器 */
 .controlsLayer {
   position: absolute;
@@ -38,8 +38,13 @@ $primary: var(--color-primary, #35ddd8);
 
 /* 1. 进度条区域 */
 .progressWrap {
+  position: relative;
   width: 100%;
   padding: 0 4px;
+}
+
+.progressPluginSlot {
+  display: block;
 }
 
 /* 2. 按钮行 */
@@ -73,9 +78,9 @@ $primary: var(--color-primary, #35ddd8);
   justify-content: center;
   position: relative;
 
-  &:focus,
   &:focus-visible {
-    outline: none;
+    outline: 2px solid $primary;
+    outline-offset: 2px;
   }
 
   svg {
@@ -155,6 +160,10 @@ $primary: var(--color-primary, #35ddd8);
   align-items: center;
 }
 
+.settingsPluginSlot {
+  display: block;
+}
+
 /* 倍速菜单 */
 .speedBox {
   position: relative;
@@ -180,6 +189,11 @@ $primary: var(--color-primary, #35ddd8);
   &:hover {
     color: $primary;
     background: rgba(255, 255, 255, 0.1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $primary;
+    outline-offset: 2px;
   }
 }
 
@@ -224,6 +238,12 @@ $primary: var(--color-primary, #35ddd8);
 
   &:hover {
     background: rgba(255, 255, 255, 0.12);
+  }
+
+
+  &:focus-visible {
+    outline: 2px solid $primary;
+    outline-offset: -2px;
   }
 }
 
@@ -282,6 +302,43 @@ $primary: var(--color-primary, #35ddd8);
 
   &:hover {
     background: rgba(255, 255, 255, 0.12);
+  }
+
+
+  &:focus-visible {
+    outline: 2px solid $primary;
+    outline-offset: -2px;
+  }
+}
+
+@media (max-width: 390px) {
+  .buttonsRow {
+    padding-inline: 6px;
+  }
+
+  .leftGroup,
+  .rightGroup {
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .timeDisplay {
+    font-size: 11px;
+  }
+
+  .volumeSlider {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .controlsLayer,
+  .iconBtn,
+  .speedBtn,
+  .speedItem,
+  .settingsItem,
+  .volumeSlider {
+    transition: none !important;
   }
 }
 

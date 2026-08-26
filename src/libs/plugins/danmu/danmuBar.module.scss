@@ -142,3 +142,26 @@
     }
   }
 }
+
+@media (max-width: 390px) {
+  .bar {
+    max-width: 100%;
+    flex-wrap: wrap;
+    border-radius: 12px;
+
+    .input {
+      width: min(180px, calc(100vw - 110px));
+      min-width: 0;
+    }
+
+    .controls {
+      width: 100%;
+      min-width: 0;
+      overflow-x: auto;
+    }
+
+    .colors {
+      display: none;
+    }
+  }
+}

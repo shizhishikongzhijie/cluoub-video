@@ -10,15 +10,17 @@ export default defineConfig({
     plugins: [
         react(),
         dts({
-            insertTypesEntry: true,
-            rollupTypes: true,
+            entryRoot: 'src/libs',
+            insertTypesEntry: false,
+            rollupTypes: false,
             copyDtsFiles: true,
             exclude: ['**/*.test.*'],
             // 可选：指定输出目录
             outDir: 'dist'
         }),
         visualizer({
-            filename: 'dist/stats.html'
+            // 保持分析报告在发布目录之外，避免 pnpm pack 把开发产物带入 npm 包。
+            filename: 'bundle-stats.html'
         })
         // rawPlugin({
         //     fileRegex: /\.svg$/
@@ -30,10 +32,20 @@ export default defineConfig({
         // 库构建不复制 public/（演示视频等资产不应进入发布包）
         copyPublicDir: false,
         lib: {
-            entry: path.resolve(__dirname, 'src/libs/index.ts'),
+            entry: {
+                index: path.resolve(__dirname, 'src/libs/index.ts'),
+                core: path.resolve(__dirname, 'src/libs/core/index.ts'),
+                react: path.resolve(__dirname, 'src/libs/react/index.ts'),
+                'plugins/capture': path.resolve(__dirname, 'src/libs/plugins/capture/index.tsx'),
+                'plugins/danmu': path.resolve(__dirname, 'src/libs/plugins/danmu/index.tsx'),
+                'plugins/dash': path.resolve(__dirname, 'src/libs/plugins/dash/index.tsx'),
+                'plugins/hls': path.resolve(__dirname, 'src/libs/plugins/hls/index.tsx'),
+                'plugins/subtitle': path.resolve(__dirname, 'src/libs/plugins/subtitle/index.tsx')
+            },
             name: 'CluoubVideo',
             formats: ['es', 'cjs'],
-            fileName: (format) => `index.${format === 'es' ? 'mjs' : 'cjs'}`
+            fileName: (format, entryName) => `${entryName}.${format === 'es' ? 'mjs' : 'cjs'}`,
+            cssFileName: 'cluoub-video'
         },
         rolldownOptions: {
             external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react', 'dashjs', 'hls.js', 'libjass'],

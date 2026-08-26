@@ -1,175 +1,245 @@
-import type { CluoubVideoProps, PlaylistItem } from '../types'
-import type { createPlayerStore } from './store.ts'
+import type { StoreApi } from 'zustand/vanilla'
 
-export type EventHandler = (...args: any[]) => void
+export const VideoType = {
+    MP4: 'mp4',
+    HLS: 'hls',
+    DASH: 'dash'
+} as const
+
+export type VideoType = (typeof VideoType)[keyof typeof VideoType]
+
+export interface VideoSource {
+    src: string
+    type?: VideoType
+    /** 展示给用户的画质名称，例如 1080P；允许业务自定义档位。 */
+    quality?: string
+}
+
+export type PlayerSource = string | VideoSource | VideoSource[]
+
+export interface PlaylistItem {
+    source: PlayerSource
+    poster?: string
+    title?: string
+}
+
+export interface PersistConfig {
+    progress?: boolean
+    volume?: boolean
+    playbackRate?: boolean
+}
+
+export interface QualityChangeInfo {
+    mode: string
+    activeKey: string
+    label: string
+}
+
+export type PluginErrorPhase = 'config' | 'setup' | 'update' | 'runtime' | 'render' | 'cleanup'
+
+export class PluginError extends Error {
+    readonly pluginId: string
+    readonly phase: PluginErrorPhase
+    readonly cause: unknown
+    readonly recoverable: boolean
+
+    constructor(pluginId: string, phase: PluginErrorPhase, cause: unknown, recoverable = true) {
+        super(cause instanceof Error ? cause.message : String(cause))
+        this.name = 'PluginError'
+        this.pluginId = pluginId
+        this.phase = phase
+        this.cause = cause
+        this.recoverable = recoverable
+    }
+}
+
+export interface PlayerOptions {
+    source: PlayerSource
+    playlist?: PlaylistItem[]
+    autoNext?: boolean
+    poster?: string
+    autoPlay?: boolean
+    loop?: boolean
+    muted?: boolean
+    persist?: boolean | PersistConfig
+    plugins?: PlayerPluginEntry[]
+    onReady?: (player: PlayerInstance) => void
+    onPlay?: () => void
+    onPause?: () => void
+    onEnded?: () => void
+    onError?: (error: unknown) => void
+    onPluginError?: (error: PluginError) => void
+    onQualityChange?: (info: QualityChangeInfo) => void
+    onPlaylistChange?: (info: { index: number; item: PlaylistItem }) => void
+}
+
+export type PlayerSlotName =
+    | 'overlay'
+    | 'controls.progress'
+    | 'controls.leading'
+    | 'controls.trailing'
+    | 'controls.settings'
+    | 'below'
+
+export interface SlotContribution<TContent = unknown> {
+    id: string
+    slot: PlayerSlotName
+    content: TContent
+    order?: number
+    zIndex?: number
+    controlId?: string
+    pluginId?: string
+}
+
+export interface SlotRegistry<TContent = unknown> {
+    register: (contribution: SlotContribution<TContent>) => () => void
+    unregister: (id: string) => void
+    getSnapshot: () => readonly SlotContribution<TContent>[]
+    subscribe: (listener: () => void) => () => void
+    clear: () => void
+}
+
+export interface PluginConfigSchema<TConfig> {
+    parse: (input: unknown) => TConfig
+}
+
+export interface PluginSetupResult<TApi = unknown> {
+    api?: TApi
+    cleanup?: () => void
+}
+
+export interface PluginSlotScope {
+    register: (contribution: Omit<SlotContribution, 'pluginId'>) => () => void
+}
+
+export interface PluginContext {
+    player: PlayerInstance
+    signal: AbortSignal
+    slots: PluginSlotScope
+    on: <TArgs extends unknown[]>(event: string, handler: (...args: TArgs) => void) => () => void
+    registerCaptureLayer: (id: string, getCanvas: () => HTMLCanvasElement | null) => () => void
+    reportError: (cause: unknown, phase?: PluginErrorPhase, recoverable?: boolean) => void
+}
+
+export interface PlayerPlugin<TConfig = undefined, TApi = undefined> {
+    readonly kind: 'cluoub-player-plugin'
+    readonly id: string
+    readonly schema?: PluginConfigSchema<TConfig>
+    readonly setup: (
+        context: PluginContext,
+        config: TConfig
+    ) => void | (() => void) | PluginSetupResult<TApi> | Promise<void | (() => void) | PluginSetupResult<TApi>>
+    configure: (config: TConfig) => ConfiguredPlayerPlugin<TConfig, TApi>
+}
+
+export interface ConfiguredPlayerPlugin<TConfig = unknown, TApi = unknown> {
+    readonly kind: 'cluoub-configured-plugin'
+    readonly plugin: PlayerPlugin<TConfig, TApi>
+    readonly config: TConfig
+}
+
+/** @deprecated 使用 definePlugin 创建具名、可校验的插件。 */
+export type LegacyPlayerPlugin<TConfig = unknown> = (player: PlayerInstance, config?: TConfig) => void | (() => void)
+
+/** @deprecated 使用 PlayerPlugin。 */
+export type IPlayerPlugin<TConfig = unknown> = LegacyPlayerPlugin<TConfig>
+
+export interface PlayerPluginDefinition {
+    readonly kind: 'cluoub-player-plugin'
+    readonly id: string
+}
+
+interface ErasedConfiguredPlayerPlugin {
+    readonly kind: 'cluoub-configured-plugin'
+    readonly plugin: PlayerPluginDefinition
+    readonly config: unknown
+}
+
+export type PlayerPluginEntry = PlayerPluginDefinition | ErasedConfiguredPlayerPlugin | LegacyPlayerPlugin<never>
+
+export interface PluginManager {
+    set: (entries?: readonly PlayerPluginEntry[]) => void
+    get: <TConfig, TApi>(plugin: PlayerPlugin<TConfig, TApi>) => TApi | undefined
+    has: (pluginOrId: PlayerPluginDefinition | string) => boolean
+    subscribe: (listener: () => void) => () => void
+    destroy: () => void
+}
 
 export interface RegisterUIOptions {
     zIndex?: number
     position?: 'left' | 'right'
     order?: number
-    /** 关联的内置控件配置键，核心控件栏据此按 controls 配置显示/隐藏 */
     controlKey?: 'quality' | 'danmu'
+}
+
+/** @deprecated 仅用于 0.3 beta 的 player.danmu 兼容别名；新代码使用对应插件导出的 DanmuAPI。 */
+export interface LegacyDanmuAPI {
+    send: (text: string, options?: { mode?: 'scroll' | 'top' | 'bottom'; color?: string }) => void
+    setVisible: (visible: boolean) => void
+    toggleVisible: () => void
+    setMode: (mode: 'scroll' | 'top' | 'bottom') => void
+    setColor: (color: string) => void
 }
 
 export interface PlayerInstance {
     video: HTMLVideoElement
-    store: ReturnType<typeof createPlayerStore>
-    options: CluoubVideoProps
-    // control
-    setShowControls: (show: boolean) => void
-
-    // API
+    store: StoreApi<PlayerState>
+    readonly options: PlayerOptions
+    slots: SlotRegistry
+    plugins: PluginManager
     play: () => Promise<void>
     pause: () => void
     togglePlay: () => void
     seek: (time: number) => void
-    setVolume: (vol: number) => void
+    setVolume: (volume: number) => void
     toggleMute: () => void
     toggleFullscreen: () => void
     setPlaybackRate: (rate: number) => void
     togglePip: () => Promise<void>
     toggleLoop: () => void
-    /** 设置屏幕模式（normal/wide/small） */
-    setScreenMode: (mode: 'normal' | 'wide' | 'small') => void
-    /** 屏幕模式单按钮循环切换：normal → wide → small → normal */
-    toggleScreenMode: () => void
-    /** 切换到播放列表指定索引 */
     playIndex: (index: number) => void
-    /** 播放下一集（无下一集时无操作） */
     next: () => void
-    /** 播放上一集（无上一集时无操作） */
     prev: () => void
-    /** 截取当前帧，返回图片 dataURL（默认 image/png） */
+    selectQuality: (key: string) => void
     captureFrame: (options?: { type?: string; quality?: number }) => string | null
-    /** 在指定时长内按帧率截取多帧（用于生成 GIF，编码由调用方完成） */
     captureFrames: (options?: { count?: number; intervalMs?: number; type?: string }) => Promise<string[]>
-    /** 合成截图：视频帧 + 弹幕 canvas + 字幕文本一起导出（异步，跨域污染时返回 null） */
     captureComposite: (options?: { type?: string; quality?: number }) => Promise<string | null>
-    /** 响应式更新：切换源（源不变时无操作） */
-    updateSource: (source: CluoubVideoProps['source']) => void
-    /** 响应式更新：更新播放列表（当前源与索引条目不一致才重载） */
+    updateSource: (source: PlayerSource) => void
     updatePlaylist: (playlist: PlaylistItem[]) => void
-    /** 响应式更新：应用标量配置（autoPlay/loop/muted/poster，undefined 保持原值） */
-    applyOptions: (options: Pick<CluoubVideoProps, 'autoPlay' | 'loop' | 'muted' | 'poster'>) => void
+    updateOptions: (options: Partial<Omit<PlayerOptions, 'source' | 'playlist' | 'plugins'>>) => void
     mount: (container: HTMLElement) => void
     destroy: () => void
-
-    // 插件系统
-    registerUI: (id: string, component: React.ReactNode, type: 'layer' | 'control', opts?: RegisterUIOptions) => void
+    registerSlot: (contribution: SlotContribution) => () => void
+    /** @deprecated 使用 registerSlot。 */
+    registerUI: (id: string, component: unknown, type: 'layer' | 'control', options?: RegisterUIOptions) => void
+    /** @deprecated 保存兼容性；新插件使用 registerSlot 返回的 disposer。 */
     unregisterUI: (id: string) => void
-    on: (event: string, fn: EventHandler) => void // 简单的 EventBus 用于插件通信
-    off: (event: string, fn: EventHandler) => void
-    emit: (event: string, ...args: any[]) => void
-
-    // 捕获层注册表：插件（如弹幕）把渲染在 <canvas> 上的图层注册进来，
-    // 合成截图时按各 canvas 的容器内坐标逐层叠加（对齐屏幕布局，无 DOM 序列化）
+    on: <TArgs extends unknown[]>(event: string, handler: (...args: TArgs) => void) => void
+    off: <TArgs extends unknown[]>(event: string, handler: (...args: TArgs) => void) => void
+    emit: <TArgs extends unknown[]>(event: string, ...args: TArgs) => void
     captureLayers: { id: string; getCanvas: () => HTMLCanvasElement | null }[]
     registerCaptureLayer: (id: string, getCanvas: () => HTMLCanvasElement | null) => void
     unregisterCaptureLayer: (id: string) => void
-
-    // 弹幕外部控制 API：由弹幕插件挂载（未安装弹幕插件时为 undefined）。
-    // 供接入自定义输入框/按钮，或程序化发送弹幕
-    danmu?: DanmuAPI
-}
-
-/** 发送弹幕的可选参数 */
-export interface SendDanmuOptions {
-    /** 弹幕模式，缺省用当前 store.danmuMode */
-    mode?: 'scroll' | 'top' | 'bottom'
-    /** 弹幕颜色，缺省用当前 store.danmuColor */
-    color?: string
-}
-
-/**
- * 弹幕外部控制 API（B 站式弹幕操作区/自定义控件的接入点）。
- * 由 danmuPlugin 安装时挂到 player.danmu，插件卸载时置空。
- */
-export interface DanmuAPI {
-    /** 发送一条弹幕（立即进入舞台；弹幕隐藏时为 no-op） */
-    send: (text: string, options?: SendDanmuOptions) => void
-    /** 显示/隐藏弹幕 */
-    setVisible: (visible: boolean) => void
-    /** 切换弹幕显示 */
-    toggleVisible: () => void
-    /** 设置默认发送模式（滚动/顶部/底部） */
-    setMode: (mode: 'scroll' | 'top' | 'bottom') => void
-    /** 设置默认发送颜色 */
-    setColor: (color: string) => void
-}
-
-export type IPlayerPlugin<T = any> = (player: PlayerInstance, config?: T) => void | (() => void)
-
-export interface SubtitleStyles {
-    fontSize: number
-    color: string
-    isOutline: boolean
-    isBold: boolean
-    opacity: number
-}
-
-/** 字幕样式默认值（唯一事实来源） */
-export const DEFAULT_SUBTITLE_STYLES: SubtitleStyles = {
-    fontSize: 20,
-    color: '#ffffff',
-    isOutline: true,
-    isBold: false,
-    opacity: 1
+    /** @deprecated 仅供 0.1 兼容入口使用。 */
+    danmu?: LegacyDanmuAPI
 }
 
 export interface PlayerState {
-    // 基础状态
     isPlaying: boolean
     isMuted: boolean
     volume: number
     currentTime: number
     duration: number
     buffered: number
-    // 多段缓冲区间（百分比 0-100），用于进度条分段渲染
     bufferedRanges: { start: number; end: number }[]
-    isWaiting: boolean // 缓冲中
+    isWaiting: boolean
     playbackRate: number
     isLoop: boolean
-
-    // 画质相关
     quality: string
-    // ABR 自动模式下实际生效的档位 key（手动模式与 quality 一致）
     activeQuality: string
     qualities: { key: string; label: string }[]
-
-    // 字幕
-    subtitleTrack: number
-    isSubtitleVisible: boolean
-    subtitleStyles?: SubtitleStyles
-    /** 字幕时间偏移（秒，正数延迟字幕显示，负数提前），用于音画同步微调 */
-    subtitleOffset: number
-    /** 当前应显示的字幕文本（VTT/SRT 由 SubtitleLayer 写入），供合成截图在 canvas 上绘制 */
-    activeSubtitleText: string
-
-    // UI 状态
     isFullscreen: boolean
     isPip: boolean
-    isControlsVisible: boolean
-    isDanmuVisible: boolean
-    /** 发送弹幕的默认模式（滚动/顶部/底部） */
-    danmuMode: 'scroll' | 'top' | 'bottom'
-    /** 发送弹幕的默认颜色 */
-    danmuColor: string
-    /** 屏幕模式：normal 常规 / wide 宽屏（21:9）/ small 小窗 */
-    screenMode: 'normal' | 'wide' | 'small'
-
-    // 播放列表
     playlistIndex: number
     playlistLength: number
-
-    // 插件注册表 (UI Slots)
-    uiRegistry: {
-        layers: { id: string; component: React.ReactNode; zIndex?: number }[]
-        controls: {
-            id: string
-            position?: 'left' | 'right'
-            order?: number
-            controlKey?: 'quality' | 'danmu'
-            component: React.ReactNode
-        }[]
-    }
 }

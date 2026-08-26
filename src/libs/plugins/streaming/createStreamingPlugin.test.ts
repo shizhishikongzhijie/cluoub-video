@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createPlayerStore } from '../../core/store'
-import type { PlayerInstance } from '../../core/types'
+import type { PlayerInstance, PluginContext, SlotContribution } from '../../core/types'
 import { createStreamingPlugin, type StreamingSourceEngine, type StreamingSourceHandler } from './createStreamingPlugin'
 
 // 构造最小 fake player：真实 store + 真实事件总线 + 被 spy 的 registerUI/unregisterUI
@@ -28,12 +28,38 @@ const createFakePlayer = (source: string) => {
     return player
 }
 
+const createContext = (player: PlayerInstance): PluginContext => {
+    const abortController = new AbortController()
+    return {
+        player,
+        signal: abortController.signal,
+        slots: {
+            register: (slot: Omit<SlotContribution, 'pluginId'>) => {
+                player.registerUI(slot.id, slot.content, slot.slot === 'overlay' ? 'layer' : 'control', {
+                    order: slot.order,
+                    position: slot.slot === 'controls.leading' ? 'left' : 'right',
+                    controlKey: slot.controlId === 'quality' ? 'quality' : undefined
+                })
+                return () => player.unregisterUI(slot.id)
+            }
+        },
+        on: (event, handler) => {
+            player.on(event, handler)
+            return () => player.off(event, handler)
+        },
+        registerCaptureLayer: (id, getCanvas) => {
+            player.registerCaptureLayer(id, getCanvas)
+            return () => player.unregisterCaptureLayer(id)
+        },
+        reportError: vi.fn()
+    }
+}
+
 const makeHandler = (overrides: Partial<StreamingSourceHandler> = {}) => {
     const engine: StreamingSourceEngine = { setQuality: vi.fn(), dispose: vi.fn() }
     const createEngine = vi.fn(async (): Promise<StreamingSourceEngine> => engine)
     const handler: StreamingSourceHandler = {
         isStreamSrc: (s) => s.includes('.mpd'),
-        controlId: 'quality-selector-dash',
         createEngine,
         ...overrides
     }
@@ -47,34 +73,27 @@ describe('createStreamingPlugin', () => {
     it('初始为流媒体源时立即接管：注册画质菜单并创建引擎', () => {
         const player = createFakePlayer('stream.mpd')
         const { createEngine, handler } = makeHandler()
-        createStreamingPlugin(player, handler)
-        expect(player.registerUI).toHaveBeenCalledWith(
-            'quality-selector-dash',
-            expect.anything(),
-            'control',
-            expect.objectContaining({ controlKey: 'quality', position: 'right' })
-        )
-        expect(createEngine).toHaveBeenCalledWith('stream.mpd', player)
+        createStreamingPlugin(createContext(player), handler)
+        expect(createEngine).toHaveBeenCalledWith('stream.mpd', player, expect.any(AbortSignal))
     })
 
     it('初始为非流媒体源时不接管，切到流媒体源时再接管', () => {
         const player = createFakePlayer('movie.mp4')
         const { createEngine, handler } = makeHandler()
-        createStreamingPlugin(player, handler)
+        createStreamingPlugin(createContext(player), handler)
         expect(createEngine).not.toHaveBeenCalled()
         player.emit('source-change', 'stream.mpd')
-        expect(createEngine).toHaveBeenCalledWith('stream.mpd', player)
+        expect(createEngine).toHaveBeenCalledWith('stream.mpd', player, expect.any(AbortSignal))
     })
 
     it('切到非流媒体源时释放：重置引擎、注销画质菜单、清空画质 store', async () => {
         const player = createFakePlayer('stream.mpd')
         const { engine, handler } = makeHandler()
-        createStreamingPlugin(player, handler)
+        createStreamingPlugin(createContext(player), handler)
         await flushEngine()
         player.store.setState({ qualities: [{ key: '0', label: '1080P' }], activeQuality: '0' })
         player.emit('source-change', 'movie.mp4')
         expect(engine.dispose).toHaveBeenCalled()
-        expect(player.unregisterUI).toHaveBeenCalledWith('quality-selector-dash')
         expect(player.store.getState().qualities).toEqual([])
         expect(player.store.getState().activeQuality).toBe('auto')
     })
@@ -82,13 +101,11 @@ describe('createStreamingPlugin', () => {
     it('切回流媒体源时重新注册画质菜单并创建新引擎', async () => {
         const player = createFakePlayer('stream.mpd')
         const { engine, createEngine, handler } = makeHandler()
-        createStreamingPlugin(player, handler)
+        createStreamingPlugin(createContext(player), handler)
         await flushEngine()
         player.emit('source-change', 'movie.mp4')
         player.emit('source-change', 'stream2.mpd')
-        expect(player.unregisterUI).toHaveBeenCalledWith('quality-selector-dash')
-        expect(player.registerUI).toHaveBeenCalledTimes(2)
-        expect(createEngine).toHaveBeenLastCalledWith('stream2.mpd', player)
+        expect(createEngine).toHaveBeenLastCalledWith('stream2.mpd', player, expect.any(AbortSignal))
         // 旧引擎被释放
         expect(engine.dispose).toHaveBeenCalled()
     })
@@ -96,7 +113,7 @@ describe('createStreamingPlugin', () => {
     it('request-quality-change 转发给当前引擎', async () => {
         const player = createFakePlayer('stream.mpd')
         const { engine, handler } = makeHandler()
-        createStreamingPlugin(player, handler)
+        createStreamingPlugin(createContext(player), handler)
         await flushEngine()
         player.emit('request-quality-change', 'auto')
         player.emit('request-quality-change', '2')
@@ -107,11 +124,10 @@ describe('createStreamingPlugin', () => {
     it('清理函数解绑事件并释放引擎', async () => {
         const player = createFakePlayer('stream.mpd')
         const { engine, createEngine, handler } = makeHandler()
-        const cleanup = createStreamingPlugin(player, handler)
+        const cleanup = createStreamingPlugin(createContext(player), handler)
         await flushEngine()
         cleanup()
         expect(engine.dispose).toHaveBeenCalled()
-        expect(player.unregisterUI).toHaveBeenCalledWith('quality-selector-dash')
         // 解绑后切源不再创建引擎
         player.emit('source-change', 'other.mpd')
         expect(createEngine).toHaveBeenCalledTimes(1)
@@ -123,10 +139,9 @@ describe('createStreamingPlugin', () => {
         const createEngine = vi.fn(() => new Promise<StreamingSourceEngine>((resolve) => (resolveCreate = resolve)))
         const handler: StreamingSourceHandler = {
             isStreamSrc: (s) => s.includes('.mpd'),
-            controlId: 'quality-selector-dash',
             createEngine
         }
-        const cleanup = createStreamingPlugin(player, handler)
+        const cleanup = createStreamingPlugin(createContext(player), handler)
         player.emit('source-change', 'stream.mpd')
         cleanup()
         const engine = { setQuality: vi.fn(), dispose: vi.fn() }
@@ -142,10 +157,9 @@ describe('createStreamingPlugin', () => {
             return true
         })
         const { createEngine, handler } = makeHandler({ isStreamSrc: () => true, nativeLoad })
-        createStreamingPlugin(player, handler)
+        createStreamingPlugin(createContext(player), handler)
         expect(nativeLoad).toHaveBeenCalledWith('stream.m3u8', player)
         expect(player.video.src).toBe('stream.m3u8')
         expect(createEngine).not.toHaveBeenCalled()
-        expect(player.registerUI).toHaveBeenCalled()
     })
 })

@@ -1,14 +1,14 @@
 import { Captions } from 'lucide-react'
 import { useState } from 'react'
 
-import type { PlayerInstance } from '../../core/types'
 import controlStyles from '../../styles/controls.module.scss'
 import type { SubtitleTrack } from './index'
+import type { SubtitleAPI } from './state'
 import styles from './styles.module.scss'
 import { SubtitleMenu } from './SubtitleMenu'
 
 // 按钮组件 (把 Popover 逻辑放在这里)
-export const SubtitleMenuBtn = ({ player, tracks }: { player: PlayerInstance; tracks: SubtitleTrack[] }) => {
+export const SubtitleMenuBtn = ({ tracks, api }: { tracks: SubtitleTrack[]; api: SubtitleAPI }) => {
     const [isOpen, setIsOpen] = useState(false)
 
     return (
@@ -22,7 +22,7 @@ export const SubtitleMenuBtn = ({ player, tracks }: { player: PlayerInstance; tr
 
             {isOpen && (
                 <div className={styles.subtitlePopover}>
-                    <SubtitleMenu player={player} tracks={tracks} />
+                    <SubtitleMenu api={api} tracks={tracks} />
                 </div>
             )}
         </div>

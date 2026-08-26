@@ -1,100 +1,177 @@
-import type { CluoubVideoProps } from '../types'
 import { captureContainerComposite } from '../utils/captureContainer'
-import { isStreamingSource, resolveSource } from '../utils/source'
-import { createPersistence, resolvePersistConfig } from './persistence'
+import { isStreamingSource, resolveSource, resolveSources } from '../utils/source'
+import { createPersistence } from './persistence'
+import { createPluginManager } from './plugin'
+import { createSlotRegistry } from './slots'
 import { createPlayerStore } from './store'
-import type { EventHandler, PlayerInstance } from './types'
+import type {
+    PlayerInstance,
+    PlayerOptions,
+    PlayerPluginEntry,
+    PlayerSource,
+    PluginManager,
+    SlotContribution,
+    VideoSource
+} from './types'
 
-export function createPlayer(options: CluoubVideoProps): PlayerInstance {
+type InternalEventHandler = (...args: unknown[]) => void
+
+const qualityLabel = (source: VideoSource, index: number) => source.quality || `画质 ${index + 1}`
+
+export function createPlayer(options: PlayerOptions): PlayerInstance {
+    let currentOptions: PlayerOptions = { ...options, playlist: options.playlist ?? [], plugins: options.plugins ?? [] }
     const store = createPlayerStore()
     const video = document.createElement('video')
-    const listeners = new Map<string, Set<EventHandler>>()
-    // 内部事件分发（供 loadItem 等内部逻辑与 instance.emit 复用）
-    const emitEvent = (evt: string, ...args: any[]) => listeners.get(evt)?.forEach((fn) => fn(...args))
-
-    // 挂载容器引用，用于全屏（对容器而非 video 全屏，保留自定义 UI）
-    let containerEl: HTMLElement | null = null
-
-    // 捕获层注册表：插件（如弹幕）注册的 canvas，合成截图时按容器坐标逐层叠加
-    const captureLayers: { id: string; getCanvas: () => HTMLCanvasElement | null }[] = []
-
-    // 记录绑定到 video 的原生监听器，便于 destroy 时统一解绑
+    const slots = createSlotRegistry()
+    const listeners = new Map<string, Set<InternalEventHandler>>()
     const videoListeners: { type: string; handler: EventListener }[] = []
+    const captureLayers: { id: string; getCanvas: () => HTMLCanvasElement | null }[] = []
+    let containerElement: HTMLElement | null = null
+    let destroyed = false
+    let playlist = currentOptions.playlist ?? []
+    let currentSourceInput: PlayerSource = currentOptions.source
+    let staticSources = resolveSources(currentSourceInput)
+    let currentSourceIndex = 0
+    let currentSrc = resolveSource(currentSourceInput)
+    let sourceLoadGeneration = 0
+    let removePendingResume: (() => void) | undefined
+    let readyEmitted = false
+
+    const emitEvent = <TArgs extends unknown[]>(event: string, ...args: TArgs) => {
+        listeners.get(event)?.forEach((handler) => handler(...args))
+    }
+
     const addVideoListener = (type: string, handler: EventListener) => {
         video.addEventListener(type, handler)
         videoListeners.push({ type, handler })
     }
 
-    // --- 应用基础配置 ---
-    video.src = resolveSource(options.source)
-    video.autoplay = options.autoPlay ?? false
-    video.loop = options.loop ?? false
-    video.muted = options.muted ?? false
+    video.autoplay = currentOptions.autoPlay ?? false
+    video.loop = currentOptions.loop ?? false
+    video.muted = currentOptions.muted ?? false
     video.playsInline = true
-    if (options.poster) video.poster = options.poster
-    // 同步初始静音/循环状态到 store
-    store.setState({ isMuted: video.muted, isLoop: video.loop })
+    if (currentOptions.poster) video.poster = currentOptions.poster
+    store.setState({ isMuted: video.muted, isLoop: video.loop, playlistLength: playlist.length })
 
-    // 播放列表初始化
-    let playlist = options.playlist ?? []
-    store.setState({ playlistLength: playlist.length })
+    const persistence = createPersistence(video, store, currentOptions.persist, () => currentSrc)
 
-    // --- 本地持久化配置 ---
-    // 当前生效的源（随播放列表切换更新），作为持久化 key
-    let currentSrc = resolveSource(options.source)
-    const persistence = createPersistence(video, store, resolvePersistConfig(options.persist), () => currentSrc)
-
-    // 切换源（供 loadItem / updateSource / updatePlaylist 复用）：重置播放状态并处理流媒体接管
-    const loadSource = (src: string, index: number) => {
-        currentSrc = src
-        store.setState({
-            playlistIndex: index,
-            currentTime: 0,
-            buffered: 0,
-            bufferedRanges: [],
-            qualities: [],
-            activeQuality: 'auto'
-        })
-
-        // 流媒体源（m3u8/mpd）交给对应插件重新加载；普通源直接换 video.src
-        if (isStreamingSource(src)) {
-            emitEvent('source-change', src)
-        } else {
-            video.src = src
-            video.load()
-        }
+    const reportError = (error: unknown) => {
+        currentOptions.onError?.(error)
+        emitEvent('error', error)
     }
 
-    // 加载播放列表中指定索引的条目（切换源并播放）
+    const syncStaticQualities = (source: PlayerSource) => {
+        staticSources = resolveSources(source)
+        currentSourceIndex = Math.max(
+            0,
+            staticSources.findIndex((candidate) => candidate.src === currentSrc)
+        )
+        if (staticSources.length <= 1) {
+            if (!isStreamingSource(currentSrc)) {
+                store.setState({ qualities: [], quality: 'auto', activeQuality: 'auto' })
+            }
+            return
+        }
+        const qualities = staticSources.map((candidate, index) => ({
+            key: String(index),
+            label: qualityLabel(candidate, index)
+        }))
+        const key = String(currentSourceIndex)
+        store.setState({ qualities, quality: key, activeQuality: key })
+    }
+
+    const loadResolvedSource = (
+        source: string,
+        playlistIndex: number,
+        behavior: { resetTime: boolean; resume: boolean; restorePersistence: boolean; preserveSettings?: boolean }
+    ) => {
+        const generation = ++sourceLoadGeneration
+        removePendingResume?.()
+        removePendingResume = undefined
+        const resumeAt = behavior.resetTime ? 0 : video.currentTime
+        const previousVolume = video.volume
+        const previousMuted = video.muted
+        const previousPlaybackRate = video.playbackRate
+        currentSrc = source
+        store.setState({
+            playlistIndex,
+            ...(behavior.resetTime ? { currentTime: 0 } : {}),
+            buffered: 0,
+            bufferedRanges: [],
+            isWaiting: true
+        })
+
+        const onMetadata = () => {
+            if (generation !== sourceLoadGeneration) return
+            if (resumeAt > 0 && resumeAt < video.duration) {
+                video.currentTime = resumeAt
+                store.setState({ currentTime: resumeAt })
+            }
+            if (behavior.preserveSettings) {
+                video.volume = previousVolume
+                video.muted = previousMuted
+                video.playbackRate = previousPlaybackRate
+                store.setState({
+                    volume: previousVolume,
+                    isMuted: previousMuted,
+                    playbackRate: previousPlaybackRate
+                })
+            }
+            if (behavior.resume) void instance.play()
+            removePendingResume = undefined
+        }
+        video.addEventListener('loadedmetadata', onMetadata, { once: true })
+        removePendingResume = () => video.removeEventListener('loadedmetadata', onMetadata)
+
+        if (isStreamingSource(source)) {
+            video.pause()
+            video.removeAttribute('src')
+            if (behavior.restorePersistence) persistence.restore()
+            emitEvent('source-change', source)
+            return
+        }
+
+        video.src = source
+        if (behavior.restorePersistence) persistence.restore()
+        video.load()
+    }
+
+    const loadSourceInput = (
+        source: PlayerSource,
+        playlistIndex: number,
+        behavior: { resetTime: boolean; resume: boolean; restorePersistence: boolean }
+    ) => {
+        currentSourceInput = source
+        currentSrc = resolveSource(source)
+        currentSourceIndex = 0
+        syncStaticQualities(source)
+        loadResolvedSource(currentSrc, playlistIndex, behavior)
+    }
+
     const loadItem = (index: number) => {
         const item = playlist[index]
         if (!item) return
-        if (item.poster) video.poster = item.poster
-        loadSource(resolveSource(item.source), index)
-        options.onPlaylistChange?.({ index, item })
-        // 切集后自动播放，避免黑屏停在首帧
-        video.play().catch(() => {})
+        if (item.poster !== undefined) video.poster = item.poster
+        loadSourceInput(item.source, index, { resetTime: true, resume: true, restorePersistence: true })
+        currentOptions.onPlaylistChange?.({ index, item })
     }
 
-    // --- 内部事件绑定 ---
     addVideoListener('play', () => {
         store.setState({ isPlaying: true })
-        options.onPlay?.()
+        currentOptions.onPlay?.()
     })
     addVideoListener('pause', () => {
         store.setState({ isPlaying: false })
-        options.onPause?.()
+        currentOptions.onPause?.()
     })
     addVideoListener('ended', () => {
-        options.onEnded?.()
-        // 连播：存在下一集时自动切换
-        if (options.autoNext) {
-            const { playlistIndex } = store.getState()
-            if (playlistIndex < playlist.length - 1) loadItem(playlistIndex + 1)
-        }
+        currentOptions.onEnded?.()
+        if (!currentOptions.autoNext) return
+        const { playlistIndex } = store.getState()
+        if (playlistIndex < playlist.length - 1) loadItem(playlistIndex + 1)
     })
-    addVideoListener('error', () => options.onError?.(video.error))
-    // timeupdate 浏览器以 4~66Hz 触发，节流到 ~250ms 一次，降低 store 写入与 UI 重渲染频率
+    addVideoListener('error', () => reportError(video.error))
+
     let lastTimeUpdate = 0
     addVideoListener('timeupdate', () => {
         const now = performance.now()
@@ -104,299 +181,295 @@ export function createPlayer(options: CluoubVideoProps): PlayerInstance {
         persistence.onTimeUpdate(now, video.currentTime)
     })
     addVideoListener('durationchange', () => store.setState({ duration: video.duration }))
-    // 缓冲态：等待数据时显示 loading，可播放/播放中时关闭
     addVideoListener('waiting', () => store.setState({ isWaiting: true }))
     addVideoListener('canplay', () => store.setState({ isWaiting: false }))
     addVideoListener('playing', () => store.setState({ isWaiting: false }))
     addVideoListener('progress', () => {
         const { buffered, duration } = video
         if (!buffered.length || !duration) return
-        // 收集全部缓冲区间用于分段渲染
         const ranges: { start: number; end: number }[] = []
-        for (let i = 0; i < buffered.length; i++) {
+        for (let index = 0; index < buffered.length; index++) {
             ranges.push({
-                start: (buffered.start(i) / duration) * 100,
-                end: (buffered.end(i) / duration) * 100
+                start: (buffered.start(index) / duration) * 100,
+                end: (buffered.end(index) / duration) * 100
             })
         }
-        // buffered 仍保留为「最后一段末尾」以兼容旧用法
-        const lastEnd = buffered.end(buffered.length - 1)
-        store.setState({ buffered: (lastEnd / duration) * 100, bufferedRanges: ranges })
+        store.setState({ buffered: (buffered.end(buffered.length - 1) / duration) * 100, bufferedRanges: ranges })
     })
-
-    // 全屏状态变化同步（用户按 ESC 退出时也能同步）
-    const onFullscreenChange = () => {
-        store.setState({ isFullscreen: document.fullscreenElement === containerEl })
-    }
-    document.addEventListener('fullscreenchange', onFullscreenChange)
-
-    // 倍速变化同步
     addVideoListener('ratechange', () => {
         store.setState({ playbackRate: video.playbackRate })
         persistence.onRateChange(video.playbackRate)
     })
-    // 音量变化持久化（含静音切换）
     addVideoListener('volumechange', () => {
+        store.setState({ volume: video.volume, isMuted: video.muted })
         persistence.onVolumeChange(video.volume, video.muted)
     })
-    // 画中画进入/退出同步
     addVideoListener('enterpictureinpicture', () => store.setState({ isPip: true }))
     addVideoListener('leavepictureinpicture', () => store.setState({ isPip: false }))
 
-    // --- 方法实现 ---
+    const onFullscreenChange = () => {
+        store.setState({ isFullscreen: document.fullscreenElement === containerElement })
+    }
+    document.addEventListener('fullscreenchange', onFullscreenChange)
+
+    const pluginManagerRef: { current?: PluginManager } = {}
     const instance: PlayerInstance = {
         video,
         store,
-        options,
-        setShowControls: (show) => {
-            store.setState({ isControlsVisible: show })
+        get options() {
+            return currentOptions
         },
-
+        slots,
+        get plugins() {
+            return pluginManagerRef.current!
+        },
         play: async () => {
             try {
                 await video.play()
-            } catch (e) {
-                console.error('Play failed', e)
+            } catch (error) {
+                reportError(error)
             }
         },
-
         pause: () => video.pause(),
-
         togglePlay: () => {
-            if (video.paused) {
-                instance.play()
-            } else {
-                instance.pause()
-            }
+            if (video.paused) void instance.play()
+            else instance.pause()
         },
-
         seek: (time) => {
-            video.currentTime = time
-            store.setState({ currentTime: time }) // 立即乐观更新
+            const bounded = Number.isFinite(video.duration)
+                ? Math.max(0, Math.min(time, video.duration))
+                : Math.max(0, time)
+            video.currentTime = bounded
+            store.setState({ currentTime: bounded })
         },
-
-        setVolume: (vol) => {
-            video.volume = vol
-            video.muted = vol === 0
-            store.setState({ volume: vol, isMuted: vol === 0 })
+        setVolume: (volume) => {
+            const bounded = Math.max(0, Math.min(volume, 1))
+            video.volume = bounded
+            video.muted = bounded === 0
+            store.setState({ volume: bounded, isMuted: video.muted })
         },
-
         toggleMute: () => {
             video.muted = !video.muted
             store.setState({ isMuted: video.muted })
         },
-
         toggleFullscreen: () => {
-            // 对容器全屏，保留自定义控制栏 / 字幕 / 弹幕层
-            const target = containerEl ?? video
-            if (document.fullscreenElement) {
-                document.exitFullscreen()
-            } else {
-                target.requestFullscreen()
-            }
+            const target = containerElement ?? video
+            const request = document.fullscreenElement ? document.exitFullscreen() : target.requestFullscreen()
+            void request.catch(reportError)
         },
         setPlaybackRate: (rate) => {
             video.playbackRate = rate
             store.setState({ playbackRate: rate })
         },
-
         togglePip: async () => {
             try {
                 if (document.pictureInPictureElement) {
                     await document.exitPictureInPicture()
                     return
                 }
-                // 进入 PiP 要求元数据已加载，否则抛 InvalidStateError
                 if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
-                    await new Promise<void>((resolve) => {
+                    await new Promise<void>((resolve) =>
                         video.addEventListener('loadedmetadata', () => resolve(), { once: true })
-                    })
+                    )
                 }
                 await video.requestPictureInPicture()
-            } catch (e) {
-                console.error('PiP toggle failed', e)
+            } catch (error) {
+                reportError(error)
             }
         },
-
         toggleLoop: () => {
             video.loop = !video.loop
+            currentOptions = { ...currentOptions, loop: video.loop }
             store.setState({ isLoop: video.loop })
         },
-
-        setScreenMode: (mode) => {
-            store.setState({ screenMode: mode })
-        },
-
-        // 屏幕模式单按钮循环：normal → wide → small → normal
-        toggleScreenMode: () => {
-            const { screenMode } = store.getState()
-            const next = screenMode === 'normal' ? 'wide' : screenMode === 'wide' ? 'small' : 'normal'
-            store.setState({ screenMode: next })
-        },
-
         playIndex: (index) => {
-            if (index < 0 || index >= playlist.length) return
-            loadItem(index)
+            if (index >= 0 && index < playlist.length) loadItem(index)
         },
-
         next: () => {
-            const { playlistIndex } = store.getState()
-            if (playlistIndex < playlist.length - 1) loadItem(playlistIndex + 1)
+            const index = store.getState().playlistIndex
+            if (index < playlist.length - 1) loadItem(index + 1)
         },
-
         prev: () => {
-            const { playlistIndex } = store.getState()
-            if (playlistIndex > 0) loadItem(playlistIndex - 1)
+            const index = store.getState().playlistIndex
+            if (index > 0) loadItem(index - 1)
         },
-
-        captureFrame: (opts) => {
+        selectQuality: (key) => {
+            if (staticSources.length <= 1) {
+                store.setState({ quality: key })
+                emitEvent('request-quality-change', key)
+                return
+            }
+            const index = Number(key)
+            const source = staticSources[index]
+            if (!source || index === currentSourceIndex) return
+            const resume = !video.paused
+            currentSourceIndex = index
+            currentSrc = source.src
+            const label = qualityLabel(source, index)
+            store.setState({ quality: key, activeQuality: key })
+            loadResolvedSource(source.src, store.getState().playlistIndex, {
+                resetTime: false,
+                resume,
+                restorePersistence: false,
+                preserveSettings: true
+            })
+            currentOptions.onQualityChange?.({ mode: key, activeKey: key, label })
+        },
+        captureFrame: (captureOptions) => {
             if (!video.videoWidth || !video.videoHeight) return null
             const canvas = document.createElement('canvas')
             canvas.width = video.videoWidth
             canvas.height = video.videoHeight
-            const ctx = canvas.getContext('2d')
-            if (!ctx) return null
+            const context = canvas.getContext('2d')
+            if (!context) return null
             try {
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-                return canvas.toDataURL(opts?.type ?? 'image/png', opts?.quality)
-            } catch (e) {
-                // 跨域视频未设置 CORS 时 canvas 会被污染，toDataURL 抛 SecurityError
-                console.error('captureFrame failed (可能为跨域未授权)', e)
+                context.drawImage(video, 0, 0, canvas.width, canvas.height)
+                return canvas.toDataURL(captureOptions?.type ?? 'image/png', captureOptions?.quality)
+            } catch (error) {
+                reportError(error)
                 return null
             }
         },
-
-        captureFrames: async (opts) => {
-            const count = opts?.count ?? 10
-            const intervalMs = opts?.intervalMs ?? 200
-            const type = opts?.type ?? 'image/png'
+        captureFrames: async (captureOptions) => {
+            const count = captureOptions?.count ?? 10
+            const intervalMs = captureOptions?.intervalMs ?? 200
             const frames: string[] = []
-            for (let i = 0; i < count; i++) {
-                const frame = instance.captureFrame({ type })
+            for (let index = 0; index < count; index++) {
+                const frame = instance.captureFrame({ type: captureOptions?.type })
                 if (frame) frames.push(frame)
-                if (i < count - 1) await new Promise((r) => setTimeout(r, intervalMs))
+                if (index < count - 1) await new Promise((resolve) => setTimeout(resolve, intervalMs))
             }
             return frames
         },
-
-        // 合成截图：视频帧 + 弹幕 canvas + 字幕文本一起导出
-        captureComposite: async (opts) => {
-            if (!containerEl) return null
-            const canvas = captureContainerComposite(containerEl, video, {
-                captureLayers: [...captureLayers],
-                subtitle: {
-                    text: store.getState().activeSubtitleText,
-                    styles: store.getState().subtitleStyles
-                }
-            })
+        captureComposite: async (captureOptions) => {
+            if (!containerElement) return null
+            const canvas = captureContainerComposite(containerElement, video, { captureLayers: [...captureLayers] })
             if (!canvas) return null
             try {
-                return canvas.toDataURL(opts?.type ?? 'image/png', opts?.quality)
-            } catch (e) {
-                // 跨域视频未设置 CORS 时 canvas 会被污染，toDataURL 抛 SecurityError
-                console.error('captureComposite failed (可能为跨域未授权)', e)
+                return canvas.toDataURL(captureOptions?.type ?? 'image/png', captureOptions?.quality)
+            } catch (error) {
+                reportError(error)
                 return null
             }
         },
-
-        // 响应式更新：外部 source prop 变化时切换源（源不变则跳过，避免重复加载）
         updateSource: (source) => {
-            const nextSrc = resolveSource(source)
-            if (!nextSrc || nextSrc === currentSrc) return
-            loadSource(nextSrc, 0)
-            video.play().catch(() => {})
+            const next = resolveSource(source)
+            if (!next || source === currentSourceInput) return
+            const resume = !video.paused
+            currentOptions = { ...currentOptions, source }
+            if (next === currentSrc) {
+                currentSourceInput = source
+                syncStaticQualities(source)
+                return
+            }
+            loadSourceInput(source, 0, { resetTime: true, resume, restorePersistence: true })
         },
-
-        // 响应式更新：外部 playlist prop 变化时更新播放列表；
-        // 当前索引越界则收敛到边界，当前播放源与该索引条目不一致才重新加载
-        updatePlaylist: (next) => {
-            playlist = next ?? []
+        updatePlaylist: (nextPlaylist) => {
+            playlist = nextPlaylist
+            currentOptions = { ...currentOptions, playlist: nextPlaylist }
             const current = store.getState().playlistIndex
-            const clamped = Math.max(0, Math.min(current, playlist.length - 1))
+            const clamped = Math.max(0, Math.min(current, Math.max(0, playlist.length - 1)))
             store.setState({ playlistLength: playlist.length, playlistIndex: clamped })
             const item = playlist[clamped]
             if (item && resolveSource(item.source) !== currentSrc) loadItem(clamped)
         },
-
-        // 响应式更新：应用 autoPlay/loop/muted/poster 等标量配置（undefined 保持原值）
-        applyOptions: (next) => {
-            if (next.loop !== undefined) video.loop = next.loop
-            if (next.muted !== undefined) video.muted = next.muted
-            if (next.autoPlay !== undefined) video.autoplay = next.autoPlay
-            if (next.poster !== undefined) video.poster = next.poster
+        updateOptions: (nextOptions) => {
+            const persistChanged = 'persist' in nextOptions && nextOptions.persist !== currentOptions.persist
+            currentOptions = { ...currentOptions, ...nextOptions }
+            if ('loop' in nextOptions) video.loop = nextOptions.loop ?? false
+            if ('muted' in nextOptions) video.muted = nextOptions.muted ?? false
+            if ('autoPlay' in nextOptions) video.autoplay = nextOptions.autoPlay ?? false
+            if ('poster' in nextOptions) {
+                if (nextOptions.poster) video.poster = nextOptions.poster
+                else video.removeAttribute('poster')
+            }
             store.setState({ isMuted: video.muted, isLoop: video.loop })
+            if (persistChanged) persistence.updateConfig(nextOptions.persist)
         },
-
         mount: (container) => {
-            containerEl = container
-            container.appendChild(video)
+            if (destroyed) throw new Error('Cannot mount a destroyed player')
+            if (containerElement === container && video.parentElement === container) return
+            containerElement = container
+            container.prepend(video)
+            if (!readyEmitted) {
+                readyEmitted = true
+                currentOptions.onReady?.(instance)
+            }
         },
-
         destroy: () => {
-            // 解绑所有原生监听器
+            if (destroyed) return
+            destroyed = true
+            pluginManagerRef.current?.destroy()
+            persistence.destroy()
+            sourceLoadGeneration++
+            removePendingResume?.()
+            removePendingResume = undefined
+            slots.clear()
             videoListeners.forEach(({ type, handler }) => video.removeEventListener(type, handler))
             videoListeners.length = 0
             document.removeEventListener('fullscreenchange', onFullscreenChange)
-            // 清理事件总线
             listeners.clear()
             video.pause()
             video.removeAttribute('src')
             video.load()
             video.remove()
-            containerEl = null
+            containerElement = null
         },
-
-        registerUI: (id, component, type, opts) => {
-            store.setState((prev) => {
-                if (type === 'layer') {
-                    return {
-                        uiRegistry: {
-                            ...prev.uiRegistry,
-                            layers: [...prev.uiRegistry.layers, { id, component, ...opts }]
-                        }
-                    }
-                } else {
-                    return {
-                        uiRegistry: {
-                            ...prev.uiRegistry,
-                            controls: [...prev.uiRegistry.controls, { id, component, ...opts }]
-                        }
-                    }
-                }
+        registerSlot: (contribution: SlotContribution) => slots.register(contribution),
+        registerUI: (id, component, type, uiOptions) => {
+            slots.register({
+                id,
+                content: component,
+                slot:
+                    type === 'layer'
+                        ? 'overlay'
+                        : uiOptions?.position === 'left'
+                          ? 'controls.leading'
+                          : 'controls.trailing',
+                order: uiOptions?.order,
+                zIndex: uiOptions?.zIndex,
+                controlId: uiOptions?.controlKey
             })
         },
-
-        unregisterUI: (id) => {
-            store.setState((prev) => ({
-                uiRegistry: {
-                    layers: prev.uiRegistry.layers.filter((l) => l.id !== id),
-                    controls: prev.uiRegistry.controls.filter((c) => c.id !== id)
-                }
-            }))
+        unregisterUI: (id) => slots.unregister(id),
+        on: (event, handler) => {
+            if (!listeners.has(event)) listeners.set(event, new Set())
+            listeners.get(event)!.add(handler as InternalEventHandler)
         },
-
-        on: (evt, fn) => {
-            if (!listeners.has(evt)) listeners.set(evt, new Set())
-            listeners.get(evt)!.add(fn)
-        },
-
-        off: (evt, fn) => {
-            listeners.get(evt)?.delete(fn)
-        },
-
-        emit: (evt, ...args) => {
-            emitEvent(evt, ...args)
-        },
-
+        off: (event, handler) => listeners.get(event)?.delete(handler as InternalEventHandler),
+        emit: (event, ...args) => emitEvent(event, ...args),
         captureLayers,
         registerCaptureLayer: (id, getCanvas) => {
-            if (!captureLayers.some((l) => l.id === id)) captureLayers.push({ id, getCanvas })
+            if (!captureLayers.some((layer) => layer.id === id)) captureLayers.push({ id, getCanvas })
         },
         unregisterCaptureLayer: (id) => {
-            const i = captureLayers.findIndex((l) => l.id === id)
-            if (i >= 0) captureLayers.splice(i, 1)
+            const index = captureLayers.findIndex((layer) => layer.id === id)
+            if (index >= 0) captureLayers.splice(index, 1)
         }
     }
 
+    const runtimePluginManager = createPluginManager(instance, (pluginError) => {
+        currentOptions.onPluginError?.(pluginError)
+        emitEvent('plugin:error', pluginError)
+    })
+    pluginManagerRef.current = {
+        set: (entries) => {
+            currentOptions = { ...currentOptions, plugins: entries ? [...entries] : [] }
+            runtimePluginManager.set(entries)
+        },
+        get: runtimePluginManager.get,
+        has: runtimePluginManager.has,
+        subscribe: runtimePluginManager.subscribe,
+        destroy: runtimePluginManager.destroy
+    }
+
+    if (isStreamingSource(currentSrc)) video.removeAttribute('src')
+    else video.src = currentSrc
+    syncStaticQualities(currentSourceInput)
+    persistence.restore()
+    pluginManagerRef.current.set(currentOptions.plugins)
+
     return instance
 }
+
+export type { PlayerPluginEntry }

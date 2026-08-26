@@ -9,7 +9,12 @@ lerna-debug.log*
 
 node_modules
 dist
+demo-dist
+.pages
 dist-ssr
+playwright-report
+test-results
+bundle-stats.html
 *.local
 
 # Editor directories and files

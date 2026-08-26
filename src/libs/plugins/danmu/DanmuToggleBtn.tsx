@@ -1,19 +1,17 @@
 import { MessageSquare, MessageSquareOff } from 'lucide-react'
 import { useStore } from 'zustand'
 
-import type { PlayerInstance } from '../../core/types'
 import controlStyles from '../../styles/controls.module.scss'
+import type { DanmuAPI } from './state'
 
 /** 弹幕开关按钮 */
-export const DanmuToggleBtn = ({ player }: { player: PlayerInstance }) => {
-    const isVisible = useStore(player.store, (s) => s.isDanmuVisible)
-
-    const toggle = () => player.store.setState({ isDanmuVisible: !isVisible })
+export const DanmuToggleBtn = ({ api }: { api: DanmuAPI }) => {
+    const isVisible = useStore(api.store, (state) => state.isVisible)
 
     return (
         <button
             className={`${controlStyles.iconBtn} ${isVisible ? controlStyles.active : ''}`}
-            onClick={toggle}
+            onClick={api.toggleVisible}
             aria-label={isVisible ? '关闭弹幕' : '开启弹幕'}
         >
             {isVisible ? <MessageSquare /> : <MessageSquareOff />}

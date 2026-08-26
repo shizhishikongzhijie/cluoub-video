@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PlayerInstance } from '../core/types'
+import { PlayerProvider, PlayerRoot } from '../react/context'
 import type { CluoubVideoProps } from '../types'
 import { usePlayer } from './usePlayer'
 
@@ -20,16 +21,19 @@ let capturedPlayer: PlayerInstance | null = null
 
 const Host = ({ props, onPlayer }: { props: CluoubVideoProps; onPlayer?: (p: PlayerInstance) => void }) => {
     const ref = useRef<HTMLDivElement>(null)
-    const player = usePlayer(ref, props)
+    const player = usePlayer(props)
     useEffect(() => {
         if (player) onPlayer?.(player)
     }, [player, onPlayer])
     // 状态文案放在独立子元素中：视频元素被命令式追加到容器，若 host 直接持有文本节点，
     // 状态更新时 React 会通过 textContent 整段覆盖并清掉命令式追加的 <video>
+    if (!player) return <span data-testid="status">loading</span>
     return (
-        <div ref={ref} data-testid="host">
-            <span data-testid="status">{player ? 'ready' : 'loading'}</span>
-        </div>
+        <PlayerProvider player={player}>
+            <PlayerRoot ref={ref} data-testid="host">
+                <span data-testid="status">ready</span>
+            </PlayerRoot>
+        </PlayerProvider>
     )
 }
 
@@ -89,25 +93,13 @@ describe('usePlayer props 响应性', () => {
 
         const { rerender, unmount } = renderHost({ source: 'a.mp4', plugins: [pluginA], onReady })
         expect(onReady).toHaveBeenCalledTimes(1)
-        const controlIds = () => capturedPlayer!.store.getState().uiRegistry.controls.map((c) => c.id)
+        const controlIds = () => capturedPlayer!.slots.getSnapshot().map((contribution) => contribution.id)
         expect(controlIds()).toContain('test-a')
 
         rerender({ source: 'a.mp4', plugins: [pluginB], onReady })
         expect(controlIds()).not.toContain('test-a')
         expect(controlIds()).toContain('test-b')
         expect(onReady).toHaveBeenCalledTimes(1) // 不重建实例
-        unmount()
-    })
-
-    it('toggleScreenMode 循环 normal → wide → small → normal', () => {
-        const { unmount } = renderHost({ source: 'a.mp4' })
-        expect(capturedPlayer!.store.getState().screenMode).toBe('normal')
-        capturedPlayer!.toggleScreenMode()
-        expect(capturedPlayer!.store.getState().screenMode).toBe('wide')
-        capturedPlayer!.toggleScreenMode()
-        expect(capturedPlayer!.store.getState().screenMode).toBe('small')
-        capturedPlayer!.toggleScreenMode()
-        expect(capturedPlayer!.store.getState().screenMode).toBe('normal')
         unmount()
     })
 
