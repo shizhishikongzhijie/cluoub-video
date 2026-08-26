@@ -17,12 +17,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cluoub-design/cluoub-video.git"
+    "url": "git+https://github.com/shizhishikongzhijie/cluoub-video.git"
   },
   "bugs": {
-    "url": "https://github.com/cluoub-design/cluoub-video/issues"
+    "url": "https://github.com/shizhishikongzhijie/cluoub-video/issues"
   },
-  "homepage": "https://github.com/cluoub-design/cluoub-video#readme",
+  "homepage": "https://github.com/shizhishikongzhijie/cluoub-video#readme",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
