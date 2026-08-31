@@ -119,7 +119,7 @@
   "dependencies": {
     "classnames": "^2.5.1",
     "gifenc": "^1.0.3",
-    "lucide-react": "^0.544.0",
+    "lucide-react": "^1.34.0",
     "zustand": "^5.0.10"
   },
   "devDependencies": {
