@@ -1,6 +1,6 @@
 # Migrating to 0.3 beta
 
-`0.3.0-beta.0` 将框架无关 Core、React 绑定和内置插件拆成独立入口。根入口暂时保留 0.1 兼容行为。
+`0.3.0-beta.0` 将框架无关 Core、React 绑定和内置插件拆成独立入口。根入口暂时保留 0.1 兼容行为；依赖可选 peer 的 DASH、HLS 和字幕插件需要从各自子路径导入。
 
 ## 推荐迁移顺序
 
@@ -15,7 +15,8 @@
 Before:
 
 ```tsx
-import { CluoubVideo, danmuPlugin, subtitlePlugin } from '@cluoub-design/cluoub-video'
+import { CluoubVideo, danmuPlugin } from '@cluoub-design/cluoub-video'
+import { subtitlePlugin } from '@cluoub-design/cluoub-video/plugins/subtitle'
 
 <CluoubVideo
   source="/video.mp4"

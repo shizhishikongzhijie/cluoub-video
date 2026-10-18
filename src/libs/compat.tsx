@@ -1,12 +1,9 @@
 import { forwardRef, useMemo } from 'react'
 
-import type { PlayerPluginEntry } from './core/types'
-import { capturePlugin } from './plugins/capture'
+import type { PlayerPlugin, PlayerPluginEntry } from './core/types'
 import type { CaptureConfig } from './plugins/capture/CaptureControl'
-import { type DanmuItem, danmuPlugin } from './plugins/danmu'
-import { dashPlugin } from './plugins/dash'
-import { hlsPlugin } from './plugins/hls'
-import { subtitlePlugin, type SubtitleTrack } from './plugins/subtitle'
+import type { DanmuItem } from './plugins/danmu'
+import type { SubtitleTrack } from './plugins/subtitle'
 import type { CluoubVideoProps, LegacyCluoubVideoProps, VideoRef } from './types'
 import { CluoubVideo as StrictCluoubVideo } from './video'
 
@@ -17,29 +14,37 @@ type LegacyPluginProps = Pick<
 
 const configureLegacyEntry = (entry: PlayerPluginEntry, props: LegacyPluginProps): PlayerPluginEntry => {
     if (typeof entry !== 'object' || entry.kind !== 'cluoub-player-plugin') return entry
+    const plugin = entry as PlayerPlugin<unknown, unknown>
+    let config: unknown
     switch (entry.id) {
-        case danmuPlugin.id:
-            return danmuPlugin.configure({
+        case 'danmu':
+            config = {
                 danmuList: props.danmuList as DanmuItem[] | undefined,
                 defaultShow: props.defaultShow,
                 showDanmuBar: props.showDanmuBar,
                 danmuColor: props.danmuColor,
                 danmuMode: props.danmuMode
-            })
-        case subtitlePlugin.id:
-            return subtitlePlugin.configure({
+            }
+            break
+        case 'subtitle':
+            config = {
                 tracks: (props.tracks as SubtitleTrack[] | undefined) ?? [],
                 defaultShow: props.defaultShow
-            })
-        case capturePlugin.id:
-            return capturePlugin.configure((props.capture as CaptureConfig | undefined) ?? {})
-        case dashPlugin.id:
-            return dashPlugin.configure({ dataPrefix: props.dataPrefix })
-        case hlsPlugin.id:
-            return hlsPlugin.configure({})
+            }
+            break
+        case 'capture':
+            config = (props.capture as CaptureConfig | undefined) ?? {}
+            break
+        case 'dash':
+            config = { dataPrefix: props.dataPrefix }
+            break
+        case 'hls':
+            config = {}
+            break
         default:
             return entry
     }
+    return plugin.configure(config)
 }
 
 /**

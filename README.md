@@ -6,7 +6,7 @@
 
 Cluoub Video Player 是一个面向现代 Web 应用的视频播放器 SDK。它以轻量 Headless Core 为基础，将默认 React UI、字幕、流媒体、弹幕和截图能力拆分为独立入口，通过统一的播放器实例、插件运行时和 Slot API 按需组合功能。
 
-当前代码版本：`0.3.0-beta.1`。代码、Demo 构建和 Pages 部署配置已完成；公开 Demo 地址以实际部署结果为准。
+当前代码版本：`0.3.0-beta.2`。代码、Demo 构建和 Pages 部署配置已完成；公开 Demo 地址以实际部署结果为准。
 
 ## 为什么是 Cluoub Video Player？
 
@@ -42,12 +42,13 @@ Cluoub Video Player 是一个面向现代 Web 应用的视频播放器 SDK。它
 ## 安装
 
 ```bash
-npm install @cluoub-design/cluoub-video@0.3.0-beta.1
+npm install @cluoub-design/cluoub-video@0.3.0-beta.2
 # 或
-pnpm add @cluoub-design/cluoub-video@0.3.0-beta.1
+pnpm add @cluoub-design/cluoub-video@0.3.0-beta.2
 ```
 
 `react` / `react-dom` 是 React 入口的 peer dependencies。`dashjs`、`hls.js`、`libjass` 是对应插件的可选 peer dependencies。
+可选插件请从 `plugins/dash`、`plugins/hls` 或 `plugins/subtitle` 子路径显式导入；未使用的插件不需要加入应用依赖。
 
 ## 默认 React 播放器
 
